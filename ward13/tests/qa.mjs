@@ -345,7 +345,8 @@ S.tips = async b => {
   await page.evaluate(() => { window.__w13.msg.t = 0; }); // dismiss the floor hint (game time runs slow under software GL)
   await page.evaluate(() => { const w = window.__w13, P = w.P; P.pitch = 0; const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); for (let d = 6; d > 2; d -= .5) { const x = P.x + fx * d, z = P.z + fz * d; if (!w.isWall(x, z) && !w.blockedAt(x, z, .35)) { const e = w.spawnEnemy('patient', x, z); e.dormant = false; e.stun = 99; break; } } });
   let text = '';
-  for (let i = 0; i < 80; i++) { await sleep(250); text = await page.evaluate(() => document.getElementById('msg').style.opacity !== '0' ? document.getElementById('msg').textContent : ''); if (/ultraviolet/.test(text)) break; }
+  // keep dismissing other messages (the floor hint is posted by a real-time timer and can land late)
+  for (let i = 0; i < 120; i++) { await sleep(250); text = await page.evaluate(() => { const m = document.getElementById('msg'); if (!/ultraviolet/.test(m.textContent)) window.__w13.msg.t = 0; return m.style.opacity !== '0' ? m.textContent : ''; }); if (/ultraviolet/.test(text)) break; }
   const seen = await page.evaluate(() => JSON.stringify(window.__w13.save.tips || {}));
   await page.close();
   return { ok: /ultraviolet/.test(text) && /"uv":true/.test(seen) && !errors.length, info: `msg="${text.slice(0, 60)}" tips=${seen}`, errors };
@@ -427,6 +428,20 @@ S.edges = async b => {
   return { ok, info: out.join('; '), errors };
 };
 
+S.map = async b => {
+  // Floor plans grade 2: exit, objectives and threats drawn as distinct shapes.
+  const { page, errors } = await open(b);
+  await newGame(page);
+  await page.evaluate(() => { const w = window.__w13; w.save.up.plans = 2; });
+  await gotoFloor(page, 3);
+  await page.evaluate(() => { const w = window.__w13, P = w.P; for (const k of Object.keys(w.L.explored)) w.L.explored[k] = 1; const e = w.spawnEnemy('patient', P.x + 2, P.z + 2); e.dormant = true; w.questDone && 0; });
+  await page.keyboard.press('KeyM'); await sleep(800);
+  const px = await page.evaluate(() => { const c = document.getElementById('map'), g = c.getContext('2d'), d = g.getImageData(0, 0, 200, 200).data; let red = 0, amber = 0; for (let i = 0; i < d.length; i += 4) { if (d[i] > 200 && d[i + 1] < 90 && d[i + 2] < 80) red++; if (d[i] > 230 && d[i + 1] > 150 && d[i + 1] < 200 && d[i + 2] < 100) amber++; } return { red, amber, shown: getComputedStyle(c).display }; });
+  if (SHOTS) await page.locator('#map').screenshot({ path: path.join(shotDir, 'map.png') });
+  await page.close();
+  return { ok: px.shown === 'block' && px.red > 0 && px.amber > 0 && !errors.length, info: `map ${px.shown}; threat px ${px.red}; objective px ${px.amber}`, errors };
+};
+
 S.dynres = async b => {
   // Drives the dynamic-quality controller with synthetic frame times through the test hook.
   const { page, errors } = await open(b);
@@ -474,7 +489,7 @@ S.perf = async b => {
   return { ok: !errors.length, info: `frame avg ${res.avg.toFixed(1)} ms, worst ${res.p99.toFixed(1)} ms (SwiftShader software GL)${res.info ? ' ' + JSON.stringify(res.info) : ''}`, errors };
 };
 
-const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'fatalRecovery', 'captions', 'settingsUI', 'tips', 'gamepad', 'edges', 'dynres', 'perf', 'floors', 'soak', 'simSoak'];
+const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'fatalRecovery', 'captions', 'settingsUI', 'tips', 'gamepad', 'edges', 'map', 'dynres', 'perf', 'floors', 'soak', 'simSoak'];
 const run = wanted.length ? wanted : order.filter(n => n !== 'soak' && n !== 'simSoak');
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-accelerated-2d-canvas', '--autoplay-policy=no-user-gesture-required', '--enable-precise-memory-info'] });
 let fails = 0;

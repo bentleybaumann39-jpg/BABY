@@ -227,7 +227,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{ outline:2px solid
       <b>Right mouse</b><span>Focus the beam into ultraviolet. It burns things and reveals hidden writing</span>
       <b>Left mouse or Q</b><span>Camera flash. Stuns what it sees; strips the Surgeon's shroud</span>
       <b>E</b><span>Take, use, read, hide in lockers</span><b>V</b><span>Camcorder night vision. See in the dark without being seen</span><b>R (hold)</b><span>Listen. Quiets the hum so you can hear what is moving</span><b>Tab (hold)</b><span>Show your status and objective</span><b>1 2 3</b><span>Dressing, pills, spare cell</span>
-      <b>G</b><span>Throw a flare that keeps things away</span><b>M</b><span>Floor map</span><b>Esc</b><span>Pause</span>
+      <b>G</b><span>Throw a flare that keeps things away</span><b>M</b><span>Floor map: square exit, diamond objectives, ring code digits, cross threats</span><b>Esc</b><span>Pause</span>
       <b>Gamepad</b><span>Sticks move and look. RT ultraviolet, RB flash, A jump, B crouch, X use, Y flashlight, LB camcorder, L3 run, R3 listen, d-pad items, View map, Menu pause</span>
     </div>
     <p style="font-size:14px">Mannequins only move when unseen and unlit. Crawlers hate light. Wraiths drift through walls and eat your sanity; burn them with ultraviolet. Stay near working lamps to steady your mind. If you hear crying, keep your light off her.</p>
@@ -2198,11 +2198,15 @@ function updHUD(dt,dk){
 function drawMap(){
   const cv=$('map'),g=cv.getContext('2d'),n=L.n,s=200/n;g.clearRect(0,0,200,200);
   for(let z=0;z<n;z++)for(let x=0;x<n;x++){const k=z*n+x;if(!L.explored[k]||L.g[k]===1)continue;g.fillStyle=L.rm[k]===-2?'#5a5a52':'#7a7468';g.fillRect(x*s,z*s,s+.4,s+.4);}
-  const dot=(x,z,c,r=3)=>{g.fillStyle=c;g.beginPath();g.arc(x/C*s,z/C*s,r,0,TAU);g.fill();};
-  if(L.exitE&&(L.quest.done||ST.plans>=1||L.explored[I2(Math.floor(L.exitE.x/C),Math.floor(L.exitE.z/C))]))dot(L.exitE.x,L.exitE.z,'#7fe0a8',4);
-  if(ST.plans>=1)for(const it of L.items)if(!it.taken&&it.kind!=='note')dot(it.x,it.z,'#ffb040');
-  if(ST.plans>=1)for(const u of L.uvs)if(u.idx>=0&&!u.found)dot(u.x,u.z,'#b090ff');
-  if(ST.plans>=2)for(const e of L.enemies)if(!e.dead&&dist(e.x,e.z,P.x,P.z)<16)dot(e.x,e.z,'#e04030',2.5);
+  // Each marker type has its own shape as well as colour, so the map reads without colour vision.
+  const mark=(x,z,c,shape,r=3)=>{const X=x/C*s,Z=z/C*s;g.fillStyle=c;g.strokeStyle=c;g.lineWidth=1.6;g.beginPath();
+    if(shape==='square')g.rect(X-r,Z-r,r*2,r*2);else if(shape==='diamond'){g.moveTo(X,Z-r-1);g.lineTo(X+r+1,Z);g.lineTo(X,Z+r+1);g.lineTo(X-r-1,Z);g.closePath();}
+    else if(shape==='ring'){g.arc(X,Z,r,0,TAU);g.stroke();return;}else if(shape==='cross'){g.moveTo(X-r,Z-r);g.lineTo(X+r,Z+r);g.moveTo(X+r,Z-r);g.lineTo(X-r,Z+r);g.stroke();return;}
+    g.fill();};
+  if(L.exitE&&(L.quest.done||ST.plans>=1||L.explored[I2(Math.floor(L.exitE.x/C),Math.floor(L.exitE.z/C))]))mark(L.exitE.x,L.exitE.z,'#7fe0a8','square',4);
+  if(ST.plans>=1)for(const it of L.items)if(!it.taken&&it.kind!=='note')mark(it.x,it.z,'#ffb040','diamond');
+  if(ST.plans>=1)for(const u of L.uvs)if(u.idx>=0&&!u.found)mark(u.x,u.z,'#b090ff','ring');
+  if(ST.plans>=2)for(const e of L.enemies)if(!e.dead&&dist(e.x,e.z,P.x,P.z)<16)mark(e.x,e.z,'#e04030','cross',3);
   const px=P.x/C*s,pz=P.z/C*s;g.save();g.translate(px,pz);g.rotate(-P.yaw);g.fillStyle='#f0e8d8';g.beginPath();g.moveTo(0,-6);g.lineTo(4,4);g.lineTo(-4,4);g.closePath();g.fill();g.restore();
 }
 /* ===================== ATMOSPHERE ===================== */
