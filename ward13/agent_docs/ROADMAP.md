@@ -117,7 +117,7 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 | Risk / deps | Low |
 | Effort | S |
 | Verify | Code review plus the `scares` scenario. |
-| **Status** | TODO |
+| **Status** | DONE: implemented with R-03 (`DIR.crashed`, `DIR.last`, floor > 2) and dt-based `secMotion` timer. Verified by code review and `scares` (the stalker, cascade and crash still trigger). |
 
 ### R-11 — Onboarding: teach by doing
 | | |
@@ -128,7 +128,7 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 | Risk / deps | Low |
 | Effort | S |
 | Verify | Drive the triggers through the test hook and check the message text. |
-| **Status** | TODO |
+| **Status** | DONE: the floor-1 text dump was removed. `TIPS` teaches uv, flash, hide, dark and sanity on first relevance, saved in `save.tips` and skipped in New Game+. The `tips` scenario shows the UV tip appearing when an enemy comes into view, and `save.tips.uv` is set. |
 
 ## NICE-TO-HAVE
 - **R-12 — Gamepad support (Gamepad API):**

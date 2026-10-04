@@ -2096,6 +2096,20 @@ function updSig(S,dt){S.t+=dt;
       FX.glitch=1;FX.flash=.9;FX.shake=1;FX.dmg=Math.max(FX.dmg,.5);SFX.scream({x:P.x,z:P.z});SFX.sting();P.san=Math.max(0,P.san-10);
       const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),m=mPatient(CM),x=P.x+fx*.7,z=P.z+fz*.7;m.root.position.set(x,0,z);m.root.rotation.y=Math.atan2(-fx,-fz);world.add(m.root);DIR.st={k:'stalk2',m,x,z,t:-.15};}return;}
 }
+// One-shot contextual tips: each mechanic is taught the first time it becomes useful (first run only).
+const TIPS={
+  uv:{when:()=>L.enemies.some(e=>!e.dead&&!e.dormant&&e.type!=='still'&&dist(e.x,e.z,P.x,P.z)<12&&inView(e.x,e.z))||L.items.some(it=>it.kind==='growth'&&!it.taken&&dist(it.x,it.z,P.x,P.z)<9&&inView(it.x,it.z)),
+    text:'Hold right mouse to focus the beam into ultraviolet. It burns them.'},
+  flash:{when:()=>L.enemies.some(e=>!e.dead&&e.state==='chase'&&dist(e.x,e.z,P.x,P.z)<6),text:'Left mouse or Q fires the camera flash. It stuns whatever it sees.'},
+  hide:{when:()=>L.enemies.some(e=>!e.dead&&e.state==='chase'&&dist(e.x,e.z,P.x,P.z)<10)&&L.lockers&&L.lockers.some(l=>dist(l.x,l.z,P.x,P.z)<4),text:'Press E at a locker to hide. Do not let it see you climb in.'},
+  dark:{when:()=>P.light&&P.bat<30,text:'Switch the flashlight off with F and the darkness recharges it. V raises the camcorder: night vision that nothing can see.'},
+  sanity:{when:()=>P.san<45,text:'Your mind is slipping. Stand under a working lamp, or take pills with 2.'},
+};
+function updTips(dt){
+  if(save.ng)return;TIPS.t=(TIPS.t||0)-dt;if(TIPS.t>0||msg.t>0.5||P.hidden)return;TIPS.t=.4;
+  save.tips=save.tips||{};for(const k in TIPS){if(k==='t'||save.tips[k])continue;const T=TIPS[k];
+    try{if(T.when()){save.tips[k]=true;msg(T.text,6);TIPS.t=8;return;}}catch(e){}}
+}
 function updWorld(dt){
   for(const it of L.items){if(it.taken)continue;if(it.kind==='fuse'){it.m.rotation.y+=dt*.8;it.m.position.y=it.y+Math.sin(gameTime*2.4+it.x)*.03;}
     if(it.kind==='growth'){const s=1.25+Math.sin(gameTime*3+it.x)*.06;it.m.scale.set(s,s*(1+Math.sin(gameTime*3+it.x)*.04),s);if(it.burn>0){it.burn-=dt;it.m.position.x=it.x+mr(-.03,.03);}}}
@@ -2118,7 +2132,7 @@ function updWorld(dt){
 function danger(){let d=99;for(const e of L.enemies)if(!e.dead&&(e.state==='chase'||e.state==='rage'||e.type==='still')&&!e.dormant)d=Math.min(d,dist(e.x,e.z,P.x,P.z));const B=L.boss;if(B&&B.active&&!B.dead)d=Math.min(d,dist(B.x,B.z,P.x,P.z)*.7);const E=L.echo;if(E&&E.m&&E.m.root.visible&&(E.st==='chase'||E.st==='ambush'||E.st==='stalk'))d=Math.min(d,dist(E.x,E.z,P.x,P.z)*(E.st==='chase'?.8:1.4));return d;}
 function update(dt){
   L.time+=dt;msg.t=(msg.t||0)-dt;if(msg.t<=0)$('msg').style.opacity=0;
-  updPlayer(dt);updEnemies(dt);updBoss(dt);updProj(dt);updWorld(dt);updSanity(dt);updPhantom(dt);updScares(dt);updDirector(dt);updLamps(dt);updAtmos(dt);updEcho(dt);updAnom(dt);updListen();updPeek(dt);
+  updPlayer(dt);updEnemies(dt);updBoss(dt);updProj(dt);updWorld(dt);updSanity(dt);updPhantom(dt);updScares(dt);updDirector(dt);updTips(dt);updLamps(dt);updAtmos(dt);updEcho(dt);updAnom(dt);updListen();updPeek(dt);
   if(state!=='play')return;
   GP.update(dt);BP.update(dt);
   const dg=danger(),dk=clamp(1-dg/12,0,1);setTension(dk);P.beat=(P.beat||0)-dt;if(dk>.25&&P.beat<=0){P.beat=1.15-dk*.6;SFX.heart(dk);}
@@ -2690,7 +2704,6 @@ function startFloor(retry){dirReset();capClear();DIR.since=0;DIR.next=mr(35,60);
     setTimeout(()=>{$('card').style.opacity=0;},1700);
     if(HINTS[lvl]&&!save.ng)setTimeout(()=>{if(state==='play')msg(HINTS[lvl],7);},1900);
     else if(isBoss(lvl))setTimeout(()=>{if(state==='play')msg('Read the note in the waiting room. Then go through.',5);},1900);
-    if(lvl===1&&!save.ng)setTimeout(()=>{if(state==='play'&&L.lvl===1)msg('Right mouse focuses the beam into ultraviolet. Left mouse fires the camera flash. V raises the camcorder: night vision that nothing can see.',7);},10000);
   }catch(e){fatal(e);}},90);
 }
 function completeFloor(){
@@ -2824,7 +2837,7 @@ appliedQ=null;state='menu';shopView='menu';FX.fade=1;refreshMenu();show('menu');
 requestAnimationFrame(loop);
 if(window.__W13_TEST)window.__w13={get L(){return L;},P,get save(){return save;},set save(v){save=v;},get state(){return state;},set state(v){state=v;},get snapshot(){return snapshot;},
   startFloor,completeFloor,openShop,toMenu,interact,interactTarget,cameraFlash,useItem,questDone,bossDie,bossHurt,die,hurt,pause,resume,closeNote,buyUp,buySup,spawnEnemy,keys,mouse,FX,ST:()=>ST,
-  get world(){return world;},scene,findPath,los,UPG,SUP,takeItem,leaveLocker,enterLocker,exitAction,updShop,blockedAt,moveC,isWall,bfsFrom,questOf,isBoss,get boss(){return L&&L.boss;},DIR,sigStalker,sigCascade,sigCrash,AU,settings,PERF,perf,
+  get world(){return world;},scene,findPath,los,UPG,SUP,takeItem,leaveLocker,enterLocker,exitAction,updShop,blockedAt,moveC,isWall,bfsFrom,questOf,isBoss,get boss(){return L&&L.boss;},DIR,sigStalker,sigCascade,sigCrash,AU,settings,PERF,perf,TIPS,
   renderInfo:()=>({programs:renderer.info.programs.length,calls:renderer.info.render.calls,tris:renderer.info.render.triangles,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures,lights:pool.length})};
 };
 </script>
