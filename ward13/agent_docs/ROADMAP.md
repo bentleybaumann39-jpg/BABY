@@ -84,7 +84,7 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 | Risk / deps | Low / R-01 (schema) |
 | Effort | S |
 | Verify | `controls` plus a settings round-trip. |
-| **Status** | TODO |
+| **Status** | DONE: `settingsUI` shows FOV 88 persisted and applied to the camera (88.0), and reduced motion and captions persist. Shake is trauma² with smooth sines; reduced motion scales bob, shake, sprint FOV kick and warp. Escape now closes the settings and controls panels, and rows were tightened so Done is visible at 720p (screenshot). |
 
 ### R-08 — Sound captions
 | | |
@@ -95,7 +95,7 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 | Risk / deps | Low |
 | Effort | M |
 | Verify | Trigger scares with captions on and check the caption DOM text. |
-| **Status** | TODO |
+| **Status** | DONE: `captions` shows "[Breathing, close behind you]" for the stalker. Hooked SFX: scream, whisper, growl, screech, slam, glass, clang, roar, scrape. Also enemy footsteps (by type), crying, locker banging, phone, the footsteps scare. Rate-limited per line, at most 3 on screen. |
 
 ### R-09 — Fatal error recovery screen
 | | |
@@ -106,7 +106,7 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 | Risk / deps | Low |
 | Effort | S |
 | Verify | Inject a throwing update through the test hook, then click Return. The menu works. |
-| **Status** | TODO |
+| **Status** | DONE: `fatalRecovery` injects a broken enemy, then checks the recovery panel, then menu → continue → play with no further errors. |
 
 ### R-10 — Fear director pacing
 | | |

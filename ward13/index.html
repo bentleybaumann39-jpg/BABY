@@ -46,6 +46,8 @@ button:focus-visible,select:focus-visible,input:focus-visible{ outline:2px solid
 .slot.empty{ opacity:.35; }
 #obolHud{ font-family:var(--serif); font-size:22px; color:var(--iodine); text-shadow:0 0 12px #c8913a55; margin-right:6px; padding-bottom:6px; }
 #msg{ position:absolute; top:22%; left:50%; transform:translateX(-50%); width:min(720px,86vw); text-align:center; font-family:var(--serif); font-size:22px; line-height:1.45; text-shadow:0 2px 12px #000; opacity:0; transition:opacity .5s; }
+#caps{ position:absolute; left:50%; bottom:calc(118px + env(safe-area-inset-bottom,0px)); transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:4px; pointer-events:none; width:min(560px,90vw); }
+#caps div{ background:#000a; color:#f0e6d2; font-size:15px; padding:3px 10px; border-radius:3px; transition:opacity .6s; }
 #prompt{ position:absolute; top:62%; left:50%; transform:translateX(-50%); font-size:15px; text-shadow:0 2px 8px #000; white-space:nowrap; }
 #prompt kbd{ font-family:var(--type); border:1px solid var(--bone-dim); border-radius:4px; padding:1px 7px; margin-right:6px; }
 #cross{ position:absolute; left:50%; top:50%; width:4px; height:4px; margin:-2px 0 0 -2px; border-radius:50%; background:var(--bone); opacity:.55; }
@@ -89,7 +91,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{ outline:2px solid
 .panel{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); width:min(640px,92vw); max-height:88vh; overflow:auto; padding:26px 32px; }
 .panel h3{ font-family:var(--serif); font-weight:normal; font-size:34px; margin:0 0 4px; }
 .panel p{ line-height:1.6; }
-.row{ display:grid; grid-template-columns:170px 1fr; gap:12px; align-items:center; padding:9px 0; border-bottom:1px solid #231c1422; font-size:15px; }
+.row{ display:grid; grid-template-columns:170px 1fr; gap:12px; align-items:center; padding:6px 0; border-bottom:1px solid #231c1422; font-size:15px; }
 .row input[type=range]{ width:100%; accent-color:var(--artery); }
 .row select{ font:inherit; background:#fff6; border:1px solid #231c1455; padding:4px 8px; color:var(--ink); }
 .keys{ display:grid; grid-template-columns:auto 1fr; gap:6px 18px; font-size:14px; }
@@ -152,7 +154,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{ outline:2px solid
 <div id="hud">
   <div id="chart"><div id="where"></div><div id="task"></div></div>
   <div id="boss"><div id="bossName"></div><div id="bossTrack"><div id="bossFill"></div></div><div id="bossNote"></div></div>
-  <div id="msg"></div><div id="prompt"></div><div id="cross"></div><div id="arrow"></div>
+  <div id="msg"></div><div id="caps"></div><div id="prompt"></div><div id="cross"></div><div id="arrow"></div>
   <canvas id="map" width="200" height="200"></canvas>
   <div id="warn"></div>
   <div id="band">
@@ -206,6 +208,9 @@ button:focus-visible,select:focus-visible,input:focus-visible{ outline:2px solid
     <div class="row"><span>Volume</span><input type="range" id="sVol" min="0" max="1" step="0.05"></div>
     <div class="row"><span>Invert look</span><label><input type="checkbox" id="sInvert"> Invert vertical mouse</label></div>
     <div class="row"><span>Photosensitivity</span><label><input type="checkbox" id="sCalm"> Soften flashes and flicker</label></div>
+    <div class="row"><span>Field of view</span><input type="range" id="sFov" min="60" max="95" step="1"></div>
+    <div class="row"><span>Camera motion</span><label><input type="checkbox" id="sStill"> Reduce head bob, shake and screen warp</label></div>
+    <div class="row"><span>Captions</span><label><input type="checkbox" id="sCap"> Show captions for important sounds</label></div>
     <p style="font-size:13px;color:#231c14aa">Graphics changes apply from the next floor. Raise brightness until the circle beside it is barely visible.</p>
     <button class="btn" id="bSetBack">Done</button>
   </div>
@@ -281,6 +286,15 @@ button:focus-visible,select:focus-visible,input:focus-visible{ outline:2px solid
     <div class="tally" id="endTally"></div>
     <button class="btn" id="bNG">Begin again, keeping your treatments (harder)</button>
     <button class="btn" id="bEndMenu">Return to the menu</button></div>
+  </div>
+</section>
+<section id="crashed" class="screen dim">
+  <div class="panel paper">
+    <h3>Something went wrong</h3>
+    <p id="crashMsg" style="font-size:15px"></p>
+    <p style="font-size:13px;color:#231c14aa">Your progress from the start of this floor is safe.</p>
+    <button class="btn" id="bCrashMenu">Return to the menu</button>
+    <button class="btn" id="bCrashReload">Reload the page</button>
   </div>
 </section>
 <div id="err"></div>
@@ -438,6 +452,20 @@ const SFX={
   hum(){tone(60,2.5,.18,'sawtooth',62,{att:.4});hiss(2.5,.06,300,'lowpass',{att:.5});},
   boom(){tone(40,2.5,.5,'sine',20,{att:.02});hiss(2,.5,800,'lowpass',{f2:100});},
 };
+/* ---------- captions (optional): important sounds as text, with direction and distance ---------- */
+const CAP={last:{},n:0};
+function cap(text,pos,every=2.5){
+  if(!settings.captions||state!=='play'||typeof P==='undefined')return;
+  let where='';if(pos&&pos.x!==undefined){const dx=pos.x-P.x,dz=pos.z-P.z,d=Math.hypot(dx,dz);if(d>22)return;
+    if(d>.5){const f=dx*-Math.sin(P.yaw)+dz*-Math.cos(P.yaw),r=dx*Math.cos(P.yaw)-dz*Math.sin(P.yaw);
+      where=Math.abs(f)>=Math.abs(r)?(f>0?'ahead':'behind you'):(r>0?'to your right':'to your left');where=(d<4?', close ':d>13?', distant, ':', ')+where;}}
+  const line=text+where,t=gameTime;if(t-(CAP.last[line]||-99)<every)return;CAP.last[line]=t;
+  const box=$('caps');if(!box)return;const el=document.createElement('div');el.textContent='['+line+']';box.appendChild(el);
+  while(box.children.length>3)box.firstChild.remove();
+  setTimeout(()=>{el.style.opacity=0;setTimeout(()=>el.remove(),700);},2800);}
+function capClear(){const b=$('caps');if(b)b.textContent='';CAP.last={};}
+{const L0={scream:'A scream',whisper:'Whispering',growl:'A growl',screech:'A screech',slam:'A door slams',glass:'Glass shatters',clang:'Metal clangs',roar:'A roar',scrape:'Scraping'};
+  for(const k in L0){const f=SFX[k];SFX[k]=function(pos,...a){cap(L0[k],pos);return f.call(this,pos,...a);};}}
 function beamHum(on){
   if(!AU.ctx)return;
   if(!AU.hum){const c=AU.ctx,o=c.createOscillator(),f=c.createBiquadFilter(),g=c.createGain();o.type='sawtooth';o.frequency.value=110;f.type='bandpass';f.frequency.value=1400;f.Q.value=6;g.gain.value=0;o.connect(f);f.connect(g);g.connect(AU.sfx);o.start();AU.hum={g};}
@@ -477,7 +505,7 @@ function initRenderer(){
   renderer.outputEncoding=THREE.LinearEncoding; renderer.toneMapping=THREE.NoToneMapping;
   renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   scene=new THREE.Scene();
-  camera=new THREE.PerspectiveCamera(74,innerWidth/innerHeight,.04,90); camera.rotation.order='YXZ'; scene.add(camera);
+  camera=new THREE.PerspectiveCamera(settings.fov,innerWidth/innerHeight,.04,90); camera.rotation.order='YXZ'; scene.add(camera);
   flash=new THREE.SpotLight(col(0xfff1dc),0,24,.5,.5,1.3);
   flash.shadow.bias=-.0006; flash.shadow.normalBias=.03; flash.shadow.camera.near=.15; flash.shadow.camera.far=26;
   flashTarget=new THREE.Object3D(); scene.add(flash,flashTarget); flash.target=flashTarget;
@@ -564,7 +592,7 @@ function renderScene(sc,cam){
   const u=p.mComp.uniforms, calm=settings.calm?.35:1;
   u.tScene.value=p.rtS.texture; u.tBloom.value=bt; u.uRes.value.set(p.w,p.h); u.uT.value=gameTime;
   u.uBloom.value=q.bloom&&!PERF.noBloom?1.05:0;u.uNV.value=FX.nv||0; u.uExp.value=settings.bright*1.4; u.uAb.value=.0025+FX.ab; u.uDmg.value=Math.min(1,FX.dmg);
-  u.uFlash.value=FX.flash*calm; u.uWarp.value=FX.warp; u.uGlitch.value=FX.glitch*calm; u.uDesat.value=FX.desat; u.uFade.value=clamp(FX.fade,0,1);
+  u.uFlash.value=FX.flash*calm; u.uWarp.value=FX.warp*(settings.still?.35:1); u.uGlitch.value=FX.glitch*calm; u.uDesat.value=FX.desat; u.uFade.value=clamp(FX.fade,0,1);
   u.uHaze.value=FX.haze; u.uTint.value.set(FX.tint[0],FX.tint[1],FX.tint[2]); u.uHazeC.value.set(FX.hazeC[0],FX.hazeC[1],FX.hazeC[2]);
   u.uPulse.value=typeof P!=='undefined'&&P&&state==='play'?clamp((60-P.san)/60,0,1)*calm+(DIR?DIR.tension*.35:0):0;
   u.uVHS.value=FX.nv||0;u.uCook.value=typeof P!=='undefined'&&P&&P.light&&!P.hidden&&state==='play'?.8:0;
@@ -2033,7 +2061,7 @@ function updScares(dt){
   if(r<.25){const lv=L.leaves.filter(l=>dist(l.x,l.z,P.x,P.z)<16&&dist(l.x,l.z,P.x,P.z)>3);if(lv.length){const l=mpick(lv);l.slam=1;l.t=0;SFX.slam(V3(l.x,1,l.z));noise(l.x,l.z,10);return;}}
   if(r<.45){const ls=L.lamps.filter(l=>l.lvl>.3&&!l.flare&&dist(l.x,l.z,P.x,P.z)<11&&dist(l.x,l.z,P.x,P.z)>3);if(ls.length){const l=mpick(ls);l.mode='dead';SFX.glass(V3(l.x,l.y,l.z));GP.burst(l.x,l.y,l.z,30,3,.8,2.5,2.2,1.5,1,.03,9);return;}}
   const a=mr(TAU),x=P.x+Math.sin(a)*mr(6,14),z=P.z+Math.cos(a)*mr(6,14);
-  if(r<.6)SFX.scream({x,z});else if(r<.75){for(let i=0;i<4;i++)setTimeout(()=>{if(state==='play')SFX.step(.9,false);},i*420+800);}else if(r<.9)SFX.whisper({x:P.x+Math.sin(a)*2,z:P.z+Math.cos(a)*2});else SFX.clang({x,z});
+  if(r<.6)SFX.scream({x,z});else if(r<.75){cap('Footsteps',{x:P.x+Math.sin(P.yaw)*2,z:P.z+Math.cos(P.yaw)*2});for(let i=0;i<4;i++)setTimeout(()=>{if(state==='play')SFX.step(.9,false);},i*420+800);}else if(r<.9)SFX.whisper({x:P.x+Math.sin(a)*2,z:P.z+Math.cos(a)*2});else SFX.clang({x,z});
 }
 function updDirector(dt){
   const dg=danger(),dk=clamp(1-dg/12,0,1),tg=clamp(dk*.8+(1-P.san/100)*.35,0,1);DIR.tension=lerp(DIR.tension,tg,Math.min(1,dt*.8));
@@ -2058,7 +2086,7 @@ function sigCrash(){const o=document.createElement('div');o.id='fakecrash';o.sty
   document.body.appendChild(o);DIR.crashed=true;if(AU.ctx&&AU.master)AU.master.gain.setTargetAtTime(0,AU.ctx.currentTime,.02);DIR.st={k:'crash',o,t:0,t0:performance.now()};}
 function updSig(S,dt){S.t+=dt;
   if(S.k==='stalk'){const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),d=dist(S.x,S.z,P.x,P.z),dot=((S.x-P.x)*fx+(S.z-P.z)*fz)/(d||1);
-    animBiped(S.m,gameTime,1,'idle');S.m.head.rotation.z=Math.sin(gameTime*13)*.08;S.br-=dt;if(S.br<=0){S.br=1.1;hiss(.7,.09,700,'bandpass',{pos:{x:S.x,y:1.6,z:S.z},q:2,att:.3});}
+    animBiped(S.m,gameTime,1,'idle');S.m.head.rotation.z=Math.sin(gameTime*13)*.08;S.br-=dt;if(S.br<=0){S.br=1.1;cap('Breathing',{x:S.x,z:S.z},3);hiss(.7,.09,700,'bandpass',{pos:{x:S.x,y:1.6,z:S.z},q:2,att:.3});}
     if(S.t>.4&&dot>.2){FX.glitch=1;FX.flash=.25;SFX.sting();P.san=Math.max(0,P.san-8);FX.shake=.6;S.m.root.position.set(P.x+fx*.55,0,P.z+fz*.55);S.m.root.rotation.y=Math.atan2(-fx,-fz);S.k='stalk2';S.t=0;return;}
     if(S.t>7){world.remove(S.m.root);DIR.st=null;msg('Something was standing behind you. It is not now.',3);}return;}
   if(S.k==='stalk2'){animBiped(S.m,gameTime,14,'attack');S.m.jaw.rotation.x=1;if(S.t>.35){world.remove(S.m.root);FX.glitch=.6;GP.burst(S.m.root.position.x,1.3,S.m.root.position.z,30,1.5,.8,.2,.02,.02,1,.06,0);DIR.st=null;}return;}
@@ -2097,12 +2125,14 @@ function update(dt){
   syncCamera(dt,dk);updHUD(dt,dk);
 }
 function syncCamera(dt,dk){
-  const sp=Math.hypot(P.vx,P.vz),bobA=P.ground?(P.sprint?.06:.028)*Math.min(1,sp/2.6):0;P.bob=(P.bob||0)+dt*(P.sprint?13:8.5)*Math.min(1,sp/2);
+  const mot=settings.still?.25:1,sp=Math.hypot(P.vx,P.vz),bobA=P.ground?(P.sprint?.06:.028)*Math.min(1,sp/2.6)*mot:0;P.bob=(P.bob||0)+dt*(P.sprint?13:8.5)*Math.min(1,sp/2);
   const eye=P.hidden?1.55:lerp(P.eye,P.crouch?1.0:1.62,1);P.eye=lerp(P.eye,P.crouch?1.0:1.62,Math.min(1,dt*10));
-  FX.shake=Math.max(0,FX.shake-dt*1.6);const sh=FX.shake*.06,br=P.hidden?Math.sin(P.breath*1.6)*.012:0;
+  // Trauma shake: squared so small hits stay subtle, smooth layered sines instead of per-frame white noise.
+  FX.shake=Math.max(0,FX.shake-dt*1.6);const tr=FX.shake*FX.shake*mot,ts=gameTime*23,br=P.hidden?Math.sin(P.breath*1.6)*.012:0;
+  const shp=(Math.sin(ts*1.13)+.5*Math.sin(ts*2.71+1.7))*tr*.045,shy=(Math.sin(ts*1.37+4.1)+.5*Math.sin(ts*3.07+.3))*tr*.045,shr=Math.sin(ts*1.71+2.2)*tr*.05;
   camera.position.set(P.x,P.y+(P.hidden?eye:P.eye)+Math.sin(P.bob*2)*bobA+br,P.z);
-  camera.rotation.set(P.pitch+mr(-sh,sh)*.5,P.yaw+mr(-sh,sh)*.5,Math.sin(P.bob)*bobA*.25+Math.sin(gameTime*1.1)*dk*.01);
-  camera.fov=lerp(camera.fov,P.sprint?80:74,Math.min(1,dt*5));camera.updateProjectionMatrix();
+  camera.rotation.set(P.pitch+shp,P.yaw+shy,Math.sin(P.bob)*bobA*.25+Math.sin(gameTime*1.1)*dk*.01*mot+shr);
+  camera.fov=lerp(camera.fov,settings.fov+(P.sprint?6*mot:0),Math.min(1,dt*5));camera.updateProjectionMatrix();
   const k=Math.min(1,dt*14);P.fl.x=lerp(P.fl.x,F.x,k);P.fl.y=lerp(P.fl.y,F.y,k);P.fl.z=lerp(P.fl.z,F.z,k);
   const rx=Math.cos(P.yaw),rz=-Math.sin(P.yaw),cp=camera.position;
   flash.position.set(cp.x+rx*.17,cp.y-.12,cp.z+rz*.17);flashTarget.position.set(flash.position.x+P.fl.x*10,flash.position.y+P.fl.y*10,flash.position.z+P.fl.z*10);
@@ -2336,8 +2366,9 @@ function vox(pos,f0,f1,dur,v0,v1,amp,type='sawtooth',breath=.3){
  SFX.whisper=p=>{w0(p);vox(p,mr(140,170),mr(120,150),1.3,'eh','ah',.02,'sine',1.6);};
  SFX.roar=p=>{r0(p);vox(p,72,46,2,'ah','oo',.3,'sawtooth',.6);};}
 function stinger(force){if(force||gameTime-(MUS.sting||-99)>18){MUS.sting=gameTime;SFX.sting();FX.shake=Math.max(FX.shake,.3);}}
-function lockerBang(l){hiss(.15,.28,900,'lowpass',{pos:l,ref:3});tone(140,.3,.12,'square',90,{pos:l,ref:3});tone(320,.6,.04,'sine',300,{pos:l,ref:3});}
+function lockerBang(l){cap('Banging on a locker',l);hiss(.15,.28,900,'lowpass',{pos:l,ref:3});tone(140,.3,.12,'square',90,{pos:l,ref:3});tone(320,.6,.04,'sine',300,{pos:l,ref:3});}
 function enemyStep(e,dt,d){if(d>20||e.dead||!(e.spd>.3))return;e.st2=(e.st2||0)-dt*e.spd;if(e.st2>0)return;
+  if(d<14)cap(e.type==='patient'?'Heavy footsteps':e.type==='crawler'?'Skittering':e.type==='still'?'Plastic creaking':'Movement',e,5);
   if(e.type==='patient'){e.st2=1.25;tone(mr(48,60),.16,.12,'sine',32,{pos:e,ref:3});hiss(.28,.06,mr(350,600),'bandpass',{pos:e,q:3,ref:3});}
   else if(e.type==='crawler'){e.st2=.45;for(let i=0;i<3;i++)hiss(.025,.07,4200,'highpass',{pos:e,delay:i*.05,ref:2.5});}
   else if(e.type==='still'){e.st2=.8;tone(mr(700,900),.04,.06,'square',500,{pos:e,ref:2.5});}}
@@ -2350,7 +2381,7 @@ function enemyExtras(e,dt,d){enemyStep(e,dt,d);if(e.type==='patient')twitch(e.m,
 const MUS={t:3,beat:0,amb:7,br:0,sting:-99,root:[55,49,58.3,46.2,51.9,43.7]};
 function musicNote(f,a){tone(f,4,a,'sine',f,{att:.008});tone(f*2.003,2.6,a*.3,'sine',f*2.003,{att:.008});tone(f*3.01,1.5,a*.12,'triangle',f*3.01,{att:.008});}
 function ambient(W){const a=mr(TAU),d=mr(6,15),pos={x:P.x+Math.sin(a)*d,z:P.z+Math.cos(a)*d,y:1.5};
-  if(W===0){if(Math.random()<.4){for(let i=0;i<2;i++){tone(440,.9,.02,'sine',440,{pos,delay:i*1.5,ref:4});tone(480,.9,.02,'sine',480,{pos,delay:i*1.5,ref:4});}}else tone(mr(300,420),1.2,.03,'square',mr(250,330),{pos,att:.3});}
+  if(W===0){if(Math.random()<.4){cap('A phone rings',pos,8);for(let i=0;i<2;i++){tone(440,.9,.02,'sine',440,{pos,delay:i*1.5,ref:4});tone(480,.9,.02,'sine',480,{pos,delay:i*1.5,ref:4});}}else tone(mr(300,420),1.2,.03,'square',mr(250,330),{pos,att:.3});}
   else if(W===1){hiss(3,.05,160,'lowpass',{pos,att:1});tone(mr(900,1400),.12,.03,'sine',mr(300,500),{pos});}
   else if(W===2){for(let i=0;i<4;i++)tone(1000,.08,.025,'sine',1000,{pos,delay:i*.9});if(Math.random()<.3)tone(1000,3,.02,'sine',1000,{pos,delay:4});}
   else if(W===3){for(let i=0;i<3;i++)tone(mr(1200,1800),.1,.03,'sine',mr(300,500),{pos,delay:i*mr(.4,1)});if(Math.random()<.4)[392,523,659].forEach((f,i)=>tone(f*mr(.98,1.02),1.4,.012,'sine',f,{pos,delay:i*.15}));}
@@ -2386,7 +2417,7 @@ function mWeeper(M){const r=humanoid({key:'weeper',s:1.0,arm:.85,leg:.92,thin:.7
   mk(GC.hair,M.dark,r.head,0,.08,0);for(const sd of[-1,1])mk(G.sph,M.eye,r.head,sd*.04,.08,.12,false).scale.setScalar(.014);return r;}
 function weepPose(m,t,k){m.hips.position.y=.36;m.spine.rotation.set(.75+Math.sin(t*2.2)*.05*k,0,Math.sin(t*1.1)*.03);m.neck.rotation.set(.5,0,0);m.head.rotation.set(.2+Math.sin(t*7)*.025*k,0,0);m.jaw.rotation.x=.15;
   m.legs.forEach(l=>{l.hip.rotation.set(-1.45,0,l.sd*.12);l.kn.rotation.set(2.5,0,0);l.ft.rotation.set(-.6,0,0);});m.arms.forEach(a=>{a.sh.rotation.set(-1.9,0,a.sd*-.25);a.el.rotation.set(-1.9,0,0);});}
-function sob(e){vox(e,mr(330,380),mr(250,290),mr(.7,1.1),'ah','oh',.07,'sine',.6);setTimeout(()=>{if(state==='play'&&!e.dead&&e.state!=='rage')vox(e,mr(300,350),mr(230,260),.6,'eh','oh',.05,'sine',.6);},mr(600,900));}
+function sob(e){cap('Someone crying',e,4);vox(e,mr(330,380),mr(250,290),mr(.7,1.1),'ah','oh',.07,'sine',.6);setTimeout(()=>{if(state==='play'&&!e.dead&&e.state!=='rage')vox(e,mr(300,350),mr(230,260),.6,'eh','oh',.05,'sine',.6);},mr(600,900));}
 function rage(e){if(e.state==='rage')return;e.state='rage';e.rt=0;e.hit=0;SFX.scream(e);vox(e,900,1300,1.2,'ee','ah',.22,'sawtooth',.8);stinger(true);FX.shake=Math.max(FX.shake,.5);}
 function updWeeper(e,dt,d){
   if(e.state!=='rage'){e.mode='cry';e.spd=0;
@@ -2579,7 +2610,7 @@ function endingChoice(){$('endChoice').style.display='block';$('endRest').style.
 function finishEnding(k){const T=ENDS[k];$('endTitle').textContent=T[0];$('endLine').textContent=T[1];$('endChoice').style.display='none';$('endRest').style.display='block';save.endings=save.endings||[];if(!save.endings.includes(k))save.endings.push(k);persist();SFX.ding();}
 /* ===================== SHOP SCENE ===================== */
 let shopScene=null,ferry=null,shopLights=[],nodT=0,shopView='menu',shopTab='up',settingsFrom='menu',controlsFrom='menu',appliedQ=null,newArmed=false,lockWarn=0;
-const SCREENS=['menu','settings','controls','pause','note','dead','done','shop','ending'];
+const SCREENS=['menu','settings','controls','pause','note','dead','done','shop','ending','crashed'];
 function show(id){for(const s of SCREENS)$(s).classList.toggle('on',s===id);}
 function buildShop(){
   shopScene=new THREE.Scene();shopScene.background=col(0x030202);shopScene.fog=new THREE.FogExp2(col(0x040302),.07);
@@ -2643,7 +2674,7 @@ const HINTS={1:'Find three emergency fuses, then take the service elevator. F to
 let everLocked=false,lockFailed=false;
 function requestLock(){try{const p=renderer.domElement.requestPointerLock();if(p&&p.catch)p.catch(()=>{if(!everLocked)lockFailed=true;});}catch(e){if(!everLocked)lockFailed=true;}}
 const locked=()=>document.pointerLockElement===renderer.domElement;
-function startFloor(retry){dirReset();DIR.since=0;DIR.next=mr(35,60);DIR.tension=0;
+function startFloor(retry){dirReset();capClear();DIR.since=0;DIR.next=mr(35,60);DIR.tension=0;
   if(!retry||!snapshot)snapshot=clone(save);
   state='loading';show(null);$('hud').classList.remove('on');$('boss').style.display='none';$('slats').style.display='none';$('cross').style.display='block';$('map').style.display='none';$('arrow').style.display='none';$('msg').style.opacity=0;
   FX.fade=1;FX.dmg=0;FX.flash=0;beamHum(false);
@@ -2700,7 +2731,7 @@ function ending(){
   $('endTally').innerHTML=`<span>Time in the ward</span><span>${mm}</span><span>Times admitted</span><span>${s.deaths}</span><span>Things put to rest</span><span>${s.kills}</span><span>Obols earned</span><span>${s.earned}</span><span>Notes found</span><span>${save.notes.length} of 30</span>`;
   save.ng=(save.ng||0)+1;save.done=(save.done||0)+1;save.level=1;persist();snapshot=null;show('ending');endingChoice();
 }
-function toMenu(){dirReset();state='menu';shopView='menu';$('hud').classList.remove('on');$('boss').style.display='none';beamHum(false);setTension(0);setDrone(36,48,.22);refreshMenu();show('menu');}
+function toMenu(){dirReset();capClear();state='menu';shopView='menu';$('hud').classList.remove('on');$('boss').style.display='none';beamHum(false);setTension(0);setDrone(36,48,.22);refreshMenu();show('menu');}
 function refreshMenu(){
   const b=$('bContinue');b.disabled=!save;$('contInfo').textContent=save?`Floor ${save.level}, ${save.obols} obols${save.ng?`, descent ${save.ng+1}`:''}`:'';
   $('discharge').textContent=save&&save.done?`Discharged ${save.done} ${save.done>1?'times':'time'}${save.endings&&save.endings.length?`, endings seen ${save.endings.length} of 3`:''}`:'Pending';$('bNew').firstChild.textContent='Begin a new admission';newArmed=false;
@@ -2709,8 +2740,11 @@ function pause(){if(state!=='play')return;if(DIR.st&&DIR.st.k==='crash')dirReset
 function resume(){if(state!=='paused')return;state='play';camUI();show(null);requestLock();lastT=performance.now();perfSettle();}
 function openNote(i){const n=NOTES[i]||NOTES[0];$('noteTitle').textContent=n[0];$('noteBody').textContent=n[1];state='note';show('note');SFX.creak({x:P.x,z:P.z});for(const k in keys)keys[k]=false;mouse.r=0;}
 function closeNote(){if(state!=='note')return;state='play';show(null);lastT=performance.now();perfSettle();if(!locked())requestLock();}
-function fatal(e){console.error(e);try{dirReset();}catch(_){}$('err').textContent='Something went wrong: '+(e&&e.message?e.message:e)+'. Reload the page to try again.';}
-function applySettingsUI(){$('sUI').value=settings.ui;$('sDiff').value=settings.diff;$('sQuality').value=settings.quality;$('sBright').value=settings.bright;$('sSens').value=settings.sens;$('sVol').value=settings.vol;$('sInvert').checked=settings.invert;$('sCalm').checked=settings.calm;}
+// Unexpected error: stop the simulation, show a recovery panel. The floor snapshot is restored on "Return to the menu".
+function fatal(e){if(state==='crashed')return;console.error(e);try{dirReset();capClear();beamHum(false);}catch(_){}
+  state='crashed';P.cam=false;try{camUI();}catch(_){}document.exitPointerLock&&document.exitPointerLock();$('hud').classList.remove('on');
+  $('crashMsg').textContent='Error: '+(e&&e.message?e.message:String(e));show('crashed');}
+function applySettingsUI(){$('sUI').value=settings.ui;$('sDiff').value=settings.diff;$('sQuality').value=settings.quality;$('sBright').value=settings.bright;$('sSens').value=settings.sens;$('sVol').value=settings.vol;$('sInvert').checked=settings.invert;$('sCalm').checked=settings.calm;$('sFov').value=settings.fov;$('sStill').checked=settings.still;$('sCap').checked=settings.captions;}
 
 /* ===================== INPUT ===================== */
 function bindUI(){
@@ -2721,7 +2755,8 @@ function bindUI(){
   on('bSetBack',()=>show(settingsFrom));on('bCtlBack',()=>show(controlsFrom));
   on('bResume',resume);on('bPSettings',()=>{settingsFrom='pause';show('settings');});on('bPControls',()=>{controlsFrom='pause';show('controls');});
   on('bRetryP',()=>{if(snapshot)save=clone(snapshot);startFloor(true);});on('bQuit',()=>{if(snapshot)save=clone(snapshot);persist();toMenu();});
-  on('bRetry',()=>{if(snapshot)save=clone(snapshot);startFloor(true);});on('bDeadMenu',()=>{if(snapshot)save=clone(snapshot);persist();toMenu();});
+  on('bRetry',()=>{if(snapshot)save=clone(snapshot);startFloor(true);});
+  on('bCrashMenu',()=>{if(snapshot)save=clone(snapshot);persist();toMenu();});on('bCrashReload',()=>location.reload());on('bDeadMenu',()=>{if(snapshot)save=clone(snapshot);persist();toMenu();});
   on('bToShop',openShop);on('bDescend',()=>startFloor());on('bNG',openShop);on('bEndMenu',toMenu);
   on('eUp',()=>finishEnding('up'));on('eStay',()=>finishEnding('stay'));on('eSign',()=>finishEnding('sign'));
   $('sUI').addEventListener('change',e=>{settings.ui=e.target.value;saveSettings();});
@@ -2735,11 +2770,17 @@ function bindUI(){
   $('sVol').addEventListener('input',e=>{settings.vol=+e.target.value;saveSettings();if(AU.master)AU.master.gain.value=settings.vol;});
   $('sInvert').addEventListener('change',e=>{settings.invert=e.target.checked;saveSettings();});
   $('sCalm').addEventListener('change',e=>{settings.calm=e.target.checked;saveSettings();});
+  $('sFov').addEventListener('input',e=>{settings.fov=+e.target.value;saveSettings();});
+  $('sStill').addEventListener('change',e=>{settings.still=e.target.checked;saveSettings();});
+  $('sCap').addEventListener('change',e=>{settings.captions=e.target.checked;saveSettings();if(!settings.captions)capClear();});
   document.addEventListener('keydown',e=>{
     if(state==='play'&&['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(e.code))e.preventDefault();
     keys[e.code]=true;if(e.repeat)return;
     if(state==='note'){if(['KeyE','Escape','Space','Enter'].includes(e.code))closeNote();return;}
-    if(e.code==='Escape'){if(state==='play')pause();else if(state==='paused')resume();return;}
+    if(e.code==='Escape'){
+      const scr=SCREENS.find(id=>$(id).classList.contains('on'));
+      if(scr==='settings'){show(settingsFrom);return;}if(scr==='controls'){show(controlsFrom);return;}
+      if(state==='play')pause();else if(state==='paused')resume();return;}
     if(state!=='play')return;
     switch(e.code){
       case'KeyE':interact();break;
@@ -2772,8 +2813,9 @@ function loop(now){
     else if(state==='dying')updDying(dt);
     if(state==='menu'||state==='shop'||state==='boot'||(state==='ending'&&!world)){updShop(dt);FX.fade=Math.max(0,FX.fade-dt*.8);FX.dmg=0;FX.warp=0;FX.desat=.1;FX.glitch=0;FX.haze=0;FX.ab=0;FX.nv=0;FX.tint=[1,1,1];FX.shake=0;
       bootN++;if(bootN===12&&!post.safe){const f=FX.fade;FX.fade=0;renderScene(shopScene,shopCam);const s=selfTest();FX.fade=f;if(s===0)enterSafeMode();}renderScene(shopScene,shopCam);}
+    else if(state==='crashed'){}
     else if(world)renderScene(scene,camera);else renderScene(shopScene,shopCam);
-  }catch(e){fatal(e);state='paused';}
+  }catch(e){fatal(e);}
 }
 
 /* ===================== BOOT ===================== */

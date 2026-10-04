@@ -280,6 +280,56 @@ S.soak = async b => {
   return { ok: !errors.length && l.objs < f.objs * 1.5 + 200, info: `${samples.length} samples; heap ${(f.heap / 1e6).toFixed(1)}->${(l.heap / 1e6).toFixed(1)} MB; scene objects ${f.objs}->${l.objs}; enemies ${f.en}->${l.en}`, errors };
 };
 
+S.fatalRecovery = async b => {
+  // Injects a broken enemy so the update loop throws, then checks the recovery panel and that play resumes cleanly.
+  const { page, errors } = await open(b);
+  await newGame(page);
+  await page.evaluate(() => { window.__w13.L.enemies.push({ injected: true }); });
+  await waitState(page, s => s === 'crashed', 20000);
+  const panel = await page.evaluate(() => document.getElementById('crashed').classList.contains('on') && document.getElementById('crashMsg').textContent);
+  const injected = errors.length; errors.length = 0;
+  await page.click('#bCrashMenu');
+  await waitState(page, s => s === 'menu', 5000);
+  await page.click('#bContinue'); await waitState(page, s => s === 'shop', 8000);
+  await page.click('#bDescend'); await waitState(page, s => s === 'play', 60000);
+  await sleep(1500);
+  const after = await st(page);
+  await page.close();
+  return { ok: !!panel && injected >= 1 && after === 'play' && !errors.length, info: `panel="${panel}" -> menu -> continue -> ${after}`, errors };
+};
+
+S.captions = async b => {
+  const { page, errors } = await open(b, { init: `try{localStorage.setItem('w13.settings', '{"captions":true}')}catch(e){}` });
+  await newGame(page);
+  const r = await page.evaluate(async () => {
+    const w = window.__w13, P = w.P, fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw);
+    w.sigStalker(); // breathing behind
+    await new Promise(r => setTimeout(r, 2500));
+    const a = document.getElementById('caps').textContent;
+    return a;
+  });
+  await page.close();
+  return { ok: /Breathing, close behind you/.test(r) && !errors.length, info: `captions: "${r}"`, errors };
+};
+
+S.settingsUI = async b => {
+  const { page, errors } = await open(b, { width: 1280, height: 720 });
+  await page.click('#bSettings');
+  await sleep(300);
+  const fit = await page.evaluate(() => { const p = document.querySelector('#settings .panel').getBoundingClientRect(); const btn = document.getElementById('bSetBack').getBoundingClientRect(); return { top: p.top, bottom: p.bottom, btnVisible: btn.bottom <= Math.min(innerHeight, p.bottom) + 1 && btn.top >= p.top, scrollable: document.querySelector('#settings').scrollHeight > innerHeight }; });
+  await shot(page, 'settings');
+  await page.evaluate(() => { const f = document.getElementById('sFov'); f.value = 88; f.dispatchEvent(new Event('input')); const c = document.getElementById('sStill'); c.checked = true; c.dispatchEvent(new Event('change')); const k = document.getElementById('sCap'); k.checked = true; k.dispatchEvent(new Event('change')); });
+  await page.keyboard.press('Escape'); await sleep(200);
+  const escBack = await page.evaluate(() => document.getElementById('menu').classList.contains('on'));
+  await page.reload(); await waitState(page, s => s === 'menu', 60000);
+  const saved = await page.evaluate(() => { const s = window.__w13.settings; return { fov: s.fov, still: s.still, captions: s.captions, ui: document.getElementById('sFov').value }; });
+  await newGame(page); await sleep(2500);
+  const fov = await page.evaluate(() => window.__w13.scene.children.find(o => o.isCamera)?.fov);
+  await page.close();
+  const ok = saved.fov === 88 && saved.still && saved.captions && saved.ui === '88' && Math.abs(fov - 88) < 3 && fit.btnVisible && escBack && !errors.length;
+  return { ok, info: `escBack=${escBack} saved=${JSON.stringify(saved)} cameraFov=${fov && fov.toFixed(1)} panelFits=${JSON.stringify(fit)}`, errors };
+};
+
 S.dynres = async b => {
   // Drives the dynamic-quality controller with synthetic frame times through the test hook.
   const { page, errors } = await open(b);
@@ -307,7 +357,7 @@ S.perf = async b => {
   return { ok: !errors.length, info: `frame avg ${res.avg.toFixed(1)} ms, worst ${res.p99.toFixed(1)} ms (SwiftShader software GL)${res.info ? ' ' + JSON.stringify(res.info) : ''}`, errors };
 };
 
-const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'dynres', 'perf', 'floors', 'soak'];
+const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'fatalRecovery', 'captions', 'settingsUI', 'dynres', 'perf', 'floors', 'soak'];
 const run = wanted.length ? wanted : order.filter(n => n !== 'soak');
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-accelerated-2d-canvas', '--autoplay-policy=no-user-gesture-required', '--enable-precise-memory-info'] });
 let fails = 0;
