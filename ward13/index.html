@@ -431,7 +431,23 @@ const qual=()=>QUAL[settings.quality]||QUAL.medium;
 let renderer,scene,camera,flash,flashTarget,hemi,post,dust;
 const col=h=>new THREE.Color(h).convertSRGBToLinear();
 const std=o=>new THREE.MeshStandardMaterial(Object.assign({envMapIntensity:.45},o));
+function patchFog(){const C=THREE.ShaderChunk;if(C.__w13fog)return;C.__w13fog=1;
+  C.fog_pars_vertex='#ifdef USE_FOG\n varying float fogDepth;\n varying vec3 vFogW;\n#endif';
+  C.fog_vertex='#ifdef USE_FOG\n fogDepth=-mvPosition.z;\n vFogW=(modelMatrix*vec4(position,1.)).xyz;\n#endif';
+  C.fog_pars_fragment='#ifdef USE_FOG\n uniform vec3 fogColor;\n varying float fogDepth;\n varying vec3 vFogW;\n uniform float fogNear;\n uniform float fogFar;\n #ifdef FOG_EXP2\n uniform float fogDensity;\n #endif\n#endif';
+  C.fog_fragment=`#ifdef USE_FOG
+ #ifdef FOG_EXP2
+  float fogFactor=1.-exp(-fogDensity*fogDensity*fogDepth*fogDepth);
+ #else
+  float fogFactor=smoothstep(fogNear,fogFar,fogDepth);
+ #endif
+ float hmist=sin(vFogW.x*.7+vFogW.z*.4+fogNear*0.)*.5+sin(vFogW.z*1.3-vFogW.x*.5)*.5;
+ fogFactor*=mix(1.3,.6,smoothstep(0.,2.9,vFogW.y));
+ fogFactor+=(1.-fogFactor)*(.22+.08*hmist)*smoothstep(.75,0.,vFogW.y)*smoothstep(1.5,7.,fogDepth);
+ gl_FragColor.rgb=mix(gl_FragColor.rgb,fogColor,clamp(fogFactor,0.,1.));
+#endif`;}
 function initRenderer(){
+  patchFog();
   renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
   renderer.domElement.id='gl'; document.body.prepend(renderer.domElement);
   renderer.outputEncoding=THREE.LinearEncoding; renderer.toneMapping=THREE.NoToneMapping;
@@ -455,11 +471,13 @@ function initRenderer(){
   post.mBlur=sm({tIn:{value:null},uDir:{value:new THREE.Vector2()}},
    'uniform sampler2D tIn;uniform vec2 uDir;varying vec2 vUv;void main(){vec3 s=texture2D(tIn,vUv).rgb*.227027;s+=(texture2D(tIn,vUv+uDir*1.3846).rgb+texture2D(tIn,vUv-uDir*1.3846).rgb)*.316216;s+=(texture2D(tIn,vUv+uDir*3.2308).rgb+texture2D(tIn,vUv-uDir*3.2308).rgb)*.07027;gl_FragColor=vec4(s,1.);}');
   const U=n=>({value:n});
-  post.mComp=sm({tScene:U(null),tBloom:U(null),uRes:U(new THREE.Vector2(1,1)),uT:U(0),uBloom:U(1),uExp:U(1),uAb:U(.002),uVig:U(1.1),uGrain:U(.06),uDmg:U(0),uFlash:U(0),uWarp:U(0),uGlitch:U(0),uDesat:U(0),uFade:U(0),uHaze:U(0),uNV:U(0),uTint:U(new THREE.Vector3(1,1,1)),uHazeC:U(new THREE.Vector3(1,1,1))},
-`uniform sampler2D tScene,tBloom;uniform vec2 uRes;uniform float uT,uBloom,uExp,uAb,uVig,uGrain,uDmg,uFlash,uWarp,uGlitch,uDesat,uFade,uHaze,uNV;uniform vec3 uTint,uHazeC;varying vec2 vUv;
+  post.mComp=sm({tScene:U(null),tBloom:U(null),uRes:U(new THREE.Vector2(1,1)),uT:U(0),uBloom:U(1),uExp:U(1),uAb:U(.002),uVig:U(1.1),uGrain:U(.06),uDmg:U(0),uFlash:U(0),uWarp:U(0),uGlitch:U(0),uDesat:U(0),uFade:U(0),uHaze:U(0),uNV:U(0),uLP:U(new THREE.Vector2(.5,.5)),uRay:U(0),uCook:U(0),uPulse:U(0),uVHS:U(0),uTint:U(new THREE.Vector3(1,1,1)),uHazeC:U(new THREE.Vector3(1,1,1))},
+`uniform sampler2D tScene,tBloom;uniform vec2 uRes;uniform float uT,uBloom,uExp,uAb,uVig,uGrain,uDmg,uFlash,uWarp,uGlitch,uDesat,uFade,uHaze,uNV,uRay,uCook,uPulse,uVHS;uniform vec2 uLP;uniform vec3 uTint,uHazeC;varying vec2 vUv;
 float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
 vec3 aces(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}
 void main(){vec2 uv=vUv;
+ {vec2 q=uv-.5;float r2=dot(q,q);uv=.5+q*(1.+r2*(.09+uPulse*.05));}
+ if(uVHS>.001){float band=fract(uT*.13);float tb=smoothstep(.03,0.,abs(uv.y-band));uv.x+=tb*.02*uVHS*sin(uv.y*400.+uT*60.);uv.x+=sin(uv.y*3.+uT*2.)*.0015*uVHS;}
  if(uWarp>.001){uv+=vec2(sin(uv.y*13.+uT*1.7),cos(uv.x*11.+uT*1.3))*.006*uWarp;}
  if(uGlitch>.001){float row=floor(uv.y*48.);float g=step(1.-uGlitch*.35,hash(vec2(row,floor(uT*24.))));uv.x+=g*(hash(vec2(uT,row))-.5)*.12*uGlitch;}
  vec2 dc=uv-.5;float d=length(dc);vec2 off=dc*uAb*(.4+d*1.6);
@@ -467,10 +485,14 @@ void main(){vec2 uv=vUv;
  float dirt=.55+.9*smoothstep(.45,.9,hash(floor(uv*vec2(9.,6.)))*0.6+hash(floor(uv*vec2(31.,19.)))*0.4)*smoothstep(.1,.6,d);
  vec3 bl=texture2D(tBloom,uv).rgb;c+=bl*uBloom*dirt+bl*uBloom*vec3(.35,.04,.02)*.6;
  vec2 a=dc*vec2(uRes.x/uRes.y,1.);c+=uHazeC*uHaze*exp(-dot(a,a)*6.);
+ if(uRay>.001){vec2 dl=(uv-uLP)/24.;vec2 tc=uv;float il=1.;vec3 acc=vec3(0.);for(int i=0;i<24;i++){tc-=dl;acc+=texture2D(tBloom,tc).rgb*il;il*=.93;}c+=acc*.085*uRay;}
+ if(uCook>.001){vec2 a=dc*vec2(uRes.x/uRes.y,1.);float r=length(a);float ring=.85+.15*sin(r*90.)*smoothstep(.35,.05,r)+.25*smoothstep(.09,.0,abs(r-.19))-.18*smoothstep(.03,0.,abs(r-.11));
+   float smudge=.9+.2*hash(floor(a*14.+3.));c*=mix(1.,ring*smudge,uCook*smoothstep(.45,.0,r));}
  vec3 raw=c;c=aces(c*uExp);c=pow(c,vec3(1./2.2));
  float l=dot(c,vec3(.299,.587,.114));c=mix(c,vec3(l),uDesat)*uTint;
  if(uNV>.001){float lm=dot(raw,vec3(.299,.587,.114))*uExp*7.;float v=pow(clamp(lm/(1.+lm),0.,1.),.75);c=mix(c,vec3(.45,1.,.55)*v,uNV);}
- c*=mix(.22,1.,1.-smoothstep(.2,.85,d*(uVig+uNV*.35)));
+ c*=mix(.22,1.,1.-smoothstep(.2,.85,d*(uVig+uNV*.35+uPulse*.5*(.6+.4*pow(abs(sin(uT*3.6)),12.)))));
+ if(uVHS>.001){c+=vec3(smoothstep(.97,1.,hash(vec2(floor(uv.y*240.),floor(uT*30.)))))*.08*uVHS;c.g+=sin(uv.y*uRes.y*.5)*.01*uVHS;}
  c=mix(c,vec3(.3,0.,.01),uDmg*smoothstep(.12,.75,d));
  if(uDmg>.01){vec2 bp=uv*vec2(uRes.x/uRes.y,1.)*5.;float n=0.,am=.5;for(int i=0;i<4;i++){vec2 ip=floor(bp),fp=fract(bp);fp=fp*fp*(3.-2.*fp);
    n+=am*mix(mix(hash(ip),hash(ip+vec2(1,0)),fp.x),mix(hash(ip+vec2(0,1)),hash(ip+1.),fp.x),fp.y);bp*=2.03;am*=.5;}
@@ -520,8 +542,18 @@ function renderScene(sc,cam){
   u.uBloom.value=q.bloom&&!PERF.noBloom?1.05:0;u.uNV.value=FX.nv||0; u.uExp.value=settings.bright*1.4; u.uAb.value=.0025+FX.ab; u.uDmg.value=Math.min(1,FX.dmg);
   u.uFlash.value=FX.flash*calm; u.uWarp.value=FX.warp; u.uGlitch.value=FX.glitch*calm; u.uDesat.value=FX.desat; u.uFade.value=clamp(FX.fade,0,1);
   u.uHaze.value=FX.haze; u.uTint.value.set(FX.tint[0],FX.tint[1],FX.tint[2]); u.uHazeC.value.set(FX.hazeC[0],FX.hazeC[1],FX.hazeC[2]);
+  u.uPulse.value=typeof P!=='undefined'&&P&&state==='play'?clamp((60-P.san)/60,0,1)*calm+(DIR?DIR.tension*.35:0):0;
+  u.uVHS.value=FX.nv||0;u.uCook.value=typeof P!=='undefined'&&P&&P.light&&!P.hidden&&state==='play'?.8:0;
+  u.uRay.value=0;
+  if(q.bloom&&!PERF.noBloom&&sc===scene&&typeof L!=='undefined'&&L&&L.lamps){let best=null,bs=0;
+    for(const l of L.lamps){if(!(l.lvl>.05))continue;const dd=Math.hypot(l.x-cam.position.x,l.z-cam.position.z);if(dd>14)continue;
+      _gr.set(l.x,l.y,l.z).project(cam);if(_gr.z>1||Math.abs(_gr.x)>1.3||Math.abs(_gr.y)>1.3)continue;const sc2=l.lvl*(1-dd/14)*(1.3-Math.max(Math.abs(_gr.x),Math.abs(_gr.y)));if(sc2>bs){bs=sc2;best=[_gr.x,_gr.y];}}
+    if(best){u.uLP.value.set(best[0]*.5+.5,best[1]*.5+.5);u.uRay.value=Math.min(1.6,bs*1.2);}
+    if(FX.flash>.05){u.uLP.value.set(.5,.5);u.uRay.value=Math.max(u.uRay.value,FX.flash*2);}}
   p.quad.material=p.mComp; renderer.setRenderTarget(null); renderer.render(p.scene,p.cam);
 }
+const _gr=new THREE.Vector3();
+const DIR={tension:0,since:0,next:40,cool:0};
 function makeDust(){
   const N=900,g=new THREE.BufferGeometry(),p=new Float32Array(N*3),s=new Float32Array(N);
   for(let i=0;i<N;i++){p[i*3]=Math.random()*16;p[i*3+1]=Math.random()*3.2;p[i*3+2]=Math.random()*16;s[i]=Math.random();}
