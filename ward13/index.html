@@ -2087,7 +2087,7 @@ function sigStalker(){const bx=Math.sin(P.yaw),bz=Math.cos(P.yaw);let x=P.x+bx*1
 function sigCascade(){const ls=L.lamps.filter(l=>l.lvl>.2&&!l.flare&&dist(l.x,l.z,P.x,P.z)<20).sort((a,b)=>dist(b.x,b.z,P.x,P.z)-dist(a.x,a.z,P.x,P.z));if(ls.length<3)return;
   DIR.st={k:'casc',ls,i:0,t:0};}
 function sigCrash(){const o=document.createElement('div');o.id='fakecrash';o.style.cssText='position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font:14px monospace;color:#ccc;pointer-events:none';
-  o.innerHTML='<div style="background:#1b1b1b;border:1px solid #444;padding:22px 28px;max-width:420px">Aw, Snap!<br><br>Something went wrong while displaying this webpage.<br><span style="color:#777">Error code: PATIENT_0313_STILL_HERE</span></div>';
+  o.innerHTML='<div style="background:#1b1b1b;border:1px solid #444;padding:22px 28px;max-width:420px">This page isn\'t responding.<br><br>The page stopped working while it was being displayed.<br><span style="color:#777">Error code: PATIENT_0313_STILL_HERE</span></div>';
   document.body.appendChild(o);DIR.crashed=true;if(AU.ctx&&AU.master)AU.master.gain.setTargetAtTime(0,AU.ctx.currentTime,.02);DIR.st={k:'crash',o,t:0,t0:performance.now()};}
 function updSig(S,dt){S.t+=dt;
   if(S.k==='stalk'){const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),d=dist(S.x,S.z,P.x,P.z),dot=((S.x-P.x)*fx+(S.z-P.z)*fz)/(d||1);
@@ -2869,7 +2869,7 @@ function loop(now){
     else if(state==='crashed'){}
     // While a floor builds, the screen is black under the title card: present one black frame, then stop
     // rendering so stale frames don't queue GPU work that the level build would have to wait behind.
-    else if(state==='loading'){if(bootN>=0&&(loadF=(loadF||0)+1)<=2&&world){FX.fade=1;renderScene(scene,camera);}}
+    else if(state==='loading'){if((loadF=(loadF||0)+1)<=2){FX.fade=1;if(world)renderScene(scene,camera);else renderScene(shopScene,shopCam);}}
     else if(world)renderScene(scene,camera);else renderScene(shopScene,shopCam);
   }catch(e){fatal(e);}
 }
@@ -2880,7 +2880,7 @@ appliedQ=null;state='menu';shopView='menu';FX.fade=1;refreshMenu();show('menu');
 requestAnimationFrame(loop);
 if(window.__W13_TEST)window.__w13={get L(){return L;},P,get save(){return save;},set save(v){save=v;},get state(){return state;},set state(v){state=v;},get snapshot(){return snapshot;},
   startFloor,completeFloor,openShop,toMenu,interact,interactTarget,cameraFlash,useItem,questDone,bossDie,bossHurt,die,hurt,pause,resume,closeNote,buyUp,buySup,spawnEnemy,keys,mouse,FX,ST:()=>ST,
-  get world(){return world;},scene,findPath,los,UPG,SUP,takeItem,leaveLocker,enterLocker,exitAction,updShop,blockedAt,moveC,isWall,bfsFrom,questOf,isBoss,get boss(){return L&&L.boss;},DIR,sigStalker,sigCascade,sigCrash,AU,settings,PERF,perf,TIPS,PAD,
+  get world(){return world;},scene,findPath,los,UPG,SUP,takeItem,leaveLocker,enterLocker,exitAction,updShop,blockedAt,moveC,isWall,bfsFrom,questOf,isBoss,get boss(){return L&&L.boss;},DIR,sigStalker,sigCascade,sigCrash,AU,settings,PERF,perf,TIPS,PAD,msg,
   renderInfo:()=>({programs:renderer.info.programs.length,calls:PERF.calls,tris:PERF.tris,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures,lights:pool.length})};
 };
 </script>

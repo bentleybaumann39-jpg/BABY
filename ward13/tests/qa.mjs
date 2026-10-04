@@ -75,12 +75,20 @@ S.boot = async b => {
 
 S.newgame = async b => {
   const { page, errors } = await open(b);
-  const ms = await newGame(page);
+  // capture the screen mid-load: the title card must sit on black, not on a stale frame
+  await page.click('#bNew');
+  await waitState(page, s => s === 'intro', 5000).catch(() => {});
+  await page.keyboard.press('Space');
+  await waitState(page, s => s === 'loading', 5000).catch(() => {});
+  const buf = await page.screenshot({ clip: { x: 0, y: 0, width: 200, height: 100 } });
+  if (SHOTS) fs.writeFileSync(path.join(shotDir, 'loading.png'), buf);
+  const t0 = Date.now(); await waitState(page, s => s === 'play', 60000); const ms = Date.now() - t0;
+  const dark = await (async () => { const p2 = await b.newPage(); await p2.setContent(`<canvas id=c></canvas>`); const v = await p2.evaluate(async b64 => { const img = new Image(); img.src = 'data:image/png;base64,' + b64; await img.decode(); const c = document.getElementById('c'); c.width = img.width; c.height = img.height; const g = c.getContext('2d'); g.drawImage(img, 0, 0); const d = g.getImageData(0, 0, c.width, c.height).data; let s = 0; for (let i = 0; i < d.length; i += 4) s += d[i] + d[i + 1] + d[i + 2]; return s / (d.length / 4) / 3; }, buf.toString('base64')); await p2.close(); return v; })();
   await sleep(1500);
   const hud = await page.evaluate(() => document.getElementById('hud').classList.contains('on'));
   await shot(page, 'floor1');
   await page.close();
-  return { ok: hud && !errors.length, info: `floor 1 playable ${ms} ms after intro skip`, errors };
+  return { ok: hud && dark < 20 && !errors.length, info: `floor 1 playable ${ms} ms after intro skip; mid-load corner brightness ${dark.toFixed(1)}/255`, errors };
 };
 
 S.controls = async b => {
@@ -334,7 +342,7 @@ S.tips = async b => {
   // Contextual onboarding: the UV tip appears the first time an enemy is in view, once.
   const { page, errors } = await open(b);
   await newGame(page);
-  for (let i = 0; i < 240 && (await page.evaluate(() => document.getElementById('msg').style.opacity !== '0')); i++) await sleep(250);
+  await page.evaluate(() => { window.__w13.msg.t = 0; }); // dismiss the floor hint (game time runs slow under software GL)
   await page.evaluate(() => { const w = window.__w13, P = w.P; P.pitch = 0; const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw); for (let d = 6; d > 2; d -= .5) { const x = P.x + fx * d, z = P.z + fz * d; if (!w.isWall(x, z) && !w.blockedAt(x, z, .35)) { const e = w.spawnEnemy('patient', x, z); e.dormant = false; e.stun = 99; break; } } });
   let text = '';
   for (let i = 0; i < 80; i++) { await sleep(250); text = await page.evaluate(() => document.getElementById('msg').style.opacity !== '0' ? document.getElementById('msg').textContent : ''); if (/ultraviolet/.test(text)) break; }
@@ -379,6 +387,46 @@ S.gamepad = async b => {
   return { ok, info: out.join('; '), errors };
 };
 
+S.edges = async b => {
+  // Interrupted actions and simultaneous state changes.
+  const init = `(() => { const btns = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })); window.__pad = { id: 'sim', index: 0, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons: btns, timestamp: 0 };
+    navigator.getGamepads = () => window.__padOn ? [window.__pad] : [null]; window.__press = (i, on) => { btns[i].pressed = on; btns[i].value = on ? 1 : 0; }; })();`;
+  const { page, errors } = await open(b, { init });
+  await newGame(page);
+  const out = [];
+  // 1. die while the stalker scare is active: stalker removed, no errors
+  await page.evaluate(() => { const w = window.__w13; w.sigStalker(); });
+  await sleep(600);
+  await page.evaluate(() => { const w = window.__w13; w.save.inv.lazarus = 0; w.P.inv = 0; w.hurt(9999, null); });
+  await waitState(page, s => s === 'dead', 60000);
+  out.push('die mid-scare: dir=' + (await page.evaluate(() => String(window.__w13.DIR.st))));
+  await page.click('#bRetry'); await waitState(page, s => s === 'play', 60000);
+  // 2. complete the floor while the light cascade runs, then the floor card -> shop
+  await page.evaluate(() => window.__w13.sigCascade()); await sleep(400);
+  await page.evaluate(() => window.__w13.completeFloor()); await waitState(page, s => s === 'done', 5000);
+  out.push('clear mid-cascade: dir=' + (await page.evaluate(() => String(window.__w13.DIR.st))));
+  await page.click('#bToShop'); await page.click('#bDescend'); await waitState(page, s => s === 'play', 60000);
+  // 3. hurt and completeFloor at the same moment (win and die together)
+  const r3 = await page.evaluate(() => { const w = window.__w13; w.save.inv.lazarus = 0; w.P.inv = 0; w.completeFloor(); w.hurt(9999, null); return w.state; });
+  out.push('win+die same tick: ' + r3);
+  await page.click('#bToShop'); await page.click('#bDescend'); await waitState(page, s => s === 'play', 60000);
+  // 4. controller held sprint then disconnected: virtual key must be released
+  await page.evaluate(() => { window.__padOn = true; window.__press(10, true); });
+  for (let k = 0; k < 40 && !(await page.evaluate(() => !!window.__w13.keys.ShiftLeft)); k++) await sleep(100);
+  const held = await page.evaluate(() => !!window.__w13.keys.ShiftLeft);
+  await page.evaluate(() => { window.__padOn = false; });
+  for (let k = 0; k < 40 && (await page.evaluate(() => !!window.__w13.keys.ShiftLeft)); k++) await sleep(100);
+  const released = await page.evaluate(() => !window.__w13.keys.ShiftLeft && !window.__w13.PAD.on);
+  out.push(`pad disconnect: held=${held} released=${released}`);
+  // 5. open a note and pause from it (Esc closes the note first), state stays coherent
+  await page.evaluate(() => { const w = window.__w13; w.state = 'play'; });
+  await page.keyboard.press('Escape'); await sleep(300); const p1 = await st(page); await page.keyboard.press('Escape'); await sleep(300); const p2 = await st(page);
+  out.push(`esc,esc: ${p1}->${p2}`);
+  await page.close();
+  const ok = /die mid-scare: dir=null/.test(out[0]) && /dir=null/.test(out[1]) && /done/.test(out[2]) && held && released && p1 === 'paused' && p2 === 'play' && !errors.length;
+  return { ok, info: out.join('; '), errors };
+};
+
 S.dynres = async b => {
   // Drives the dynamic-quality controller with synthetic frame times through the test hook.
   const { page, errors } = await open(b);
@@ -406,7 +454,7 @@ S.perf = async b => {
   return { ok: !errors.length, info: `frame avg ${res.avg.toFixed(1)} ms, worst ${res.p99.toFixed(1)} ms (SwiftShader software GL)${res.info ? ' ' + JSON.stringify(res.info) : ''}`, errors };
 };
 
-const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'fatalRecovery', 'captions', 'settingsUI', 'tips', 'gamepad', 'dynres', 'perf', 'floors', 'soak'];
+const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'fatalRecovery', 'captions', 'settingsUI', 'tips', 'gamepad', 'edges', 'dynres', 'perf', 'floors', 'soak'];
 const run = wanted.length ? wanted : order.filter(n => n !== 'soak');
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-accelerated-2d-canvas', '--autoplay-policy=no-user-gesture-required', '--enable-precise-memory-info'] });
 let fails = 0;
