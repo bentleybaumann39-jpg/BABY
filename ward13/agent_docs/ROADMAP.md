@@ -49,7 +49,7 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 | Risk / deps | Low: visual parity must hold. Compare screenshots. |
 | Effort | M |
 | Verify | Profile floor 1 and floor 30 before and after (see `PERF_REPORT.md`). Screenshot comparison. |
-| **Status** | TODO |
+| **Status** | DONE: `rmap` 2.8–3.3 s → 41–76 ms and `nmap` ~850 → ~650 ms (medians of 7 profiled loads of floor 30). Roughness upload is 4× smaller. Total load time in the sandbox is dominated by bimodal software-GPU sync waits, so it is **UNVERIFIED** on real hardware (see PERF_REPORT). Visual parity was checked by screenshot. |
 
 ### R-05 — Offline single-file build
 | | |
