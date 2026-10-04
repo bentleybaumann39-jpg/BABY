@@ -14,7 +14,7 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 | Risk / deps | Low / none |
 | Effort | S |
 | Verify | The `corruptSave` scenario runs with zero page errors, and Continue / New game work. |
-| **Status** | TODO |
+| **Status** | DONE: verified by `corruptSave` (8/8 cases) and `scares` |
 
 ### R-02 — Validate and repair saves
 | | |
@@ -25,7 +25,7 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 | Risk / deps | Low / R-01 |
 | Effort | S |
 | Verify | The `corruptSave` cases all reach play. A real v3 save round-trips unchanged (`shopLoop`). |
-| **Status** | TODO |
+| **Status** | DONE: verified by `corruptSave` (8/8 cases) and `scares` |
 
 ### R-03 — Fear director lifecycle
 | | |
@@ -36,7 +36,7 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 | Risk / deps | Low / none |
 | Effort | S |
 | Verify | The `scares` scenario: no overlay after quit, and gain > 0. |
-| **Status** | TODO |
+| **Status** | DONE: verified by `corruptSave` (8/8 cases) and `scares` (overlay gone, gain 0.8 after quit) |
 
 ## HIGH IMPACT
 

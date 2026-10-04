@@ -309,8 +309,17 @@ function fbm(x,y,z,o=3){let s=0,a=.5,f=1;for(let i=0;i<o;i++){s+=a*vnoise(x*f,y*
 /* ---------- settings, save, catalogue ---------- */
 function lsGet(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){return null;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
-const settings=Object.assign({ui:'minimal',diff:'normal',quality:'medium',sens:1,vol:.8,bright:1,invert:false,calm:false},lsGet('w13.settings')||{});
-const saveSettings=()=>lsSet('w13.settings',settings);
+// Settings schema: every stored value is validated so a corrupt or old entry can never break the menu.
+const SET_DEF={ui:'minimal',diff:'normal',quality:'medium',sens:1,vol:.8,bright:1,invert:false,calm:false,still:false,fov:74,captions:false};
+const SET_RULE={ui:['minimal','full'],diff:['easy','normal','nightmare'],quality:['low','medium','high'],sens:[.3,2.5],vol:[0,1],bright:[.5,2.2],fov:[60,95]};
+function cleanSettings(src){const o={},s=src&&typeof src==='object'?src:{};
+  for(const k in SET_DEF){const d=SET_DEF[k],v=s[k],r=SET_RULE[k];
+    if(typeof d==='boolean')o[k]=typeof v==='boolean'?v:d;
+    else if(typeof d==='number'){const n=typeof v==='number'||(typeof v==='string'&&v.trim()!=='')?+v:NaN;o[k]=Number.isFinite(n)?clamp(n,r[0],r[1]):d;}
+    else o[k]=r.includes(v)?v:d;}
+  return o;}
+const settings=cleanSettings(lsGet('w13.settings'));
+const saveSettings=()=>{Object.assign(settings,cleanSettings(settings));lsSet('w13.settings',settings);};
 const UPG=[
  {id:'battery',name:'Lithium cells',desc:'Flashlight battery lasts 25% longer per grade.',costs:[40,85,140,220],icon:'M7 6h10v14H7zM10 3h4v3M10 11h4M10 15h4'},
  {id:'dynamo',name:'Dynamo coil',desc:'Battery recharges faster in darkness and drains less.',costs:[50,110,190],icon:'M12 3v18M5 8l7-5 7 5M5 16l7 5 7-5'},
@@ -333,7 +342,22 @@ const SUP=[
  {id:'lazarus',name:'Lazarus shot',desc:'If you die, you get back up once with half your health.',cost:150,max:1,icon:'M4 20l6-6M8 12l4 4M10 10l8-8 4 4-8 8zM15 5l4 4'},
 ];
 const newSave=()=>({v:3,level:1,ng:0,obols:30,up:{},inv:{medkit:2,pills:1,battery:1,flare:1,lazarus:0},notes:[],stats:{deaths:0,kills:0,time:0,earned:0},seed:(Math.random()*1e9)|0});
-let save=lsGet('w13.save'); if(!save||save.v!==3)save=null;
+// Repairs a loaded save onto the current defaults: keeps valid progress, drops or clamps anything malformed.
+function repairSave(s){
+  if(!s||typeof s!=='object'||s.v!==3)return null;
+  const d=newSave(),obj=v=>v&&typeof v==='object'&&!Array.isArray(v)?v:null,
+    num=(v,a,b,def)=>{const n=typeof v==='number'?v:typeof v==='string'&&v.trim()!==''?+v:NaN;return Number.isFinite(n)?clamp(Math.floor(n),a,b):def;};
+  const o={v:3,level:num(s.level,1,30,1),ng:num(s.ng,0,999,0),obols:num(s.obols,0,1e7,d.obols),seed:num(s.seed,0,2147483647,d.seed),up:{},inv:{},notes:[],stats:{}};
+  const su=obj(s.up)||{};for(const u of UPG){const g=num(su[u.id],0,u.costs.length,0);if(g)o.up[u.id]=g;}
+  const si=obj(s.inv);for(const it of SUP)o.inv[it.id]=si?num(si[it.id],0,it.max,0):d.inv[it.id];
+  if(Array.isArray(s.notes))for(const i of s.notes)if(Number.isInteger(i)&&i>=0&&i<30&&!o.notes.includes(i))o.notes.push(i);
+  const ss=obj(s.stats)||{};for(const k in d.stats)o.stats[k]=num(ss[k],0,1e9,0);
+  const h=obj(s.habit);if(h)o.habit={hide:num(h.hide,0,1e6,0),flash:num(h.flash,0,1e6,0),sprint:num(h.sprint,0,1e9,0)};
+  if(Array.isArray(s.endings))o.endings=s.endings.filter((e,i,a)=>['up','stay','sign'].includes(e)&&a.indexOf(e)===i);
+  const dn=num(s.done,0,1e6,0);if(dn)o.done=dn;
+  const tp=obj(s.tips);if(tp){o.tips={};for(const k in tp)if(tp[k]===true)o.tips[k]=true;}
+  return o;}
+let save=repairSave(lsGet('w13.save'));
 let snapshot=null;
 const persist=()=>{if(save)lsSet('w13.save',save);};
 const up=id=>(save&&save.up[id])||0;
@@ -553,7 +577,13 @@ function renderScene(sc,cam){
   p.quad.material=p.mComp; renderer.setRenderTarget(null); renderer.render(p.scene,p.cam);
 }
 const _gr=new THREE.Vector3();
-const DIR={tension:0,since:0,next:40,cool:0};
+const DIR={tension:0,since:0,next:40,cool:0,st:null,last:null,crashed:false};
+// Ends any running signature scare and undoes its side effects (overlay, muted master, stray meshes, speech).
+function dirReset(){const S=DIR.st;DIR.st=null;
+  if(S){if(S.o)S.o.remove();if(S.m&&S.m.root&&S.m.root.parent)S.m.root.parent.remove(S.m.root);}
+  const o=document.getElementById('fakecrash');if(o)o.remove();
+  if(AU.ctx&&AU.master){const t=AU.ctx.currentTime;AU.master.gain.cancelScheduledValues(t);AU.master.gain.setValueAtTime(settings.vol,t);}
+  try{if(window.speechSynthesis)speechSynthesis.cancel();}catch(e){}}
 function makeDust(){
   const N=900,g=new THREE.BufferGeometry(),p=new Float32Array(N*3),s=new Float32Array(N);
   for(let i=0;i<N;i++){p[i*3]=Math.random()*16;p[i*3+1]=Math.random()*3.2;p[i*3+2]=Math.random()*16;s[i]=Math.random();}
@@ -930,8 +960,9 @@ function secMotion(r,t,spd,mode,w){
   if(typeof P!=='undefined'&&r.root.parent){const rp=r.root.position,d=Math.hypot(P.x-rp.x,P.z-rp.z);if(d<10&&d>.3){let a=Math.atan2(P.x-rp.x,P.z-rp.z)-r.root.rotation.y;a=Math.atan2(Math.sin(a),Math.cos(a));tgt+=clamp(a,-1.3,1.3)*(1-d/10)*1.4;}}
   S.hl+=(tgt-S.hl)*.08;r.neck.rotation.set(br*.03,S.hl,0);r.head.rotation.y=0;
   // random hyperextended glitch twitch (joints bending the wrong way)
-  S.gt-=1/60;if(S.gt<=0){S.gt=(1.5+Math.random()*5)*(1-DIR.tension*.6);if(Math.random()<.55){S.gl=1;S.gv=[(Math.random()-.5)*1.4,(Math.random()-.5)*1.8,(Math.random()-.5)*1.2];}}
-  if(S.gl>0){S.gl=Math.max(0,S.gl-.06);const q=S.gl*S.gl;r.neck.rotation.x+=S.gv[0]*q;r.neck.rotation.z+=S.gv[2]*q;r.head.rotation.y+=S.gv[1]*q;
+  const sdt=Math.min(.1,Math.max(0,gameTime-(S.lt===undefined?gameTime:S.lt)));S.lt=gameTime;
+  S.gt-=sdt;if(S.gt<=0){S.gt=(1.5+Math.random()*5)*(1-DIR.tension*.6);if(Math.random()<.55){S.gl=1;S.gv=[(Math.random()-.5)*1.4,(Math.random()-.5)*1.8,(Math.random()-.5)*1.2];}}
+  if(S.gl>0){S.gl=Math.max(0,S.gl-sdt*3.6);const q=S.gl*S.gl;r.neck.rotation.x+=S.gv[0]*q;r.neck.rotation.z+=S.gv[2]*q;r.head.rotation.y+=S.gv[1]*q;
     const a=r.arms[(k|0)%2];a.el.rotation.x+=Math.abs(S.gv[1])*q*.9;a.el.rotation.z+=S.gv[0]*q;r.jaw.rotation.x+=q*.7;}
   // foot plant: keep sole flat to floor
   for(const l of r.legs)l.ft.rotation.x=-(l.hip.rotation.x+l.kn.rotation.x)*.85+(w?.08:0);
@@ -2006,8 +2037,10 @@ function updDirector(dt){
   DIR.vT=(DIR.vT||25)-dt;if(DIR.vT<=0){DIR.vT=mr(40,90);if(P.san<55&&!settings.calm)speakWhisper();}
   const S=DIR.st;if(S)return updSig(S,dt);
   DIR.since+=dt;if(L.arenaRoom||P.hidden||DIR.since<DIR.next||DIR.tension>.45||settings.calm)return;
-  DIR.since=0;DIR.next=mr(55,100);const r=Math.random();
-  if(r<.4)sigStalker();else if(r<.7)sigCascade();else sigCrash();
+  DIR.since=0;DIR.next=mr(55,100);
+  const opts=['stalk','stalk','casc'];if(!DIR.crashed&&L.lvl>2)opts.push('crash');
+  let k=mpick(opts);if(k===DIR.last&&opts.length>1)k=mpick(opts.filter(x=>x!==DIR.last));DIR.last=k;
+  if(k==='stalk')sigStalker();else if(k==='casc')sigCascade();else sigCrash();
 }
 function speakWhisper(){try{const ss=window.speechSynthesis;if(!ss||!AU.ctx)return;const lines=['patient zero three one three','you came back','we kept your bed warm','dont turn around','it knows your name','again'];
   const u=new SpeechSynthesisUtterance(mpick(lines));u.pitch=.1;u.rate=.55;u.volume=Math.min(1,settings.vol*.35);ss.cancel();ss.speak(u);hiss(1.6,.05,1800,'bandpass',{q:6});}catch(e){}}
@@ -2018,7 +2051,7 @@ function sigCascade(){const ls=L.lamps.filter(l=>l.lvl>.2&&!l.flare&&dist(l.x,l.
   DIR.st={k:'casc',ls,i:0,t:0};}
 function sigCrash(){const o=document.createElement('div');o.id='fakecrash';o.style.cssText='position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font:14px monospace;color:#ccc;pointer-events:none';
   o.innerHTML='<div style="background:#1b1b1b;border:1px solid #444;padding:22px 28px;max-width:420px">Aw, Snap!<br><br>Something went wrong while displaying this webpage.<br><span style="color:#777">Error code: PATIENT_0313_STILL_HERE</span></div>';
-  document.body.appendChild(o);if(AU.ctx)AU.master&&AU.master.gain.setTargetAtTime(0,AU.ctx.currentTime,.02);DIR.st={k:'crash',o,t:0,t0:performance.now()};}
+  document.body.appendChild(o);DIR.crashed=true;if(AU.ctx&&AU.master)AU.master.gain.setTargetAtTime(0,AU.ctx.currentTime,.02);DIR.st={k:'crash',o,t:0,t0:performance.now()};}
 function updSig(S,dt){S.t+=dt;
   if(S.k==='stalk'){const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),d=dist(S.x,S.z,P.x,P.z),dot=((S.x-P.x)*fx+(S.z-P.z)*fz)/(d||1);
     animBiped(S.m,gameTime,1,'idle');S.m.head.rotation.z=Math.sin(gameTime*13)*.08;S.br-=dt;if(S.br<=0){S.br=1.1;hiss(.7,.09,700,'bandpass',{pos:{x:S.x,y:1.6,z:S.z},q:2,att:.3});}
@@ -2027,7 +2060,7 @@ function updSig(S,dt){S.t+=dt;
   if(S.k==='stalk2'){animBiped(S.m,gameTime,14,'attack');S.m.jaw.rotation.x=1;if(S.t>.35){world.remove(S.m.root);FX.glitch=.6;GP.burst(S.m.root.position.x,1.3,S.m.root.position.z,30,1.5,.8,.2,.02,.02,1,.06,0);DIR.st=null;}return;}
   if(S.k==='casc'){if(S.t>.32){S.t=0;const l=S.ls[S.i++];if(l){l.off=9;SFX.glass(V3(l.x,l.y,l.z));SFX.slam(V3(l.x,1,l.z));}
       if(S.i>=S.ls.length||S.i>=7){const a=mr(TAU);SFX.scream({x:P.x+Math.sin(a)*5,z:P.z+Math.cos(a)*5});SFX.sting();P.san=Math.max(0,P.san-6);DIR.st=null;}}return;}
-  if(S.k==='crash'){if(performance.now()-S.t0>2000){S.o.remove();if(AU.ctx&&AU.master)AU.master.gain.setTargetAtTime(settings.vol!=null?settings.vol:1,AU.ctx.currentTime,.01);
+  if(S.k==='crash'){if(performance.now()-S.t0>2000){dirReset();
       FX.glitch=1;FX.flash=.9;FX.shake=1;FX.dmg=Math.max(FX.dmg,.5);SFX.scream({x:P.x,z:P.z});SFX.sting();P.san=Math.max(0,P.san-10);
       const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),m=mPatient(CM),x=P.x+fx*.7,z=P.z+fz*.7;m.root.position.set(x,0,z);m.root.rotation.y=Math.atan2(-fx,-fz);world.add(m.root);DIR.st={k:'stalk2',m,x,z,t:-.15};}return;}
 }
@@ -2594,7 +2627,7 @@ const HINTS={1:'Find three emergency fuses, then take the service elevator. F to
 let everLocked=false,lockFailed=false;
 function requestLock(){try{const p=renderer.domElement.requestPointerLock();if(p&&p.catch)p.catch(()=>{if(!everLocked)lockFailed=true;});}catch(e){if(!everLocked)lockFailed=true;}}
 const locked=()=>document.pointerLockElement===renderer.domElement;
-function startFloor(retry){DIR.st&&DIR.st.o&&DIR.st.o.remove();DIR.st=null;DIR.since=0;DIR.next=mr(35,60);DIR.tension=0;if(AU.master)AU.master.gain.value=settings.vol;
+function startFloor(retry){dirReset();DIR.since=0;DIR.next=mr(35,60);DIR.tension=0;
   if(!retry||!snapshot)snapshot=clone(save);
   state='loading';show(null);$('hud').classList.remove('on');$('boss').style.display='none';$('slats').style.display='none';$('cross').style.display='block';$('map').style.display='none';$('arrow').style.display='none';$('msg').style.opacity=0;
   FX.fade=1;FX.dmg=0;FX.flash=0;beamHum(false);
@@ -2614,7 +2647,7 @@ function startFloor(retry){DIR.st&&DIR.st.o&&DIR.st.o.remove();DIR.st=null;DIR.s
   }catch(e){fatal(e);}},90);
 }
 function completeFloor(){
-  if(state!=='play')return;state='done';P.cam=false;camUI();document.exitPointerLock&&document.exitPointerLock();$('hud').classList.remove('on');beamHum(false);setTension(0);SFX.ding();
+  if(state!=='play')return;dirReset();state='done';P.cam=false;camUI();document.exitPointerLock&&document.exitPointerLock();$('hud').classList.remove('on');beamHum(false);setTension(0);SFX.ding();
   const lvl=L.lvl,bonus=Math.round((20+lvl*4+(L.arenaRoom?40:0))*ST.favor),t=L.time;save.obols+=bonus;save.stats.earned+=bonus;save.stats.time+=t;
   if(lvl>=30){ending();return;}
   save.level=lvl+1;persist();snapshot=null;
@@ -2628,7 +2661,7 @@ function die(src){
   if(state!=='play')return;
   if(save.inv.lazarus>0){save.inv.lazarus--;P.hp=ST.maxHp*.5;P.inv=2.5;FX.flash=1;FX.dmg=.4;msg('The Lazarus shot burns through your veins. You get back up.',4);SFX.ding();
     for(const e of L.enemies)if(!e.dead&&dist(e.x,e.z,P.x,P.z)<9){e.stun=4;e.state='search';e.tx=e.x;e.tz=e.z;}return;}
-  state='dying';P.cam=false;camUI();P.deadT=0;P.killer=src||null;save.stats.deaths++;beamHum(false);if(P.hidden)leaveLocker(true);
+  dirReset();state='dying';P.cam=false;camUI();P.deadT=0;P.killer=src||null;save.stats.deaths++;beamHum(false);if(P.hidden)leaveLocker(true);
   document.exitPointerLock&&document.exitPointerLock();$('hud').classList.remove('on');
   const k=P.killer,fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw);
   if(k&&k.m&&k.m.root){const r=k.m.root,dd=(k.r&&k.kind?k.r+.9:.8);r.visible=true;r.position.set(P.x+fx*dd,k.type==='crawler'?1.05:(k.y||0),P.z+fz*dd);r.rotation.y=Math.atan2(-fx,-fz);if(k.type==='crawler')r.rotation.x=-.6;}
@@ -2651,16 +2684,16 @@ function ending(){
   $('endTally').innerHTML=`<span>Time in the ward</span><span>${mm}</span><span>Times admitted</span><span>${s.deaths}</span><span>Things put to rest</span><span>${s.kills}</span><span>Obols earned</span><span>${s.earned}</span><span>Notes found</span><span>${save.notes.length} of 30</span>`;
   save.ng=(save.ng||0)+1;save.done=(save.done||0)+1;save.level=1;persist();snapshot=null;show('ending');endingChoice();
 }
-function toMenu(){state='menu';shopView='menu';$('hud').classList.remove('on');$('boss').style.display='none';beamHum(false);setTension(0);setDrone(36,48,.22);refreshMenu();show('menu');}
+function toMenu(){dirReset();state='menu';shopView='menu';$('hud').classList.remove('on');$('boss').style.display='none';beamHum(false);setTension(0);setDrone(36,48,.22);refreshMenu();show('menu');}
 function refreshMenu(){
   const b=$('bContinue');b.disabled=!save;$('contInfo').textContent=save?`Floor ${save.level}, ${save.obols} obols${save.ng?`, descent ${save.ng+1}`:''}`:'';
   $('discharge').textContent=save&&save.done?`Discharged ${save.done} ${save.done>1?'times':'time'}${save.endings&&save.endings.length?`, endings seen ${save.endings.length} of 3`:''}`:'Pending';$('bNew').firstChild.textContent='Begin a new admission';newArmed=false;
 }
-function pause(){if(state!=='play')return;state='paused';camUI();for(const k in keys)keys[k]=false;mouse.r=0;beamHum(false);document.exitPointerLock&&document.exitPointerLock();$('pauseTask').innerHTML=taskText()[0];show('pause');}
+function pause(){if(state!=='play')return;if(DIR.st&&DIR.st.k==='crash')dirReset();state='paused';camUI();for(const k in keys)keys[k]=false;mouse.r=0;beamHum(false);document.exitPointerLock&&document.exitPointerLock();$('pauseTask').innerHTML=taskText()[0];show('pause');}
 function resume(){if(state!=='paused')return;state='play';camUI();show(null);requestLock();lastT=performance.now();}
 function openNote(i){const n=NOTES[i]||NOTES[0];$('noteTitle').textContent=n[0];$('noteBody').textContent=n[1];state='note';show('note');SFX.creak({x:P.x,z:P.z});for(const k in keys)keys[k]=false;mouse.r=0;}
 function closeNote(){if(state!=='note')return;state='play';show(null);lastT=performance.now();if(!locked())requestLock();}
-function fatal(e){console.error(e);$('err').textContent='Something went wrong: '+(e&&e.message?e.message:e)+'. Reload the page to try again.';}
+function fatal(e){console.error(e);try{dirReset();}catch(_){}$('err').textContent='Something went wrong: '+(e&&e.message?e.message:e)+'. Reload the page to try again.';}
 function applySettingsUI(){$('sUI').value=settings.ui;$('sDiff').value=settings.diff;$('sQuality').value=settings.quality;$('sBright').value=settings.bright;$('sSens').value=settings.sens;$('sVol').value=settings.vol;$('sInvert').checked=settings.invert;$('sCalm').checked=settings.calm;}
 
 /* ===================== INPUT ===================== */

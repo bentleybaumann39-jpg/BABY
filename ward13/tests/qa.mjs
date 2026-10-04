@@ -198,16 +198,38 @@ S.resize = async b => {
 
 S.corruptSave = async b => {
   const results = [];
-  for (const bad of ['{not json', JSON.stringify({ v: 3 }), JSON.stringify({ v: 3, level: 99, inv: null, up: null, stats: null, notes: null }), JSON.stringify({ v: 2, level: 4 })]) {
-    const { page, errors } = await open(b, { init: `try{localStorage.setItem('w13.save', ${JSON.stringify(bad)});localStorage.setItem('w13.settings','{"quality":"ultra","vol":"x"}')}catch(e){}` });
-    let s = 'menu';
-    const cont = await page.evaluate(() => !document.getElementById('bContinue').disabled);
-    if (cont) { await page.click('#bContinue'); await sleep(800); s = await st(page); if (s === 'shop') { await page.click('#bDescend'); s = await waitState(page, x => x === 'play' || x === 'paused', 30000).then(() => st(page)).catch(() => 'stuck'); } }
-    results.push(`${bad.slice(0, 22)}=>${cont ? 'continue:' + s : 'no-continue'}${errors.length ? ' ERR' : ''}`);
-    if (errors.length) results.push(...errors.slice(0, 2));
+  const good = { v: 3, level: 7, ng: 1, obols: 412, up: { battery: 2, lens: 1 }, inv: { medkit: 3, pills: 0, battery: 2, flare: 1, lazarus: 1 }, notes: [0, 4, 9], stats: { deaths: 5, kills: 12, time: 900, earned: 600 }, seed: 12345, habit: { hide: 2, flash: 7, sprint: 30 }, endings: ['up'], done: 1 };
+  const cases = [
+    ['good save is kept intact', JSON.stringify(good), null, 'same'],
+    ['not json', '{not json', null, 'none'],
+    ['empty v3', JSON.stringify({ v: 3 }), null, 'play'],
+    ['nulls + level 99', JSON.stringify({ v: 3, level: 99, inv: null, up: null, stats: null, notes: null }), null, 'play'],
+    ['junk types', JSON.stringify({ v: 3, level: '4', obols: 'lots', up: { battery: 99, bogus: 3 }, inv: { medkit: -4, flare: 'x' }, notes: [1, 1, 'x', 500, -1], stats: [], habit: 'no', endings: ['up', 'hack'] }), null, 'play'],
+    ['old version', JSON.stringify({ v: 2, level: 4 }), null, 'none'],
+    ['corrupt settings', JSON.stringify(good), '{"quality":"ultra","vol":"x","sens":null,"bright":99,"ui":7,"invert":"yes"}', 'play'],
+    ['settings not json', null, '{{{', 'newgame'],
+  ];
+  for (const [name, sv, set, expect] of cases) {
+    const init = `try{localStorage.clear();${sv !== null ? `localStorage.setItem('w13.save', ${JSON.stringify(sv)});` : ''}${set !== null ? `localStorage.setItem('w13.settings', ${JSON.stringify(set)});` : ''}}catch(e){}`;
+    const { page, errors } = await open(b, { init });
+    let got = '?';
+    try {
+      const cont = await page.evaluate(() => !document.getElementById('bContinue').disabled);
+      if (expect === 'same') {
+        const same = await page.evaluate(g => { const c = o => JSON.stringify(o, Object.keys(o).sort()); const s = window.__w13.save; return JSON.stringify(JSON.parse(JSON.stringify(s), (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort()) : v)) === JSON.stringify(JSON.parse(JSON.stringify(g), (k, v) => v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.entries(v).sort()) : v)); }, good);
+        got = same ? 'same' : 'changed:' + JSON.stringify(await page.evaluate(() => window.__w13.save));
+      } else if (expect === 'none') got = cont ? 'continue-enabled' : 'none';
+      else if (expect === 'newgame') { got = (await newGame(page).then(() => 'newgame')); }
+      else {
+        if (!cont) got = 'no-continue';
+        else { await page.click('#bContinue'); await waitState(page, x => x === 'shop', 8000); await page.click('#bDescend'); await waitState(page, x => x === 'play', 60000); got = 'play'; }
+      }
+    } catch (e) { got = 'threw ' + e.message.split('\n')[0]; }
+    const ok = got === expect && !errors.length;
+    results.push(`${ok ? 'ok' : 'BAD'} ${name}: ${got}${errors.length ? ' ' + errors[0].slice(0, 120) : ''}`);
     await page.close();
   }
-  return { ok: !results.some(r => /ERR|stuck|pageerror/.test(r)), info: results.join(' | '), errors: [] };
+  return { ok: results.every(r => r.startsWith('ok')), info: results.join(' | '), errors: [] };
 };
 
 S.scares = async b => {
