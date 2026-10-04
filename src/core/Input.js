@@ -31,6 +31,7 @@ export class Input {
     this.locked = false;
     this.enabled = true;
     this.synthetic = false; // test harness drives input
+    this.lockedAt = 0;
 
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Tab' || e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
@@ -48,13 +49,19 @@ export class Input {
     });
     window.addEventListener('mousemove', (e) => {
       if (!this.locked && !this.synthetic) return;
-      this.mouseDX += e.movementX || 0;
-      this.mouseDY += e.movementY || 0;
+      if (this.synthetic && !this.locked) return;
+      // Ignore the bogus first deltas Chrome reports right after locking.
+      if (performance.now() - this.lockedAt < 120) return;
+      const mx = e.movementX || 0, my = e.movementY || 0;
+      if (Math.abs(mx) > 400 || Math.abs(my) > 400) return;
+      this.mouseDX += mx;
+      this.mouseDY += my;
     });
     window.addEventListener('wheel', (e) => { this.wheel += Math.sign(e.deltaY); }, { passive: true });
     window.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === canvas;
+      if (this.locked) { this.lockedAt = performance.now(); this.mouseDX = 0; this.mouseDY = 0; }
       if (this.onLockChange) this.onLockChange(this.locked);
     });
   }

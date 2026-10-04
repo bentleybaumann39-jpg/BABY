@@ -1,0 +1,22 @@
+// Screenshot the title screen and the first seconds of a new game via real menu clicks.
+import { chromium } from 'playwright';
+import { startServer } from '../tools/serve.mjs';
+const out = process.argv[2] || 'shots';
+const port = 8000 + Math.floor(Math.random() * 900);
+const server = await startServer(port, true);
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+const errs = [];
+page.on('pageerror', (e) => errs.push(e.message));
+page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
+await page.goto(`http://localhost:${port}/index.html?seed=3`);
+await page.waitForFunction(() => window.__ready === true || window.__fatal, null, { timeout: 240000 });
+await page.waitForTimeout(3000);
+await page.screenshot({ path: `${out}/title.png` });
+await page.click('button[data-act="new"]');
+await page.evaluate(() => { window.__game.fixedDt = 1 / 30; });
+await page.waitForTimeout(12000);
+console.log('fade', await page.evaluate(() => getComputedStyle(document.getElementById('fade')).opacity), JSON.stringify(await page.evaluate(() => { const g = window.__game; return { p: g.player.pos, yaw: g.player.yaw, pitch: g.player.pitch, cam: g.camera.position }; })));
+await page.screenshot({ path: `${out}/newgame.png` });
+console.log('mode', await page.evaluate(() => window.__game.mode), errs.join('\n'));
+await browser.close(); server.close();

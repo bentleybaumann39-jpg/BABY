@@ -199,7 +199,9 @@ export class Game {
     this.mode = m;
     const playing = m === 'play';
     this.ui.hud.classList.toggle('show', ['play', 'reader', 'terminal', 'journal', 'cutscene'].includes(m));
-    if (!playing && m !== 'cutscene') this.input.exitLock(); else if (playing && !this.test) this.input.requestLock();
+    // Keep the pointer locked while reading or at a terminal; free it for menus and the journal.
+    if (['title', 'pause', 'death', 'ending', 'journal', 'settings', 'gallery'].includes(m)) this.input.exitLock();
+    else if (playing && !this.test && !document.pointerLockElement) this.input.requestLock();
   }
 
   toTitle() {
@@ -486,8 +488,8 @@ export class Game {
   updateTitle(dt) {
     const t = this.time;
     const cam = this.camera;
-    cam.position.set(41 + Math.sin(t * 0.05) * 6, 1.7 + Math.sin(t * 0.13) * 0.15, 60 - Math.sin(t * 0.04) * 2);
-    cam.lookAt(41, 3.2, 44);
+    cam.position.set(33 + Math.sin(t * 0.05) * 3, 1.7 + Math.sin(t * 0.13) * 0.15, 59 - Math.sin(t * 0.04) * 1.5);
+    cam.lookAt(38.5 + Math.sin(t * 0.03) * 1.5, 3.4, 44);
     cam.updateMatrixWorld();
     this.lights.update(dt, cam.position, t);
     this.updateRain(dt, true);

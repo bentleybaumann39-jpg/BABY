@@ -428,7 +428,7 @@ export class Story {
       this.breakerLevers.push({ name, lever, arm });
       g.interaction.add({
         id: 'breaker:' + name, obj: lever, range: 1.8,
-        prompt: () => `${g.power.isOn(name) ? 'Switch off' : 'Switch on'}  (${name === 'bird' || name === 'cup' || name === 'bed' || name === 'bulb' || name === 'flame' || name === 'speaker' || name === 'bell' || name === 'drop' ? '' : ''}breaker)`,
+        prompt: () => `${g.power.isOn(name) ? 'Switch off' : 'Switch on'} breaker  (${g.power.count()}/3 live)`,
         use: () => this.flipBreaker(name),
       });
     });
