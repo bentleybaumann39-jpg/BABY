@@ -198,9 +198,9 @@ S.resize = async b => {
   for (const [w, h] of sizes) {
     await page.setViewportSize({ width: w, height: h });
     for (let i = 0; i < 60; i++) { await sleep(250); if (await page.evaluate(([w, h]) => { const c = document.getElementById('gl'); return c.clientWidth === w && c.clientHeight === h; }, [w, h])) break; }
-    const r = await page.evaluate(() => { const c = document.getElementById('gl'), hud = document.getElementById('hud'); const over = [...hud.querySelectorAll('*')].filter(e => { const b = e.getBoundingClientRect(); return b.width && (b.right > innerWidth + 1 || b.bottom > innerHeight + 1 || b.left < -1); }).map(e => e.id || e.className).slice(0, 5); return { cw: c.clientWidth, ch: c.clientHeight, over }; });
+    const r = await page.evaluate(() => { const c = document.getElementById('gl'), hud = document.getElementById('hud'); const over = [...hud.querySelectorAll('*')].filter(e => { const b = e.getBoundingClientRect(); return b.width && (b.right > innerWidth + 1 || b.bottom > innerHeight + 1 || b.left < -1); }).map(e => e.id || e.className).slice(0, 5); const r1 = document.getElementById('band').getBoundingClientRect(), r2 = document.getElementById('belt').getBoundingClientRect(); if (r1.width && r2.width && r1.right > r2.left && r2.right > r1.left && r1.bottom > r2.top && r2.bottom > r1.top) over.push('band-overlaps-belt'); return { cw: c.clientWidth, ch: c.clientHeight, over }; });
     if (r.cw !== w || r.ch !== h || r.over.length) bad.push(`${w}x${h}:${r.cw}x${r.ch} over=${r.over.join('|')}`);
-    await shot(page, `res-${w}x${h}`);
+    if (w * h <= 1280 * 900) await shot(page, `res-${w}x${h}`);
   }
   await page.close();
   return { ok: !bad.length && !errors.length, info: bad.length ? bad.join(' ; ') : 'all sizes fill viewport, HUD in bounds', errors };

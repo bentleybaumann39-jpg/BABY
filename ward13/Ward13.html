@@ -147,6 +147,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{ outline:2px solid
 #intro small{color:var(--bone-dim);font-size:13px}
 #err{ position:fixed; left:0; right:0; bottom:20px; text-align:center; z-index:40; color:var(--iodine); font-size:14px; padding:0 20px; }
 @media (max-width:760px){ #shop .ledger{ right:3vw; } #band{ width:200px; } .slot{ width:48px; } }
+@media (max-width:700px){ #belt{ bottom:calc(150px + env(safe-area-inset-bottom,0px)); flex-wrap:wrap; justify-content:flex-end; max-width:calc(100vw - 44px); } #caps{ bottom:calc(230px + env(safe-area-inset-bottom,0px)); } }
 @media (prefers-reduced-motion: reduce){ #fade,#card,#msg{ transition:none; } }
 </style>
 </head>
@@ -1997,13 +1998,15 @@ function enterLocker(lk){{const E=L.echo;if(E&&E.st==='chase'&&echoSees(E))E.los
   P.sx=P.x;P.sz=P.z;P.x=lk.x;P.z=lk.z;P.yaw=Math.atan2(-lk.fx,-lk.fz);P.pitch=0;P.light=false;SFX.creak({x:P.x,z:P.z});$('slats').style.display='block';$('cross').style.display='none';}
 function leaveLocker(forced){const lk=P.hidden;if(!lk)return;P.hidden=null;P.x=lk.x+lk.fx*.85;P.z=lk.z+lk.fz*.85;$('slats').style.display='none';$('cross').style.display='block';if(!forced)SFX.creak({x:P.x,z:P.z});}
 function interact(){const t=interactTarget();if(t)t.fn();}
+// A refused item use says why (empty vs. not needed) instead of only buzzing.
+function deny(t){SFX.deny();if(!(msg.t>0.5))msg(t,1.6);}
 function useItem(k){
   const inv=save.inv;
-  if(k==='medkit'){if(inv.medkit>0&&P.hp<ST.maxHp){inv.medkit--;P.hp=Math.min(ST.maxHp,P.hp+50);SFX.pickup();msg('You bind the wound.',2);}else SFX.deny();}
-  else if(k==='pills'){if(inv.pills>0&&P.san<100){inv.pills--;P.san=Math.min(100,P.san+60);SFX.pickup();msg('The walls stop breathing.',2);}else SFX.deny();}
-  else if(k==='battery'){if(inv.battery>0&&P.bat<99){inv.battery--;P.bat=100;SFX.click();msg('Fresh cell.',1.5);}else SFX.deny();}
+  if(k==='medkit'){if(inv.medkit>0&&P.hp<ST.maxHp){inv.medkit--;P.hp=Math.min(ST.maxHp,P.hp+50);SFX.pickup();msg('You bind the wound.',2);}else deny(inv.medkit>0?'You are not hurt.':'No field dressings left.');}
+  else if(k==='pills'){if(inv.pills>0&&P.san<100){inv.pills--;P.san=Math.min(100,P.san+60);SFX.pickup();msg('The walls stop breathing.',2);}else deny(inv.pills>0?'Your mind is steady.':'No pills left.');}
+  else if(k==='battery'){if(inv.battery>0&&P.bat<99){inv.battery--;P.bat=100;SFX.click();msg('Fresh cell.',1.5);}else deny(inv.battery>0?'The battery is already full.':'No spare cells left.');}
   else if(k==='flare'){if(inv.flare>0&&!P.hidden){inv.flare--;const m=new THREE.Group();mk(G.cyl,PM.yellow,m,0,0,0,false).scale.set(.04,.25,.04);const sp=new THREE.Sprite(glintMat(0xff3010));sp.scale.setScalar(1.1);m.add(sp);world.add(m);
-    const lamp=addLamp(P.x,P.z,1,'on',0xff3a1a,1.9);lamp.flare=true;L.flares.push({x:P.x,y:1.3,z:P.z,vx:F.x*8,vy:F.y*8+2.5,vz:F.z*8,life:20,landed:false,m,lamp});hiss(.6,.2,3000,'highpass');}else SFX.deny();}
+    const lamp=addLamp(P.x,P.z,1,'on',0xff3a1a,1.9);lamp.flare=true;L.flares.push({x:P.x,y:1.3,z:P.z,vx:F.x*8,vy:F.y*8+2.5,vz:F.z*8,life:20,landed:false,m,lamp});hiss(.6,.2,3000,'highpass');}else deny(P.hidden?'Not from in here.':'No flares left.');}
 }
 function cameraFlash(){
   if(P.flash<1||P.hidden){SFX.deny();return;}P.flash--;P.pulse=.12;FX.flash=1;SFX.flash();noise(P.x,P.z,9);
@@ -2684,7 +2687,7 @@ function openShop(){state='shop';shopView='shop';show('shop');$('hud').classList
 
 /* ===================== FLOW ===================== */
 const clone=o=>JSON.parse(JSON.stringify(o));
-const HINTS={1:'Find three emergency fuses, then take the service elevator. F toggles the flashlight. Darkness recharges it.',2:'Hold right mouse to focus the beam into ultraviolet. It burns. Left mouse or Q fires the camera flash.',
+const HINTS={1:'Find the emergency fuses (they glow amber), then take the service elevator. F toggles the flashlight. Darkness recharges it.',2:'Hold right mouse to focus the beam into ultraviolet. It burns. Left mouse or Q fires the camera flash.',
   3:'Lockers can hide you. Press E beside one. If something sees you climb in, it will come looking.',4:'Call the elevator, then stay alive until it arrives. Flares keep things back.',6:'Crawlers hate light. Keep your beam on them and they will run.',
   11:'Mannequins only move when they are unseen and unlit. Keep them in your light.',12:'If you hear crying, keep your light off her. The camcorder (V) lets you look without being seen.',16:'Wraiths drift through walls and eat your sanity. Burn them with ultraviolet.',21:'This wing takes your mind first. Stay near working lamps.',26:'This is Ward 13. It is alive.'};
 let everLocked=false,lockFailed=false;
