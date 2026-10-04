@@ -33,7 +33,7 @@ await page.evaluate(() => {
 
 console.log('Movement & collision');
 await check('walks forward', () => { const g = __game; g.player.place(37.3, 55.6, 0); const z0 = g.player.pos.z; g.input.simKey('KeyW', true); run(1.5); g.input.simKey('KeyW', false); run(0.3); return { ok: g.player.pos.z < z0 - 2, info: (z0 - g.player.pos.z).toFixed(2) + 'm' }; });
-await check('blocked by walls', () => { const g = __game; g.player.place(41, 44.8, Math.PI); g.input.simKey('KeyW', true); run(2); g.input.simKey('KeyW', false); return { ok: g.player.pos.z < 45.75, info: g.player.pos.z.toFixed(2) }; });
+await check('blocked by walls', () => { const g = __game; g.player.place(36.5, 43.5, Math.PI / 2); g.input.simKey('KeyW', true); run(2); g.input.simKey('KeyW', false); return { ok: g.player.pos.x > 35.25, info: g.player.pos.x.toFixed(2) }; });
 await check('stairs follow ramp', () => { const g = __game; g.player.place(8.5, 12.5, 0); g.input.simKey('KeyW', true); run(4); g.input.simKey('KeyW', false); run(0.5); return { ok: g.player.pos.y < -2.5, info: 'y=' + g.player.pos.y.toFixed(2) }; });
 
 console.log('Arrival');
