@@ -445,6 +445,26 @@ S.dynres = async b => {
   return { ok: r.recovered && r.capped && !errors.length, info: r.out, errors };
 };
 
+S.simSoak = async b => {
+  // Long-session soak via the real update loop without rendering: SIM_MIN game-minutes on a busy floor.
+  const { page, errors } = await open(b, { width: 480, height: 270 });
+  await newGame(page);
+  const floor = Number(process.env.SOAK_FLOOR || 24), mins = Number(process.env.SIM_MIN || 20);
+  await gotoFloor(page, floor);
+  const samples = [];
+  for (let m = 0; m < mins; m++) {
+    const r = await page.evaluate(() => { const w = window.__w13; const P = w.P; P.yaw += 2.1; const st = w.simulate(60, true);
+      let objs = 0; w.scene.traverse(() => objs++); const L = w.L;
+      return { st, heap: performance.memory ? performance.memory.usedJSHeapSize : 0, objs, en: L.enemies.length, proj: L.proj.length, haz: L.haz.length, flares: L.flares.length, ri: w.renderInfo() }; });
+    samples.push(r);
+    if (r.st !== 'play') break;
+  }
+  await page.close();
+  const f = samples[1] || samples[0], l = samples[samples.length - 1];
+  const grow = l.objs - f.objs;
+  return { ok: !errors.length && l.st === 'play' && grow < 400 && l.heap < f.heap * 1.5 + 5e6, info: `floor ${floor}, ${samples.length} game-min; heap ${(f.heap / 1e6).toFixed(1)}->${(l.heap / 1e6).toFixed(1)} MB; scene objs ${f.objs}->${l.objs}; enemies ${samples.map(s => s.en).join(',')}; geos ${samples.map(s => s.ri.geos).join(",")}; tex ${samples.map(s => s.ri.tex).join(",")}`, errors };
+};
+
 S.perf = async b => {
   const { page, errors } = await open(b, { width: 640, height: 360 });
   await newGame(page);
@@ -454,8 +474,8 @@ S.perf = async b => {
   return { ok: !errors.length, info: `frame avg ${res.avg.toFixed(1)} ms, worst ${res.p99.toFixed(1)} ms (SwiftShader software GL)${res.info ? ' ' + JSON.stringify(res.info) : ''}`, errors };
 };
 
-const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'fatalRecovery', 'captions', 'settingsUI', 'tips', 'gamepad', 'edges', 'dynres', 'perf', 'floors', 'soak'];
-const run = wanted.length ? wanted : order.filter(n => n !== 'soak');
+const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'fatalRecovery', 'captions', 'settingsUI', 'tips', 'gamepad', 'edges', 'dynres', 'perf', 'floors', 'soak', 'simSoak'];
+const run = wanted.length ? wanted : order.filter(n => n !== 'soak' && n !== 'simSoak');
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-accelerated-2d-canvas', '--autoplay-policy=no-user-gesture-required', '--enable-precise-memory-info'] });
 let fails = 0;
 for (const name of run) {

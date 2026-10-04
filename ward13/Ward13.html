@@ -2881,6 +2881,7 @@ requestAnimationFrame(loop);
 if(window.__W13_TEST)window.__w13={get L(){return L;},P,get save(){return save;},set save(v){save=v;},get state(){return state;},set state(v){state=v;},get snapshot(){return snapshot;},
   startFloor,completeFloor,openShop,toMenu,interact,interactTarget,cameraFlash,useItem,questDone,bossDie,bossHurt,die,hurt,pause,resume,closeNote,buyUp,buySup,spawnEnemy,keys,mouse,FX,ST:()=>ST,
   get world(){return world;},scene,findPath,los,UPG,SUP,takeItem,leaveLocker,enterLocker,exitAction,updShop,blockedAt,moveC,isWall,bfsFrom,questOf,isBoss,get boss(){return L&&L.boss;},DIR,sigStalker,sigCascade,sigCrash,AU,settings,PERF,perf,TIPS,PAD,msg,
+  simulate:(secs,keepAlive)=>{let t=0;while(t<secs&&state==='play'){if(keepAlive){P.hp=ST.maxHp;P.inv=1;P.san=Math.max(P.san,40);}gameTime+=.05;TIMEU.value=gameTime;update(.05);t+=.05;}return state;},
   renderInfo:()=>({programs:renderer.info.programs.length,calls:PERF.calls,tris:PERF.tris,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures,lights:pool.length})};
 };
 </script>
