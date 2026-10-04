@@ -2733,7 +2733,8 @@ appliedQ=null;state='menu';shopView='menu';FX.fade=1;refreshMenu();show('menu');
 requestAnimationFrame(loop);
 if(window.__W13_TEST)window.__w13={get L(){return L;},P,get save(){return save;},set save(v){save=v;},get state(){return state;},set state(v){state=v;},get snapshot(){return snapshot;},
   startFloor,completeFloor,openShop,toMenu,interact,interactTarget,cameraFlash,useItem,questDone,bossDie,bossHurt,die,hurt,pause,resume,closeNote,buyUp,buySup,spawnEnemy,keys,mouse,FX,ST:()=>ST,
-  get world(){return world;},scene,findPath,los,UPG,SUP,takeItem,leaveLocker,enterLocker,exitAction,updShop,blockedAt,moveC,isWall,bfsFrom,questOf,isBoss,get boss(){return L&&L.boss;},DIR,sigStalker,sigCascade,sigCrash};
+  get world(){return world;},scene,findPath,los,UPG,SUP,takeItem,leaveLocker,enterLocker,exitAction,updShop,blockedAt,moveC,isWall,bfsFrom,questOf,isBoss,get boss(){return L&&L.boss;},DIR,sigStalker,sigCascade,sigCrash,AU,settings,
+  renderInfo:()=>({programs:renderer.info.programs.length,calls:renderer.info.render.calls,tris:renderer.info.render.triangles,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures,lights:pool.length})};
 };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
