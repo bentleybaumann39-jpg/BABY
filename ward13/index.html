@@ -345,7 +345,7 @@ function audioInit(){
   const AC=window.AudioContext||window.webkitAudioContext; if(!AC)return;
   let c; try{c=new AC();}catch(e){return;} AU.ctx=c;
   const comp=c.createDynamicsCompressor(); comp.threshold.value=-16; comp.ratio.value=5;
-  AU.master=c.createGain(); AU.master.gain.value=settings.vol; comp.connect(AU.master); AU.master.connect(c.destination);
+  AU.master=c.createGain(); AU.master.gain.value=settings.vol; AU.muf=c.createBiquadFilter(); AU.muf.type='lowpass'; AU.muf.frequency.value=20000; comp.connect(AU.muf); AU.muf.connect(AU.master); AU.master.connect(c.destination);
   AU.rev=c.createConvolver(); const n=Math.floor(c.sampleRate*3.2), ib=c.createBuffer(2,n,c.sampleRate);
   for(let ch=0;ch<2;ch++){const d=ib.getChannelData(ch);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.6);}
   AU.rev.buffer=ib; const rg=c.createGain(); rg.gain.value=.55; AU.rev.connect(rg); rg.connect(comp);
@@ -2002,11 +2002,15 @@ function updScares(dt){
 }
 function updDirector(dt){
   const dg=danger(),dk=clamp(1-dg/12,0,1),tg=clamp(dk*.8+(1-P.san/100)*.35,0,1);DIR.tension=lerp(DIR.tension,tg,Math.min(1,dt*.8));
+  if(AU.muf){const f=P.hidden?650:P.hp<25?1400:FX.dmg>.5?2200:19000;AU.muf.frequency.setTargetAtTime(f,AU.ctx.currentTime,.15);}
+  DIR.vT=(DIR.vT||25)-dt;if(DIR.vT<=0){DIR.vT=mr(40,90);if(P.san<55&&!settings.calm)speakWhisper();}
   const S=DIR.st;if(S)return updSig(S,dt);
   DIR.since+=dt;if(L.arenaRoom||P.hidden||DIR.since<DIR.next||DIR.tension>.45||settings.calm)return;
   DIR.since=0;DIR.next=mr(55,100);const r=Math.random();
   if(r<.4)sigStalker();else if(r<.7)sigCascade();else sigCrash();
 }
+function speakWhisper(){try{const ss=window.speechSynthesis;if(!ss||!AU.ctx)return;const lines=['patient zero three one three','you came back','we kept your bed warm','dont turn around','it knows your name','again'];
+  const u=new SpeechSynthesisUtterance(mpick(lines));u.pitch=.1;u.rate=.55;u.volume=Math.min(1,settings.vol*.35);ss.cancel();ss.speak(u);hiss(1.6,.05,1800,'bandpass',{q:6});}catch(e){}}
 function sigStalker(){const bx=Math.sin(P.yaw),bz=Math.cos(P.yaw);let x=P.x+bx*1.8,z=P.z+bz*1.8;if(isWall(x,z)||!los(P.x,P.z,x,z)){x=P.x+bx*1.1;z=P.z+bz*1.1;if(isWall(x,z))return;}
   const m=mPatient(CM);m.root.position.set(x,0,z);m.root.rotation.y=Math.atan2(P.x-x,P.z-z);world.add(m.root);
   DIR.st={k:'stalk',m,x,z,t:0,br:0};}
