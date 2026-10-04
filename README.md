@@ -10,6 +10,8 @@ The full design document is in [DESIGN.md](DESIGN.md).
 
 ## Play
 
+**Easiest:** double-click `ANECHOIC.html`. It is one self-contained file that opens straight in your browser, with no server and no install. Rebuild it with `npm run build`.
+
 You need a desktop browser with WebGL2 and Web Audio (Chrome, Edge or Firefox). Use headphones.
 
 ```bash

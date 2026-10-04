@@ -6,10 +6,12 @@
   "private": true,
   "scripts": {
     "start": "node tools/serve.mjs 8080",
+    "build": "node tools/build-standalone.mjs",
     "validate": "node tools/validate.mjs",
     "test": "node tools/validate.mjs && node tests/smoke.mjs"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "playwright": "^1.56.1"
   },
   "license": "MIT"
