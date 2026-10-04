@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+import { startServer } from '../tools/serve.mjs';
+const port = 8000 + Math.floor(Math.random() * 900);
+const server = await startServer(port, true);
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const page = await browser.newPage({ viewport: { width: 640, height: 360 } });
+page.on('pageerror', (e) => console.log('ERR', e.message));
+await page.goto(`http://localhost:${port}/index.html?test&seed=7`);
+await page.waitForFunction(() => window.__ready === true || window.__fatal, null, { timeout: 240000 });
+const code = process.argv[2];
+await page.evaluate((pos) => { const g = window.__game; g.ui.setFade(0, 0.01); g.story.timers = []; g.fixedDt = 1/30; g.player.place(...pos.split(',').map(Number)); }, process.env.POS || '43.5,44.5,0.35');
+await page.waitForTimeout(2500);
+console.log(await page.evaluate(code));
+if (process.argv[3]) await page.screenshot({ path: process.argv[3] });
+await browser.close(); server.close();

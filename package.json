@@ -1,0 +1,16 @@
+{
+  "name": "anechoic",
+  "version": "1.0.0",
+  "description": "ANECHOIC — a first-person psychological horror game built with Three.js and procedural Web Audio.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node tools/serve.mjs 8080",
+    "validate": "node tools/validate.mjs",
+    "test": "node tools/validate.mjs && node tests/smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.1"
+  },
+  "license": "MIT"
+}

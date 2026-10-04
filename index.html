@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ANECHOIC</title>
+  <meta name="description" content="A first-person psychological horror game about a silence that learned to walk.">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="view" tabindex="0"></canvas>
+
+  <!-- Loading -->
+  <div id="loading" class="screen show">
+    <div class="load-inner">
+      <h1 class="logo">ANECHOIC</h1>
+      <div class="load-bar"><div id="load-fill"></div></div>
+      <div id="load-text">preparing silence…</div>
+      <p class="warn">Headphones strongly recommended.<br>Contains psychological horror, sudden sounds and themes of disappearance.</p>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <div id="title" class="screen">
+    <div class="title-inner">
+      <h1 class="logo big">ANECHOIC</h1>
+      <div class="tagline">Larkhollow Acoustical Research Laboratory · est. 1959</div>
+      <nav class="menu" id="title-menu">
+        <button data-act="continue" id="btn-continue">Continue</button>
+        <button data-act="new">New Game</button>
+        <button data-act="settings">Settings</button>
+        <button data-act="endings">Endings</button>
+        <button data-act="credits">Credits</button>
+      </nav>
+      <div class="title-foot">WASD move · Shift run · C crouch · E interact · F flashlight · RMB recorder · Space hold breath · Q throw oscillator · Tab journal</div>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="crosshair"></div>
+    <div id="prompt"></div>
+    <div id="notify"></div>
+    <div id="subtitle"></div>
+    <div id="caption"></div>
+    <div id="hint"></div>
+    <div id="objective"></div>
+    <div id="battery"><span></span></div>
+    <div id="slats"></div>
+    <div id="fade"></div>
+  </div>
+
+  <!-- Document reader -->
+  <div id="reader" class="screen">
+    <div class="paper" id="paper"></div>
+    <div class="reader-foot">[E] / [Esc] close</div>
+  </div>
+
+  <!-- Terminal -->
+  <div id="terminal" class="screen">
+    <div class="crt"><pre id="crt-text"></pre></div>
+    <div class="reader-foot">[↑/↓] select · [Enter] open · [Backspace] back · [Esc] leave</div>
+  </div>
+
+  <!-- Journal -->
+  <div id="journal" class="screen">
+    <div class="journal-inner">
+      <div class="tabs" id="journal-tabs">
+        <button data-tab="docs" class="on">Documents</button>
+        <button data-tab="tapes">Tapes</button>
+        <button data-tab="items">Items</button>
+        <button data-tab="map">Floor Plan</button>
+      </div>
+      <div class="journal-body">
+        <ul id="journal-list"></ul>
+        <div id="journal-view"></div>
+      </div>
+      <div class="reader-foot">[Tab] / [Esc] close</div>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div id="pause" class="screen">
+    <div class="title-inner">
+      <h2 class="logo">PAUSED</h2>
+      <nav class="menu">
+        <button data-act="resume">Resume</button>
+        <button data-act="settings">Settings</button>
+        <button data-act="checkpoint">Load Last Checkpoint</button>
+        <button data-act="quit">Quit to Title</button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings" class="screen">
+    <div class="settings-inner">
+      <h2 class="logo">SETTINGS</h2>
+      <div id="settings-form"></div>
+      <div class="calib"><div class="calib-mark"></div><span>Adjust brightness until the mark is barely visible.</span></div>
+      <nav class="menu"><button data-act="back">Back</button></nav>
+    </div>
+  </div>
+
+  <!-- Endings gallery / credits -->
+  <div id="gallery" class="screen">
+    <div class="settings-inner">
+      <h2 class="logo" id="gallery-title">ENDINGS</h2>
+      <div id="gallery-body"></div>
+      <nav class="menu"><button data-act="back">Back</button></nav>
+    </div>
+  </div>
+
+  <!-- Death -->
+  <div id="death" class="screen">
+    <div class="death-inner">
+      <p id="death-text"></p>
+      <nav class="menu" id="death-menu">
+        <button data-act="checkpoint">Try Again</button>
+        <button data-act="quit">Quit to Title</button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Ending -->
+  <div id="ending" class="screen">
+    <div class="ending-inner">
+      <div class="ending-label">ENDING</div>
+      <h2 id="ending-title"></h2>
+      <div id="ending-text"></div>
+      <div id="ending-stats"></div>
+      <nav class="menu"><button data-act="quit">Return to Title</button></nav>
+    </div>
+  </div>
+
+  <div id="click-to-play" class="screen">
+    <div class="ctp">Click to continue</div>
+  </div>
+
+  <div id="error" class="screen"></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
