@@ -821,14 +821,14 @@ function ghostMat(cHex,rHex,fade){return new THREE.ShaderMaterial({transparent:t
 function creatureMats(){const M=creatureMats0();crawl(M.skin,.004);crawl(M.pale,.005);crawl(M.flesh,.022);crawl(M.leather,.002);return M;}
 function creatureMats0(){
   const T=commonTex(),n=x=>x.normal,v2=s=>new THREE.Vector2(s,s);
-  return {skin:std({map:T.skin.map,normalMap:n(T.skin),normalScale:v2(.8),roughness:.55,color:col(0xd2ccc2)}),
-    pale:std({map:T.skin.map,normalMap:n(T.skin),roughness:.5,color:col(0x9aa6a2)}),
+  return {skin:sss(std({map:T.skin.map,normalMap:n(T.skin),normalScale:v2(.8),roughness:.55,color:col(0xd2ccc2)})),
+    pale:sss(std({map:T.skin.map,normalMap:n(T.skin),roughness:.5,color:col(0x9aa6a2)})),
     gown:std({map:T.gown.map,normalMap:n(T.gown),roughness:.92,side:THREE.DoubleSide}),
     bandage:std({map:T.bandage.map,normalMap:n(T.bandage),roughness:.95}),
     teeth:std({color:col(0xcbbf98),roughness:.35}),hole:std({color:col(0x050202),roughness:1}),
     eye:std({color:0,emissive:col(0xd8ffe6),emissiveIntensity:4}),eyeR:std({color:0,emissive:col(0xff2a18),emissiveIntensity:5}),
     plastic:std({map:T.plastic.map,normalMap:n(T.plastic),roughness:.28,color:col(0xf0e8da)}),
-    flesh:std({map:T.flesh.map,normalMap:n(T.flesh),normalScale:v2(1.2),roughness:.32}),
+    flesh:sss(std({map:T.flesh.map,normalMap:n(T.flesh),normalScale:v2(1.2),roughness:.32})),
     uniform:std({map:T.uniform.map,normalMap:n(T.uniform),roughness:.85,side:THREE.DoubleSide}),
     scrubs:std({map:T.uniform.map,normalMap:n(T.uniform),roughness:.85,color:col(0x6f9c94),side:THREE.DoubleSide}),
     coat:std({map:T.uniform.map,normalMap:n(T.uniform),roughness:.8,color:col(0xf2f0ea),side:THREE.DoubleSide}),
@@ -852,7 +852,13 @@ function humGeo(o){
   if(o.ribs)for(let i=0;i<5;i++)tor.push(tf(new THREE.TorusGeometry(.17*t-i*.006,.01,5,20,Math.PI*1.1),0,.42-i*.07,-.005,Math.PI/2,0,Math.PI*-.05,1,.72,1));
   if(o.spineBumps)for(let i=0;i<8;i++)tor.push(tf(blob(.022,1,.1,3,i),0,.06+i*.065,-.13*t));
   P.torso=mergeGeos(tor);P.neck=limb(.17,.042,.05,8,0);
-  P.skull=blob(.12,3,o.skullAmp||.07,3,2,1,1.25,1.1);P.jaw=blob(.075,2,.05,3,3,1,.5,1.05);
+  P.skull=blob(.12,4,o.skullAmp||.07,3,2,1,1.25,1.1);{const g=P.skull,p=g.attributes.position;
+    for(let i=0;i<p.count;i++){let x=p.getX(i),y=p.getY(i),z=p.getZ(i);if(z>0){
+      for(const sd of[-1,1]){const dx=x-sd*.045,dy=y+.005,d=Math.hypot(dx,dy*1.15);const k=Math.max(0,1-d/.042);z-=k*k*.045;
+        const ck=Math.max(0,1-Math.hypot(x-sd*.06,y+.06)/.035);z+=ck*.012;}
+      const brow=Math.max(0,1-Math.abs(y-.04)/.018)*Math.max(0,1-Math.abs(x)/.09);z+=brow*.01;
+      const tm=Math.max(0,1-Math.hypot(Math.abs(x)-.1,y+.02)/.04);x*=1-tm*.12;}
+      p.setXYZ(i,x,y,z);}g.computeVertexNormals();}P.jaw=blob(.075,2,.05,3,3,1,.5,1.05);
   P.uarm=limb(a*.5,.05*t,.038*t,10);P.farm=limb(a*.5,.04*t,.026*t,10);P.hand=handGeo(o.finger||1);
   P.thigh=limb(l*.5,.07*t,.048*t,10);P.shin=limb(l*.5,.05*t,.033*t,10);P.foot=blob(.06,2,.05,3,4,.75,.4,1.7);
   if(o.cloth){const top=o.cloth.top,bot=o.cloth.bot,r0=o.cloth.r0,r1=o.cloth.r1,gap=o.cloth.gap||0;
@@ -863,9 +869,16 @@ function humGeo(o){
   return GC[k]=P;
 }
 const SKM=new Map(),TIMEU={value:0};
-function crawl(m,amp){m.userData.crawl=amp;m.onBeforeCompile=sh=>{sh.uniforms.uTime=TIMEU;sh.uniforms.uAmp={value:m.userData.crawl};
-  sh.vertexShader='uniform float uTime;\nuniform float uAmp;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed+=normal*sin(position.x*23.+uTime*3.1)*sin(position.y*19.-uTime*2.3)*sin(position.z*21.+uTime*1.7)*uAmp;');};return m;}
-function skinMat(m){let s=SKM.get(m);if(!s){s=m.clone();s.skinning=true;if(m.userData.crawl)crawl(s,m.userData.crawl);SKM.set(m,s);}return s;}
+function skinHook(m){const U=m.userData;m.customProgramCacheKey=()=>'w13s'+(U.sss?1:0)+(U.crawl?1:0);
+  m.onBeforeCompile=sh=>{sh.uniforms.uTime=TIMEU;sh.uniforms.uAmp={value:U.crawl||0};
+    if(U.crawl)sh.vertexShader='uniform float uTime;\nuniform float uAmp;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed+=normal*sin(position.x*23.+uTime*3.1)*sin(position.y*19.-uTime*2.3)*sin(position.z*21.+uTime*1.7)*uAmp;');
+    if(U.sss){sh.fragmentShader='uniform float uTime;\n'+sh.fragmentShader.replace('#include <lights_fragment_end>',`#include <lights_fragment_end>
+      {float rim=1.-clamp(dot(geometry.normal,geometry.viewDir),0.,1.);float pulse=.75+.25*pow(max(0.,sin(uTime*2.6)),6.);
+       vec3 sss=diffuseColor.rgb*vec3(1.,.22,.15)*(rim*rim*.9*pulse);reflectedLight.indirectDiffuse+=sss*(.25+reflectedLight.directDiffuse*2.5);
+       float vein=smoothstep(.42,.2,diffuseColor.b)*pulse;totalEmissiveRadiance+=vec3(.05,0.,0.)*vein*rim;}`);}};m.needsUpdate=true;return m;}
+function sss(m){m.userData.sss=1;return skinHook(m);}
+function crawl(m,amp){m.userData.crawl=amp;return skinHook(m);}
+function skinMat(m){let s=SKM.get(m);if(!s){s=m.clone();s.skinning=true;s.userData=Object.assign({},m.userData);if(s.userData.crawl||s.userData.sss)skinHook(s);SKM.set(m,s);}return s;}
 function humanoid(o,M){
   const P=humGeo(o),t=o.thin||1,a=o.arm,l=o.leg,root=new THREE.Group(),body=grp(root);body.scale.setScalar(o.s||1);
   const hipY=l+.06,bones=[],bn=(par,x,y,z)=>{const b=new THREE.Bone();b.position.set(x,y,z);if(par)par.add(b);bones.push(b);return b;};
@@ -913,9 +926,11 @@ function secMotion(r,t,spd,mode,w){
   for(const a of r.arms){if(!a.cl)continue;a.cl.rotation.z=a.sd*(br*.03+(mode==='attack'?.18:mode==='stun'?.3:0));a.cl.rotation.y=a.sd*(w?Math.sin(t*spd)*.08:0);
     a.hand&&(a.hand.rotation.x=Math.sin(t*2.3+a.sd+k)*.15-.1,a.hand.rotation.z=a.sd*Math.sin(t*1.3+k)*.12);}
   // head lags behind torso sway, then snaps
-  const tgt=-r.chest.rotation.y*.8-r.spine.rotation.z*.6;S.hl+=(tgt-S.hl)*.08;r.neck.rotation.set(br*.03,S.hl,0);r.head.rotation.y=0;
+  let tgt=-r.chest.rotation.y*.8-r.spine.rotation.z*.6;
+  if(typeof P!=='undefined'&&r.root.parent){const rp=r.root.position,d=Math.hypot(P.x-rp.x,P.z-rp.z);if(d<10&&d>.3){let a=Math.atan2(P.x-rp.x,P.z-rp.z)-r.root.rotation.y;a=Math.atan2(Math.sin(a),Math.cos(a));tgt+=clamp(a,-1.3,1.3)*(1-d/10)*1.4;}}
+  S.hl+=(tgt-S.hl)*.08;r.neck.rotation.set(br*.03,S.hl,0);r.head.rotation.y=0;
   // random hyperextended glitch twitch (joints bending the wrong way)
-  S.gt-=1/60;if(S.gt<=0){S.gt=1.5+Math.random()*5;if(Math.random()<.55){S.gl=1;S.gv=[(Math.random()-.5)*1.4,(Math.random()-.5)*1.8,(Math.random()-.5)*1.2];}}
+  S.gt-=1/60;if(S.gt<=0){S.gt=(1.5+Math.random()*5)*(1-DIR.tension*.6);if(Math.random()<.55){S.gl=1;S.gv=[(Math.random()-.5)*1.4,(Math.random()-.5)*1.8,(Math.random()-.5)*1.2];}}
   if(S.gl>0){S.gl=Math.max(0,S.gl-.06);const q=S.gl*S.gl;r.neck.rotation.x+=S.gv[0]*q;r.neck.rotation.z+=S.gv[2]*q;r.head.rotation.y+=S.gv[1]*q;
     const a=r.arms[(k|0)%2];a.el.rotation.x+=Math.abs(S.gv[1])*q*.9;a.el.rotation.z+=S.gv[0]*q;r.jaw.rotation.x+=q*.7;}
   // foot plant: keep sole flat to floor
@@ -926,7 +941,10 @@ function mPatient(M){
   const r=humanoid({key:'patient',s:1.14,arm:.95,leg:1.0,finger:1.6,thin:.85,ribs:1,spineBumps:1,skin:M.skin,clothMat:M.gown,cloth:{top:.62,bot:-.52,r0:.27,r1:.21,gap:1.1}},M);
   const b=GC.patBand||(GC.patBand=mergeGeos([0,1,2].map(i=>tf(new THREE.TorusGeometry(.128,.014,6,26),0,.1+i*.035,.005,Math.PI/2+mr(-.15,.15),0,mr(-.1,.1),1,1.12,1))));
   mk(b,M.bandage,r.head);for(const sd of[-1,1])mk(G.sph,M.eye,r.head,sd*.045,.075,.125,false).scale.setScalar(.018);
-  const teeth=GC.teeth||(GC.teeth=mergeGeos(Array.from({length:9},(_,i)=>tf(G.box,(i-4)*.016,-.01,.055,0,0,0,.009,.022,.01))));mk(teeth,M.teeth,r.jaw);mk(G.sph,M.hole,r.head,0,.0,.08,false).scale.set(.09,.05,.06);
+  const teeth=GC.teeth||(GC.teeth=mergeGeos(Array.from({length:9},(_,i)=>tf(G.box,(i-4)*.016,-.01,.055,0,0,0,.009,.022,.01))));mk(teeth,M.teeth,r.jaw);
+  GC.ivTube=GC.ivTube||ttube([V3(0,-.3,.03),V3(.02,-.55,.08),V3(-.03,-.85,.04),V3(.05,-1.1,-.05),V3(.02,-1.25,-.1)],.006,.004,5,24);
+  mk(GC.ivTube,M.glass,r.arms[0].el,0,0,0,false);mk(G.sph,M.flesh,r.arms[0].el,0,-.3,.03).scale.set(.03,.05,.03);
+  if(M.flesh){const w=mk(G.sph,M.flesh,r.chest,.06,.12,.13);w.scale.set(.05,.08,.018);const w2=mk(G.sph,M.flesh,r.spine,-.08,.1,.12);w2.scale.set(.05,.07,.025);}mk(G.sph,M.hole,r.head,0,.0,.08,false).scale.set(.09,.05,.06);
   return r;
 }
 function mStill(M){const r=humanoid({key:'still',s:1.02,arm:.72,leg:.92,thin:1,skin:M.plastic,skullAmp:.01},M);
@@ -1982,6 +2000,33 @@ function updScares(dt){
   const a=mr(TAU),x=P.x+Math.sin(a)*mr(6,14),z=P.z+Math.cos(a)*mr(6,14);
   if(r<.6)SFX.scream({x,z});else if(r<.75){for(let i=0;i<4;i++)setTimeout(()=>{if(state==='play')SFX.step(.9,false);},i*420+800);}else if(r<.9)SFX.whisper({x:P.x+Math.sin(a)*2,z:P.z+Math.cos(a)*2});else SFX.clang({x,z});
 }
+function updDirector(dt){
+  const dg=danger(),dk=clamp(1-dg/12,0,1),tg=clamp(dk*.8+(1-P.san/100)*.35,0,1);DIR.tension=lerp(DIR.tension,tg,Math.min(1,dt*.8));
+  const S=DIR.st;if(S)return updSig(S,dt);
+  DIR.since+=dt;if(L.arenaRoom||P.hidden||DIR.since<DIR.next||DIR.tension>.45||settings.calm)return;
+  DIR.since=0;DIR.next=mr(55,100);const r=Math.random();
+  if(r<.4)sigStalker();else if(r<.7)sigCascade();else sigCrash();
+}
+function sigStalker(){const bx=Math.sin(P.yaw),bz=Math.cos(P.yaw);let x=P.x+bx*1.8,z=P.z+bz*1.8;if(isWall(x,z)||!los(P.x,P.z,x,z)){x=P.x+bx*1.1;z=P.z+bz*1.1;if(isWall(x,z))return;}
+  const m=mPatient(CM);m.root.position.set(x,0,z);m.root.rotation.y=Math.atan2(P.x-x,P.z-z);world.add(m.root);
+  DIR.st={k:'stalk',m,x,z,t:0,br:0};}
+function sigCascade(){const ls=L.lamps.filter(l=>l.lvl>.2&&!l.flare&&dist(l.x,l.z,P.x,P.z)<20).sort((a,b)=>dist(b.x,b.z,P.x,P.z)-dist(a.x,a.z,P.x,P.z));if(ls.length<3)return;
+  DIR.st={k:'casc',ls,i:0,t:0};}
+function sigCrash(){const o=document.createElement('div');o.id='fakecrash';o.style.cssText='position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;font:14px monospace;color:#ccc;pointer-events:none';
+  o.innerHTML='<div style="background:#1b1b1b;border:1px solid #444;padding:22px 28px;max-width:420px">Aw, Snap!<br><br>Something went wrong while displaying this webpage.<br><span style="color:#777">Error code: PATIENT_0313_STILL_HERE</span></div>';
+  document.body.appendChild(o);if(AU.ctx)AU.master&&AU.master.gain.setTargetAtTime(0,AU.ctx.currentTime,.02);DIR.st={k:'crash',o,t:0,t0:performance.now()};}
+function updSig(S,dt){S.t+=dt;
+  if(S.k==='stalk'){const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),d=dist(S.x,S.z,P.x,P.z),dot=((S.x-P.x)*fx+(S.z-P.z)*fz)/(d||1);
+    animBiped(S.m,gameTime,1,'idle');S.m.head.rotation.z=Math.sin(gameTime*13)*.08;S.br-=dt;if(S.br<=0){S.br=1.1;hiss(.7,.09,700,'bandpass',{pos:{x:S.x,y:1.6,z:S.z},q:2,att:.3});}
+    if(S.t>.4&&dot>.2){FX.glitch=1;FX.flash=.25;SFX.sting();P.san=Math.max(0,P.san-8);FX.shake=.6;S.m.root.position.set(P.x+fx*.55,0,P.z+fz*.55);S.m.root.rotation.y=Math.atan2(-fx,-fz);S.k='stalk2';S.t=0;return;}
+    if(S.t>7){world.remove(S.m.root);DIR.st=null;msg('Something was standing behind you. It is not now.',3);}return;}
+  if(S.k==='stalk2'){animBiped(S.m,gameTime,14,'attack');S.m.jaw.rotation.x=1;if(S.t>.35){world.remove(S.m.root);FX.glitch=.6;GP.burst(S.m.root.position.x,1.3,S.m.root.position.z,30,1.5,.8,.2,.02,.02,1,.06,0);DIR.st=null;}return;}
+  if(S.k==='casc'){if(S.t>.32){S.t=0;const l=S.ls[S.i++];if(l){l.off=9;SFX.glass(V3(l.x,l.y,l.z));SFX.slam(V3(l.x,1,l.z));}
+      if(S.i>=S.ls.length||S.i>=7){const a=mr(TAU);SFX.scream({x:P.x+Math.sin(a)*5,z:P.z+Math.cos(a)*5});SFX.sting();P.san=Math.max(0,P.san-6);DIR.st=null;}}return;}
+  if(S.k==='crash'){if(performance.now()-S.t0>2000){S.o.remove();if(AU.ctx&&AU.master)AU.master.gain.setTargetAtTime(settings.vol!=null?settings.vol:1,AU.ctx.currentTime,.01);
+      FX.glitch=1;FX.flash=.9;FX.shake=1;FX.dmg=Math.max(FX.dmg,.5);SFX.scream({x:P.x,z:P.z});SFX.sting();P.san=Math.max(0,P.san-10);
+      const fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),m=mPatient(CM),x=P.x+fx*.7,z=P.z+fz*.7;m.root.position.set(x,0,z);m.root.rotation.y=Math.atan2(-fx,-fz);world.add(m.root);DIR.st={k:'stalk2',m,x,z,t:-.15};}return;}
+}
 function updWorld(dt){
   for(const it of L.items){if(it.taken)continue;if(it.kind==='fuse'){it.m.rotation.y+=dt*.8;it.m.position.y=it.y+Math.sin(gameTime*2.4+it.x)*.03;}
     if(it.kind==='growth'){const s=1.25+Math.sin(gameTime*3+it.x)*.06;it.m.scale.set(s,s*(1+Math.sin(gameTime*3+it.x)*.04),s);if(it.burn>0){it.burn-=dt;it.m.position.x=it.x+mr(-.03,.03);}}}
@@ -2004,7 +2049,7 @@ function updWorld(dt){
 function danger(){let d=99;for(const e of L.enemies)if(!e.dead&&(e.state==='chase'||e.state==='rage'||e.type==='still')&&!e.dormant)d=Math.min(d,dist(e.x,e.z,P.x,P.z));const B=L.boss;if(B&&B.active&&!B.dead)d=Math.min(d,dist(B.x,B.z,P.x,P.z)*.7);const E=L.echo;if(E&&E.m&&E.m.root.visible&&(E.st==='chase'||E.st==='ambush'||E.st==='stalk'))d=Math.min(d,dist(E.x,E.z,P.x,P.z)*(E.st==='chase'?.8:1.4));return d;}
 function update(dt){
   L.time+=dt;msg.t=(msg.t||0)-dt;if(msg.t<=0)$('msg').style.opacity=0;
-  updPlayer(dt);updEnemies(dt);updBoss(dt);updProj(dt);updWorld(dt);updSanity(dt);updPhantom(dt);updScares(dt);updLamps(dt);updAtmos(dt);updEcho(dt);updAnom(dt);updListen();updPeek(dt);
+  updPlayer(dt);updEnemies(dt);updBoss(dt);updProj(dt);updWorld(dt);updSanity(dt);updPhantom(dt);updScares(dt);updDirector(dt);updLamps(dt);updAtmos(dt);updEcho(dt);updAnom(dt);updListen();updPeek(dt);
   if(state!=='play')return;
   GP.update(dt);BP.update(dt);
   const dg=danger(),dk=clamp(1-dg/12,0,1);setTension(dk);P.beat=(P.beat||0)-dt;if(dk>.25&&P.beat<=0){P.beat=1.15-dk*.6;SFX.heart(dk);}
@@ -2545,7 +2590,7 @@ const HINTS={1:'Find three emergency fuses, then take the service elevator. F to
 let everLocked=false,lockFailed=false;
 function requestLock(){try{const p=renderer.domElement.requestPointerLock();if(p&&p.catch)p.catch(()=>{if(!everLocked)lockFailed=true;});}catch(e){if(!everLocked)lockFailed=true;}}
 const locked=()=>document.pointerLockElement===renderer.domElement;
-function startFloor(retry){
+function startFloor(retry){DIR.st&&DIR.st.o&&DIR.st.o.remove();DIR.st=null;DIR.since=0;DIR.next=mr(35,60);DIR.tension=0;if(AU.master)AU.master.gain.value=settings.vol;
   if(!retry||!snapshot)snapshot=clone(save);
   state='loading';show(null);$('hud').classList.remove('on');$('boss').style.display='none';$('slats').style.display='none';$('cross').style.display='block';$('map').style.display='none';$('arrow').style.display='none';$('msg').style.opacity=0;
   FX.fade=1;FX.dmg=0;FX.flash=0;beamHum(false);
@@ -2684,7 +2729,7 @@ appliedQ=null;state='menu';shopView='menu';FX.fade=1;refreshMenu();show('menu');
 requestAnimationFrame(loop);
 if(window.__W13_TEST)window.__w13={get L(){return L;},P,get save(){return save;},set save(v){save=v;},get state(){return state;},set state(v){state=v;},get snapshot(){return snapshot;},
   startFloor,completeFloor,openShop,toMenu,interact,interactTarget,cameraFlash,useItem,questDone,bossDie,bossHurt,die,hurt,pause,resume,closeNote,buyUp,buySup,spawnEnemy,keys,mouse,FX,ST:()=>ST,
-  get world(){return world;},scene,findPath,los,UPG,SUP,takeItem,leaveLocker,enterLocker,exitAction,updShop,blockedAt,moveC,isWall,bfsFrom,questOf,isBoss,get boss(){return L&&L.boss;}};
+  get world(){return world;},scene,findPath,los,UPG,SUP,takeItem,leaveLocker,enterLocker,exitAction,updShop,blockedAt,moveC,isWall,bfsFrom,questOf,isBoss,get boss(){return L&&L.boss;},DIR,sigStalker,sigCascade,sigCrash};
 };
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
