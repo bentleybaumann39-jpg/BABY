@@ -61,7 +61,7 @@ export class AudioEngine {
     this.master = ctx.createGain();
     this.comp = ctx.createDynamicsCompressor();
     this.comp.threshold.value = -14; this.comp.ratio.value = 4; this.comp.attack.value = 0.005; this.comp.release.value = 0.2;
-    this.muffleFilter = ctx.createBiquadFilter(); this.muffleFilter.type = 'lowpass'; this.muffleFilter.frequency.value = 20000;
+    this.muffleFilter = ctx.createBiquadFilter(); this.muffleFilter.type = 'lowpass'; this.muffleFilter.frequency.value = ctx.sampleRate * 0.42;
     this.master.connect(this.muffleFilter).connect(this.comp).connect(ctx.destination);
 
     this.sfx = ctx.createGain(); this.sfx.connect(this.master);
@@ -161,7 +161,7 @@ export class AudioEngine {
     const dist = Math.max(dl, prop.path);
     dx = dx / dl * dist; dz = dz / dl * dist;
     p.positionX.value = lx + dx; p.positionY.value = pos.y ?? 1.2; p.positionZ.value = lz + dz;
-    lp.frequency.value = prop.cutoff;
+    lp.frequency.value = this.clampF(prop.cutoff);
     g.gain.value = (opts.gain ?? 1) * prop.gain;
     src.connect(lp).connect(g).connect(p).connect(opts.bus || this.sfx);
     const send = ctx.createGain(); send.gain.value = (opts.reverb ?? 0.35) * Math.min(1, 0.4 + dist / 15);
@@ -252,9 +252,11 @@ export class AudioEngine {
     h.chain.panner.positionX.setTargetAtTime(lx + dx / dl * dist, t, 0.1);
     h.chain.panner.positionZ.setTargetAtTime(lz + dz / dl * dist, t, 0.1);
     h.chain.panner.positionY.setTargetAtTime(h.pos.y ?? 1.2, t, 0.1);
-    h.chain.filter.frequency.setTargetAtTime(prop.cutoff, t, 0.1);
+    h.chain.filter.frequency.setTargetAtTime(this.clampF(prop.cutoff), t, 0.1);
     h.chain.gain.gain.setTargetAtTime(prop.gain, t, 0.1);
   }
+
+  clampF(f) { return Math.max(60, Math.min(Number.isFinite(f) ? f : 18000, (this.ctx?.sampleRate || 44100) * 0.42)); }
 
   setReverb(preset) {
     if (!this.ready || preset === this.zonePreset || !this.irs[preset]) return;
@@ -313,7 +315,7 @@ export class AudioEngine {
     this.sfx.gain.setTargetAtTime(this.game.settings.get('sfxVolume') * (1 - s * 0.55), t, 0.3);
     this.tinnitus?.setGain(Math.max(0, s - 0.25) * 0.06 + (state.tinnitus || 0) * 0.08, 0.4);
     const cutoff = 20000 * Math.pow(1 - Math.min(0.95, this.muffle), 2.5) + 200;
-    this.muffleFilter.frequency.setTargetAtTime(cutoff, t, 0.15);
+    this.muffleFilter.frequency.setTargetAtTime(this.clampF(cutoff), t, 0.15);
     // Music layers
     const m = state.music || {};
     this.mLow?.setGain((m.low || 0) * 0.5, 1.5);

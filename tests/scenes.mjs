@@ -33,6 +33,8 @@ const SCENES = {
   chamber: `g.power.on.bird=true; g.doors.get('vault').locked=false; g.doors.open(g.doors.get('vault'),69,7.5); g.doors.get('vault').angle=g.doors.get('vault').target; g.doors.get('vault').pivot.rotation.y=g.doors.get('vault').angle; g.player.place(73.5,7.5,-1.5708); g.player.flashOn=true;`,
   entity: `g.power.on.bird=true; g.player.place(52,34.5,-1.5708); g.player.flashOn=true; g.ai.debugShow(58,34.5,-Math.PI/2,{x:52,y:1.6,z:34.5});`,
   entityClose: `g.player.place(30,34.5,-1.5708); g.player.flashOn=true; g.ai.debugShow(33.2,34.3,-Math.PI/2,{x:30,y:1.6,z:34.5}); g.player.pitch=0.25;`,
+  entityDark: `g.player.place(24,2.5,-1.5708); g.player.flashOn=true; g.ai.debugShow(30.5,2.3,-Math.PI/2,{x:24,y:-2.4,z:2.5});`,
+  chamber2: `g.power.on.bird=true; g.player.place(76.5,9.5,0.3); g.player.flashOn=true; g.player.pitch=0.1;`,
   recorder: `g.player.place(25,34,-1.5708); g.input.simMouse(2,true);`,
   mapjournal: `g.inventory.add('floorplan'); g.ui.journalTab='map'; g.ui.openJournal(); g.setMode('journal');`,
 };

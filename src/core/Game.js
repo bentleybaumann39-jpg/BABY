@@ -476,8 +476,10 @@ export class Game {
     } else if (mode === 'journal') {
       if (input.hit('journal') || input.hit('pause')) { this.ui.show('journal', false); this.setMode('play'); }
     } else if (mode === 'terminal') {
-      for (const code of input.pressed) this.ui.terminalKey(code);
-      if (input.hit('pause')) { this.ui.show('terminal', false); this.ui.terminal = null; this.setMode('play'); }
+      const atRoot = this.ui.terminal && this.ui.terminal.open < 0;
+      const leave = input.hit('pause') || input.hit('journal') || (atRoot && input.pressed.has('Backspace'));
+      if (leave) { this.ui.show('terminal', false); this.ui.terminal = null; this.setMode('play'); }
+      else for (const code of input.pressed) this.ui.terminalKey(code);
     } else if (mode === 'pause') {
       if (input.pressed.has('Escape') && this.pauseOpenedAt !== this.time) { /* handled by browser exiting lock; ignore */ }
     }

@@ -181,7 +181,7 @@ export const PROP_MATS = {
   glass: { color: 0x9fb2b8, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.18, depthWrite: false },
   glassFrost: { color: 0xc8d0d0, roughness: 0.6, transparent: true, opacity: 0.55, depthWrite: false },
   screenOff: { color: 0x101412, roughness: 0.2, metalness: 0.1 },
-  foam: { color: 0x48484a, tex: 'foam', roughness: 1.0, repeat: 1, normalScale: 1.2 },
+  foam: { color: 0xb8b8c0, tex: 'foam', roughness: 1.0, repeat: 1, normalScale: 1.2 },
   skin: { tex: 'skin', roughness: 0.38, repeat: 3, color: 0x8f877c, normalScale: 1.4 },
   skinDark: { color: 0x3a1f1d, roughness: 0.15, metalness: 0.1 },
   paintWhite: { color: 0xc9c4b6, roughness: 0.7 },
