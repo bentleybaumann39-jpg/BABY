@@ -2778,8 +2778,13 @@ if(window.__W13_TEST)window.__w13={get L(){return L;},P,get save(){return save;}
 <script>
 (function(){
   const err=m=>{document.getElementById('err').textContent=m;};
+  let tried=false;
   function go(){
-    if(!window.THREE){err('The 3D engine could not be loaded. Check your internet connection, then reload the page.');return;}
+    if(!window.THREE){
+      // CDN unreachable (offline, blocked): fall back to a copy next to this file, if there is one.
+      if(!tried){tried=true;const s=document.createElement('script');s.src='vendor/three.min.js';s.onload=go;
+        s.onerror=()=>err('The 3D engine could not be loaded. Check your internet connection, or play the offline file Ward13.html.');document.body.appendChild(s);return;}
+      err('The 3D engine could not be loaded. Check your internet connection, or play the offline file Ward13.html.');return;}
     try{window.gameBoot();}catch(e){console.error(e);err('The game could not start: '+e.message+'. Your browser may not support WebGL.');}
   }
   if(document.readyState==='complete')go();else window.addEventListener('load',go);

@@ -60,7 +60,7 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 | Risk / deps | Low / none |
 | Effort | S |
 | Verify | Run the QA suite against `Ward13.html` with **network blocked** (no CDN route). |
-| **Status** | TODO |
+| **Status** | DONE: `Ward13.html` passes boot, newgame and floors 1/5/30 with **all network blocked** (`--offline`). `index.html` with the CDN blocked falls back to `vendor/` (boot and newgame pass). `buildFresh` guards against a stale build. |
 
 ### R-06 — Dynamic resolution that recovers
 | | |

@@ -13,6 +13,7 @@ const args = process.argv.slice(2);
 const fileArg = args.find(a => a.startsWith('--file='));
 const FILE = fileArg ? path.resolve(fileArg.slice(7)) : path.join(root, 'index.html');
 const SHOTS = args.includes('--shots');
+const OFFLINE = args.includes('--offline'); // block ALL network: proves the file runs with no CDN
 const wanted = args.filter(a => !a.startsWith('--'));
 const shotDir = path.join(root, 'tests', 'shots');
 if (SHOTS) fs.mkdirSync(shotDir, { recursive: true });
@@ -28,8 +29,11 @@ async function open(browser, { width = 800, height = 450, init } = {}) {
   page.on('console', m => { if (m.type() === 'error' && !/ERR_FAILED|ERR_NAME|fonts/.test(m.text())) errors.push('console: ' + m.text()); });
   await page.addInitScript(() => { window.__W13_TEST = 1; });
   if (init) await page.addInitScript(init);
-  await page.route('**/three.min.js', r => r.fulfill({ body: fs.readFileSync(path.join(root, 'vendor', 'three.min.js')), contentType: 'text/javascript' }));
-  await page.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
+  if (OFFLINE) await page.route(/^https?:/, r => r.abort());
+  else {
+    await page.route('**/three.min.js', r => r.fulfill({ body: fs.readFileSync(path.join(root, 'vendor', 'three.min.js')), contentType: 'text/javascript' }));
+    await page.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
+  }
   const t0 = Date.now();
   await page.goto('file://' + FILE, { timeout: 90000 });
   await waitState(page, s => s === 'menu', 60000);
@@ -54,6 +58,12 @@ async function gotoFloor(page, lvl) {
 const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: path.join(shotDir, name + '.png') }); };
 
 const S = {};
+
+S.buildFresh = async () => {
+  const { execFileSync } = await import('child_process');
+  try { const o = execFileSync('node', [path.join(root, 'tools', 'build.mjs'), '--check'], { encoding: 'utf8' }); return { ok: true, info: o.trim(), errors: [] }; }
+  catch (e) { return { ok: false, info: (e.stderr || e.message).trim(), errors: [] }; }
+};
 
 S.boot = async b => {
   const { page, errors, bootMs } = await open(b);
@@ -279,7 +289,7 @@ S.perf = async b => {
   return { ok: !errors.length, info: `frame avg ${res.avg.toFixed(1)} ms, worst ${res.p99.toFixed(1)} ms (SwiftShader software GL)${res.info ? ' ' + JSON.stringify(res.info) : ''}`, errors };
 };
 
-const order = ['boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'perf', 'floors', 'soak'];
+const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'perf', 'floors', 'soak'];
 const run = wanted.length ? wanted : order.filter(n => n !== 'soak');
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-accelerated-2d-canvas', '--autoplay-policy=no-user-gesture-required', '--enable-precise-memory-info'] });
 let fails = 0;
