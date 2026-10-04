@@ -2854,18 +2854,22 @@ function bindUI(){
 }
 
 /* ===================== LOOP ===================== */
-let lastT=performance.now(),bootN=0;
+let lastT=performance.now(),bootN=0,loadF=0;
 function loop(now){
   requestAnimationFrame(loop);
   let dt=(now-lastT)/1000;lastT=now;if(!(dt>0))dt=.016;dt=Math.min(dt,.05);
   try{
     pollPad(dt);
     gameTime+=dt;TIMEU.value=gameTime;FX.flash=Math.max(0,FX.flash-dt*2.6);
+    if(state!=='loading')loadF=0;
     if(state==='play'){update(dt);perf(dt);FX.fade=Math.max(0,FX.fade-dt*.75);}
     else if(state==='dying')updDying(dt);
     if(state==='menu'||state==='shop'||state==='boot'||(state==='ending'&&!world)){updShop(dt);FX.fade=Math.max(0,FX.fade-dt*.8);FX.dmg=0;FX.warp=0;FX.desat=.1;FX.glitch=0;FX.haze=0;FX.ab=0;FX.nv=0;FX.tint=[1,1,1];FX.shake=0;
       bootN++;if(bootN===12&&!post.safe){const f=FX.fade;FX.fade=0;renderScene(shopScene,shopCam);const s=selfTest();FX.fade=f;if(s===0)enterSafeMode();}renderScene(shopScene,shopCam);}
     else if(state==='crashed'){}
+    // While a floor builds, the screen is black under the title card: present one black frame, then stop
+    // rendering so stale frames don't queue GPU work that the level build would have to wait behind.
+    else if(state==='loading'){if(bootN>=0&&(loadF=(loadF||0)+1)<=2&&world){FX.fade=1;renderScene(scene,camera);}}
     else if(world)renderScene(scene,camera);else renderScene(shopScene,shopCam);
   }catch(e){fatal(e);}
 }
