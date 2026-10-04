@@ -6,7 +6,7 @@ export class Interaction {
     this.game = game;
     this.list = [];
     this.ray = new THREE.Raycaster();
-    this.ray.far = 2.3;
+    this.ray.far = 3;
     this.focus = null;
     this.hitMat = new THREE.MeshBasicMaterial({ visible: false });
     this.root = new THREE.Group();
@@ -59,10 +59,12 @@ export class Interaction {
     }
     for (const d of cands) {
       const hits = this.ray.intersectObject(d.obj, true);
-      if (hits.length && hits[0].distance < (d.range ?? 2.2) && hits[0].distance < bestD) {
+      if (hits.length && hits[0].distance < (d.range ?? 2.6) && hits[0].distance < bestD) {
         // Not through walls
         const h = hits[0].point;
-        if (!g.grid.los(cam.position.x, cam.position.z, h.x - (h.x - cam.position.x) * 0.02, h.z - (h.z - cam.position.z) * 0.02, 'sight') && Math.hypot(h.x - cam.position.x, h.z - cam.position.z) > 0.7) continue;
+        const dx = h.x - cam.position.x, dz = h.z - cam.position.z, dl = Math.hypot(dx, dz);
+        const back = Math.min(0.7, dl);
+        if (dl > 0.9 && !g.grid.los(cam.position.x, cam.position.z, h.x - dx / dl * back, h.z - dz / dl * back, 'sight')) continue;
         best = d; bestD = hits[0].distance;
       }
     }

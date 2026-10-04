@@ -76,6 +76,11 @@ export class Doors {
         break;
       }
     }
+    // Full-size invisible hit box so the whole door is easy to aim at.
+    const hb = new THREE.Mesh(new THREE.BoxGeometry(1.06, Math.min(H, 2.2), 0.3), new THREE.MeshBasicMaterial({ visible: false }));
+    hb.position.set(0, Math.min(H, 2.2) / 2, 0);
+    leaf.add(hb);
+    hitMesh = hb;
     hitMesh.userData.door = d;
     // Card reader light for powered doors
     let reader = null;

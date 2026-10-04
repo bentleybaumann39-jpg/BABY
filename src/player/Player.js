@@ -225,6 +225,14 @@ export class Player {
       const r = g.grid.resolveCircle(nx, nz, RADIUS);
       this.pos.x = r.x; this.pos.z = r.z;
     }
+    // Walking into a closed, unlocked door pushes it open.
+    if (len > 0 && !this.frozen) {
+      const ax = this.pos.x + wx * 0.6, az = this.pos.z + wz * 0.6;
+      const door = g.doors.list.find((d) => d.x === Math.floor(ax) && d.z === Math.floor(az));
+      if (door && !g.doors.isOpen(door) && Math.abs(door.target) < 0.01 && !g.doors.isLocked(door) && door.style !== 'shelf' && door.style !== 'vault') {
+        g.doors.open(door, this.pos.x, this.pos.z, { slow: this.crouched, quiet: this.crouched });
+      }
+    }
     const floor = g.map.floorAt(this.pos.x, this.pos.z);
     this.pos.y += (floor - this.pos.y) * Math.min(1, dt * 14);
 
