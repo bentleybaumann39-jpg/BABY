@@ -71,7 +71,7 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 | Risk / deps | Low |
 | Effort | S |
 | Verify | Unit-drive `perf()` with synthetic dt through the test hook. |
-| **Status** | TODO |
+| **Status** | DONE: the `dynres` scenario drives `perf()` with synthetic frame times. Slow frames for 20 s give 0.55 scale; fast frames for 60 s restore 1.00 and bloom; a bounce becomes a ceiling. Steps every ~8 s, settles 2.5 s after load, resume or a note. A quality change resets it. |
 
 ## MEDIUM IMPACT
 

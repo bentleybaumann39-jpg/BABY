@@ -280,6 +280,24 @@ S.soak = async b => {
   return { ok: !errors.length && l.objs < f.objs * 1.5 + 200, info: `${samples.length} samples; heap ${(f.heap / 1e6).toFixed(1)}->${(l.heap / 1e6).toFixed(1)} MB; scene objects ${f.objs}->${l.objs}; enemies ${f.en}->${l.en}`, errors };
 };
 
+S.dynres = async b => {
+  // Drives the dynamic-quality controller with synthetic frame times through the test hook.
+  const { page, errors } = await open(b);
+  await newGame(page);
+  const r = await page.evaluate(() => {
+    const w = window.__w13, P = w.PERF, feed = (dt, secs) => { for (let t = 0; t < secs; t += dt) w.perf(dt); }, snap = () => `${P.dyn.toFixed(2)}${P.noBloom ? '/nobloom' : ''}${P.cap ? '/cap' : ''}`;
+    const out = []; P.cool = 0;
+    feed(.045, 20); out.push('slow20s=' + snap());
+    feed(.012, 60); out.push('fast60s=' + snap());
+    const recovered = P.dyn === 1 && !P.noBloom;
+    // oscillation guard: slow again right after a step up makes that level the ceiling
+    P.cool = 0; feed(.045, 9); feed(.012, 7); const up = P.dyn; feed(.045, 3); feed(.012, 30); out.push('afterBounce=' + snap());
+    return { out: out.join(' '), recovered, capped: P.cap };
+  });
+  await page.close();
+  return { ok: r.recovered && r.capped && !errors.length, info: r.out, errors };
+};
+
 S.perf = async b => {
   const { page, errors } = await open(b, { width: 640, height: 360 });
   await newGame(page);
@@ -289,7 +307,7 @@ S.perf = async b => {
   return { ok: !errors.length, info: `frame avg ${res.avg.toFixed(1)} ms, worst ${res.p99.toFixed(1)} ms (SwiftShader software GL)${res.info ? ' ' + JSON.stringify(res.info) : ''}`, errors };
 };
 
-const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'perf', 'floors', 'soak'];
+const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'dynres', 'perf', 'floors', 'soak'];
 const run = wanted.length ? wanted : order.filter(n => n !== 'soak');
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-accelerated-2d-canvas', '--autoplay-policy=no-user-gesture-required', '--enable-precise-memory-info'] });
 let fails = 0;

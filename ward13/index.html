@@ -545,7 +545,7 @@ function resize(){
   post.rtA=makeRT(post.bw,post.bh); post.rtB=makeRT(post.bw,post.bh); post.w=w; post.h=h;
   if(dust)dust.material.uniforms.uSize.value=h/900;
 }
-const PERF={acc:0,n:0,cool:6,dyn:1,noBloom:false};
+const PERF={acc:0,n:0,cool:6,dyn:1,noBloom:false,good:0,upAt:-99,cap:false,told:false};
 const FX={nv:0,flash:0,dmg:0,shake:0,glitch:0,warp:0,fade:1,haze:0,ab:0,desat:0,tint:[1,1,1],hazeC:[1,1,1]};
 let gameTime=0;
 function renderScene(sc,cam){
@@ -2417,8 +2417,20 @@ function selfTest(){try{const gl=renderer.getContext();if(!gl.readPixels)return 
   gl.readPixels(Math.max(0,(w>>1)-8),Math.max(0,(h>>1)-8),16,16,gl.RGBA,gl.UNSIGNED_BYTE,px);let s=0;for(let i=0;i<px.length;i+=4)s+=px[i]+px[i+1]+px[i+2];return s;}catch(e){return -1;}}
 function enterSafeMode(){if(post.safe)return;post.safe=true;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.outputEncoding=THREE.sRGBEncoding;
   for(const sc of[scene,shopScene])sc.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);});console.warn('Ward 13: post-processing disabled (safe mode)');}
-function perf(dt){PERF.acc+=dt;PERF.n++;PERF.cool-=dt;if(PERF.acc<3)return;const avg=PERF.acc/PERF.n;PERF.acc=0;PERF.n=0;
-  if(avg>.034&&PERF.cool<=0){PERF.cool=8;if(PERF.dyn>.6){PERF.dyn=Math.max(.55,PERF.dyn-.15);resize();msg('Lowering resolution to keep things smooth. You can change graphics in Settings.',3);}else if(!PERF.noBloom){PERF.noBloom=true;msg('Turning off glow to keep things smooth.',3);}}}
+// Dynamic quality with hysteresis: steps down (resolution, then glow) when frames run slow, and back up
+// (glow, then resolution) after a sustained fast stretch. A level that immediately proves too slow becomes the ceiling.
+function perf(dt){
+  if(document.hidden)return;
+  PERF.acc+=dt;PERF.n++;PERF.cool-=dt;if(PERF.acc<2)return;const avg=PERF.acc/PERF.n;PERF.acc=0;PERF.n=0;
+  if(PERF.cool>0)return;
+  if(avg>.034){PERF.good=0;PERF.cool=6;if(gameTime-PERF.upAt<12)PERF.cap=true;
+    if(PERF.dyn>.6){PERF.dyn=Math.max(.55,PERF.dyn-.15);resize();if(!PERF.told){PERF.told=true;msg('Lowering resolution to keep things smooth. You can change graphics in Settings.',3);}}
+    else if(!PERF.noBloom){PERF.noBloom=true;}}
+  else if(avg<.02&&!PERF.cap){PERF.good+=2;if(PERF.good>=4){PERF.good=0;PERF.cool=4;PERF.upAt=gameTime;
+    if(PERF.noBloom)PERF.noBloom=false;else if(PERF.dyn<1){PERF.dyn=Math.min(1,PERF.dyn+.15);resize();}}}
+  else PERF.good=0;
+}
+function perfSettle(){PERF.cool=Math.max(PERF.cool,2.5);PERF.acc=0;PERF.n=0;PERF.good=0;}
 
 /* ===================== JUMPSCARE ===================== */
 function jumpscare(dt){const k=P.killer;if(!k||!k.m||!k.m.root)return;const r=k.m.root,fx=-Math.sin(P.yaw),fz=-Math.cos(P.yaw),big=k.r&&k.kind,d0=big?k.r+.9:.8,d1=big?k.r+.45:.4,dd=lerp(d0,d1,Math.min(1,P.deadT/.22));
@@ -2639,11 +2651,11 @@ function startFloor(retry){dirReset();DIR.since=0;DIR.next=mr(35,60);DIR.tension
   $('cardSub').textContent=isBoss(lvl)?`${WINGS[w].name}, floor ${lvl}`:`${WINGS[w].name}. ${QTITLE[questOf(lvl)]}.`;$('card').style.opacity=1;
   requestLock();audioInit();
   setTimeout(()=>{try{
-    if(appliedQ!==settings.quality){appliedQ=settings.quality;resize();initPool();}
+    if(appliedQ!==settings.quality){appliedQ=settings.quality;PERF.dyn=1;PERF.noBloom=false;resize();initPool();}
     GP.list.length=0;BP.list.length=0;for(const k in HC)delete HC[k];
     buildLevel(lvl);resetPlayer();spawnRoster();bossSetup();echoSetup();P.map=false;P.peek=6;if(L.quest.auto)questDone();
     syncCamera(.016,0);updLamps(.016);renderer.compile(scene,camera);
-    state='play';$('hud').classList.add('on');lastT=performance.now();
+    state='play';$('hud').classList.add('on');lastT=performance.now();PERF.cap=false;perfSettle();
     setTimeout(()=>{$('card').style.opacity=0;},1700);
     if(HINTS[lvl]&&!save.ng)setTimeout(()=>{if(state==='play')msg(HINTS[lvl],7);},1900);
     else if(isBoss(lvl))setTimeout(()=>{if(state==='play')msg('Read the note in the waiting room. Then go through.',5);},1900);
@@ -2694,9 +2706,9 @@ function refreshMenu(){
   $('discharge').textContent=save&&save.done?`Discharged ${save.done} ${save.done>1?'times':'time'}${save.endings&&save.endings.length?`, endings seen ${save.endings.length} of 3`:''}`:'Pending';$('bNew').firstChild.textContent='Begin a new admission';newArmed=false;
 }
 function pause(){if(state!=='play')return;if(DIR.st&&DIR.st.k==='crash')dirReset();state='paused';camUI();for(const k in keys)keys[k]=false;mouse.r=0;beamHum(false);document.exitPointerLock&&document.exitPointerLock();$('pauseTask').innerHTML=taskText()[0];show('pause');}
-function resume(){if(state!=='paused')return;state='play';camUI();show(null);requestLock();lastT=performance.now();}
+function resume(){if(state!=='paused')return;state='play';camUI();show(null);requestLock();lastT=performance.now();perfSettle();}
 function openNote(i){const n=NOTES[i]||NOTES[0];$('noteTitle').textContent=n[0];$('noteBody').textContent=n[1];state='note';show('note');SFX.creak({x:P.x,z:P.z});for(const k in keys)keys[k]=false;mouse.r=0;}
-function closeNote(){if(state!=='note')return;state='play';show(null);lastT=performance.now();if(!locked())requestLock();}
+function closeNote(){if(state!=='note')return;state='play';show(null);lastT=performance.now();perfSettle();if(!locked())requestLock();}
 function fatal(e){console.error(e);try{dirReset();}catch(_){}$('err').textContent='Something went wrong: '+(e&&e.message?e.message:e)+'. Reload the page to try again.';}
 function applySettingsUI(){$('sUI').value=settings.ui;$('sDiff').value=settings.diff;$('sQuality').value=settings.quality;$('sBright').value=settings.bright;$('sSens').value=settings.sens;$('sVol').value=settings.vol;$('sInvert').checked=settings.invert;$('sCalm').checked=settings.calm;}
 
@@ -2770,7 +2782,7 @@ appliedQ=null;state='menu';shopView='menu';FX.fade=1;refreshMenu();show('menu');
 requestAnimationFrame(loop);
 if(window.__W13_TEST)window.__w13={get L(){return L;},P,get save(){return save;},set save(v){save=v;},get state(){return state;},set state(v){state=v;},get snapshot(){return snapshot;},
   startFloor,completeFloor,openShop,toMenu,interact,interactTarget,cameraFlash,useItem,questDone,bossDie,bossHurt,die,hurt,pause,resume,closeNote,buyUp,buySup,spawnEnemy,keys,mouse,FX,ST:()=>ST,
-  get world(){return world;},scene,findPath,los,UPG,SUP,takeItem,leaveLocker,enterLocker,exitAction,updShop,blockedAt,moveC,isWall,bfsFrom,questOf,isBoss,get boss(){return L&&L.boss;},DIR,sigStalker,sigCascade,sigCrash,AU,settings,
+  get world(){return world;},scene,findPath,los,UPG,SUP,takeItem,leaveLocker,enterLocker,exitAction,updShop,blockedAt,moveC,isWall,bfsFrom,questOf,isBoss,get boss(){return L&&L.boss;},DIR,sigStalker,sigCascade,sigCrash,AU,settings,PERF,perf,
   renderInfo:()=>({programs:renderer.info.programs.length,calls:renderer.info.render.calls,tris:renderer.info.render.triangles,geos:renderer.info.memory.geometries,tex:renderer.info.memory.textures,lights:pool.length})};
 };
 </script>
