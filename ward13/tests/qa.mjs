@@ -343,6 +343,42 @@ S.tips = async b => {
   return { ok: /ultraviolet/.test(text) && /"uv":true/.test(seen) && !errors.length, info: `msg="${text.slice(0, 60)}" tips=${seen}`, errors };
 };
 
+S.gamepad = async b => {
+  // Simulated standard-mapping gamepad (real devices are UNVERIFIED in this environment).
+  const init = `(() => { const btns = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })); window.__pad = { id: 'sim', index: 0, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons: btns, timestamp: 0 };
+    navigator.getGamepads = () => [window.__pad]; window.__press = (i, on) => { btns[i].pressed = on; btns[i].value = on ? 1 : 0; }; })();`;
+  const { page, errors } = await open(b, { init });
+  // hold until the game's poll has seen the press, then until it has seen the release (frames are slow under software GL)
+  const seen = (i, v) => page.evaluate(([i, v]) => !!(window.__w13.PAD.prev[i]) === v, [i, v]);
+  const tap = async i => { await page.evaluate(i => window.__press(i, true), i); for (let k = 0; k < 40 && !(await seen(i, true)); k++) await sleep(100); await page.evaluate(i => window.__press(i, false), i); for (let k = 0; k < 40 && !(await seen(i, false)); k++) await sleep(100); };
+  const out = [];
+  await tap(13); await tap(13);
+  const focused = await page.evaluate(() => document.activeElement && document.activeElement.id);
+  out.push('menu focus ' + focused);
+  // focus "Begin a new admission" then press A
+  for (let i = 0; i < 6 && (await page.evaluate(() => document.activeElement && document.activeElement.id)) !== 'bNew'; i++) await tap(13);
+  await tap(0);
+  const afterA = await st(page);
+  out.push('A on ' + afterA);
+  await waitState(page, s => s === 'intro', 8000).catch(() => {});
+  await tap(0);
+  out.push('after A ' + await st(page));
+  await waitState(page, s => s === 'play', 60000).catch(e => { throw new Error(out.join('; ') + ' ' + e.message); });
+  const p0 = await page.evaluate(() => ({ x: window.__w13.P.x, z: window.__w13.P.z, yaw: window.__w13.P.yaw, light: window.__w13.P.light }));
+  await page.evaluate(() => { window.__pad.axes[1] = -1; window.__pad.axes[2] = .8; }); for (let k = 0; k < 80 && (await page.evaluate(y => Math.abs(window.__w13.P.yaw - y) < .15, p0.yaw)); k++) await sleep(100); await page.evaluate(() => { window.__pad.axes[1] = 0; window.__pad.axes[2] = 0; });
+  const p1 = await page.evaluate(() => ({ x: window.__w13.P.x, z: window.__w13.P.z, yaw: window.__w13.P.yaw }));
+  out.push(`moved ${Math.hypot(p1.x - p0.x, p1.z - p0.z).toFixed(2)}m turned ${(p0.yaw - p1.yaw).toFixed(2)}rad`);
+  await tap(3); const light = await page.evaluate(() => window.__w13.P.light); out.push('Y light ' + p0.light + '->' + light);
+  await tap(3);
+  await page.evaluate(() => window.__press(7, true)); for (let k = 0; k < 40 && !(await seen(7, true)); k++) await sleep(100); await sleep(300); const uv = await page.evaluate(() => window.__w13.P.uv); await page.evaluate(() => window.__press(7, false));
+  out.push('RT uv ' + uv);
+  await tap(9); const paused = await st(page); await tap(9); const resumed = await st(page);
+  out.push(`menu ${paused}->${resumed}`);
+  await page.close();
+  const ok = /^b/.test(focused || '') && p1.yaw !== p0.yaw && Math.hypot(p1.x - p0.x, p1.z - p0.z) > 0.05 && light !== p0.light && uv === true && paused === 'paused' && resumed === 'play' && !errors.length;
+  return { ok, info: out.join('; '), errors };
+};
+
 S.dynres = async b => {
   // Drives the dynamic-quality controller with synthetic frame times through the test hook.
   const { page, errors } = await open(b);
@@ -370,7 +406,7 @@ S.perf = async b => {
   return { ok: !errors.length, info: `frame avg ${res.avg.toFixed(1)} ms, worst ${res.p99.toFixed(1)} ms (SwiftShader software GL)${res.info ? ' ' + JSON.stringify(res.info) : ''}`, errors };
 };
 
-const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'fatalRecovery', 'captions', 'settingsUI', 'tips', 'dynres', 'perf', 'floors', 'soak'];
+const order = ['buildFresh', 'boot', 'newgame', 'controls', 'deathRetry', 'shopLoop', 'spam', 'resize', 'corruptSave', 'scares', 'fatalRecovery', 'captions', 'settingsUI', 'tips', 'gamepad', 'dynres', 'perf', 'floors', 'soak'];
 const run = wanted.length ? wanted : order.filter(n => n !== 'soak');
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--disable-accelerated-2d-canvas', '--autoplay-policy=no-user-gesture-required', '--enable-precise-memory-info'] });
 let fails = 0;

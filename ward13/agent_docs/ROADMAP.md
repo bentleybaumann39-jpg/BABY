@@ -133,8 +133,10 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
 ## NICE-TO-HAVE
 - **R-12 — Gamepad support (Gamepad API):**
   - Sticks for move and look, triggers for UV and flash, face buttons for the actions.
-  - **UNVERIFIABLE here:** there is no device. Deferred unless budget remains. **Status:** TODO.
-- **R-13 — Draw-call statistics for the dev hook:** capture `renderer.info` after the scene pass. **Status:** TODO
+  - **Status:** DONE. The `gamepad` scenario uses a simulated standard-mapping pad. It covers menu focus with the d-pad, A to activate, A to skip the intro, the left stick to move, the right stick to look, Y for the flashlight, RT for ultraviolet, and Menu to pause and resume.
+  - It also found and fixed a real blocker: the intro could only be dismissed by keyboard or mouse.
+  - Real hardware is **UNVERIFIED**.
+- **R-13 — Draw-call statistics for the dev hook:** capture `renderer.info` after the scene pass. **Status:** DONE (floor 1: 157 calls and 69K triangles; floor 30: 181 calls and 31K triangles).
 
 ## Deliberately not doing
 - **Upgrading three.js beyond r128:** the owner asked to keep r128. The risk of large API changes (encoding, skinning flags) is high and the gain for players is small.
