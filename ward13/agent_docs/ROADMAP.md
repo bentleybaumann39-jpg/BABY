@@ -138,6 +138,11 @@ Each item has a status. Verification is done with `tests/qa.mjs` (scenario named
   - Real hardware is **UNVERIFIED**.
 - **R-13 — Draw-call statistics for the dev hook:** capture `renderer.info` after the scene pass. **Status:** DONE (floor 1: 157 calls and 69K triangles; floor 30: 181 calls and 31K triangles).
 
+## Added during Phases 6–8 (found by testing)
+- **R-14 — Load stall root cause:** stop rendering stale frames while loading. Found by A/B. DONE (PERF_REPORT).
+- **R-15 — Colorblind-safe map markers and legend.** DONE (`map`).
+- **R-16 — Narrow-window HUD overlap, fuse-count copy, explained item refusals, browser-neutral fake crash.** DONE (`resize`, screenshots).
+
 ## Deliberately not doing
 - **Upgrading three.js beyond r128:** the owner asked to keep r128. The risk of large API changes (encoding, skinning flags) is high and the gain for players is small.
 - **Key rebinding UI:** medium effort and touches every key handler. The keyboard layout is standard WASD, and arrow keys already work for turning and moving. Revisit after gamepad.

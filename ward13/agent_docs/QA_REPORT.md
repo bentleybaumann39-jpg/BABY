@@ -61,3 +61,28 @@
 | What bugs remain? | None known from the QA matrix. |
 | What performance problems remain? | Software GL cannot measure real frame rates (see PERF_REPORT). |
 | What would keep it from feeling professional? | No human playtest of balance, and untested real devices. Both need people and hardware, not code. |
+
+## Final gate run (commit after "colour-independent map markers")
+- **`node ward13/tests/qa.mjs`:** 20/20 PASS, exit 0.
+  - Scenarios: buildFresh, boot, newgame, controls, deathRetry, shopLoop, spam, resize, corruptSave, scares, fatalRecovery, captions, settingsUI, tips, gamepad, edges, map, dynres, perf, floors.
+  - All 30 floors pass with 0 errors.
+- **`--offline --file=ward13/Ward13.html`:** boot, newgame, controls, deathRetry, shopLoop, gamepad, and floors 1/6/11/16/21/26/30: 7/7 PASS, exit 0, with all network blocked.
+- **`soak`:** 5 real minutes, heap 17.4 → 17.6 MB, scene objects flat (earlier commit).
+- **`simSoak`:** 45 game-minutes on floor 24 (final build).
+  - Heap: 47.7 → 38.8 MB.
+  - Scene objects: flat at 793.
+  - Geometries and textures: plateau by game-minute 26 (73→84, 57→60), then flat for 19 minutes. That is first-use uploads, not a leak.
+
+# FINAL QUALITY GATE
+
+| Gate | Evidence | Status |
+|---|---|---|
+| **Gameplay:** the core loop is complete start to end; no placeholder mechanics | `floors` builds and runs all 30 floors and 6 bosses with 0 errors. `shopLoop` covers clear → shop → descend. `deathRetry` covers death → retry and Lazarus. The ending is reachable (floor 30 boss builds; `ending()` is unchanged). **Difficulty and fun are not human-playtested.** | PASS (fun **UNVERIFIED**) |
+| **Technical:** builds cleanly; no known crashes or soft-locks; architecture documented; no dead or conflicting systems | `buildFresh`. 20/20 + 7/7 QA. Fixed soft-locks: corrupt-settings dead menu, gamepad intro, crash freeze. `ARCHITECTURE.md` has "How to add content". Keyboard and pad share `playKey` (no duplicate input paths). | PASS |
+| **Visual:** consistent art direction; readable; no placeholder art | Screenshots: floor 1, floor 30, patient close-up, map, settings, 6 resolutions. Texture optimization checked for parity by screenshot. | PASS |
+| **Audio:** every key action has a sound; no stuck or leaked voices | Refused actions now buzz **and** explain. The fake-crash mute is always restored (`scares`: gain 0.8 after quitting mid-crash). Captions mirror the key cues. **Audible mix UNVERIFIED** (no audio output in the sandbox). | PASS (mix **UNVERIFIED**) |
+| **UX:** menus, HUD, onboarding, settings and accessibility complete and navigable with every supported input; errors handled | `settingsUI`, `gamepad` (menus with d-pad and A), `captions`, `tips`, `map` (shape-coded), `fatalRecovery`, `resize` (no overlap). Escape closes panels. | PASS |
+| **Performance:** target met or the gap documented; no memory growth; load times recorded | `PERF_REPORT.md`: floor-30 load −52% and boot −7% against base. Per-frame JS is unchanged. Soaks are flat. The 60 fps target on real GPUs is **UNVERIFIED**; the gap and remaining options are documented. | PASS (real GPU **UNVERIFIED**) |
+| **QA:** full Phase 7 matrix run; all Critical and High bugs fixed and regression-tested; Low issues listed | Matrix above. 12 bugs fixed, each with a scenario or screenshot. Remaining Low issues are listed with reasons. | PASS |
+| **Documentation** | `ARCHITECTURE`, `AUDIT`, `ROADMAP` (all items DONE with evidence), `CHANGELOG_AGENT`, `ASSUMPTIONS`, `QA_REPORT`, `PERF_REPORT` | PASS |
+| **Honesty check** | Every claim cites a scenario, profile or screenshot. Real-device and human-playtest items are labeled UNVERIFIED. One suspected regression (stale loading frame) was **not** reproduced and is labeled defensive in the changelog. | PASS |

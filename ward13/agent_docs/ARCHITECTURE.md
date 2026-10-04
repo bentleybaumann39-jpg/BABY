@@ -44,10 +44,10 @@ flowchart LR
 
 | Module (section in `index.html`) | Responsibility | Key functions | Health |
 |---|---|---|---|
-| Settings, save and catalogue | `localStorage` keys `w13.settings` and `w13.save` (v:3). The upgrade (`UPG`) and supply (`SUP`) catalogues. | `lsGet/lsSet`, `newSave`, `persist`, `up` | 3: no validation of loaded data |
-| Audio | WebAudio graph: compressor → muffle low-pass → master. Reverb convolver, drone and tension pad. Every sound is synthesized. | `audioInit`, `tone`, `hiss`, `SFX.*`, `setDrone`, `setTension` | 4 |
+| Settings, save and catalogue | `localStorage` keys `w13.settings` (validated by the `SET_DEF`/`SET_RULE` schema) and `w13.save` (v:3, repaired field by field). The upgrade (`UPG`) and supply (`SUP`) catalogues. | `cleanSettings`, `repairSave`, `newSave`, `persist`, `up` | 5 |
+| Audio | WebAudio graph: compressor → muffle low-pass → master. Reverb convolver, drone and tension pad. Every sound is synthesized. Optional captions wrap the key `SFX` cues. | `audioInit`, `tone`, `hiss`, `SFX.*`, `cap`, `capClear` | 4 |
 | Renderer and post | WebGLRenderer with linear output into a half-float render target. Bloom, god rays and the composite shader (ACES, grain, vignette, damage, VHS). A height fog patched into the shader chunks. | `initRenderer`, `patchFog`, `renderScene`, `resize` | 4 |
-| Procedural textures | 1024² canvas paint for walls, floors and ceilings per wing. Normal maps (`nmap`) and roughness maps (`rmap`) are derived on the CPU. | `wallTex/floorTex/ceilTex/commonTex`, `nmap`, `rmap` | 2: CPU-heavy, dominates load time |
+| Procedural textures | 1024² canvas paint for walls, floors and ceilings per wing. Normal maps (`nmap`, optimized) and half-resolution roughness and wet maps (`rmap`, bounding-box puddles) are derived on the CPU. | `wallTex/floorTex/ceilTex/commonTex`, `nmap`, `rmap` | 4 |
 | Geometry and creatures | Lathe and blob helpers. A skinned humanoid rig (hips, spine, chest, clavicles, neck, head, jaw, limbs). Monster builders and boss builders. | `humanoid`, `animBiped`, `secMotion`, `mPatient…mHeart` | 4 |
 | Floors and layout | Grid levels (`L.g`: 0 floor, 1 wall, 2 door). The wing and boss tables, the quest sequence (`QSEQ`) and the notes. BFS pathfinding and an obstacle grid. | `genLayout`, `genArena`, `findPath`, `blockedAt`, `moveC`, `los` | 4 |
 | Building | Turns the layout into meshes: shell, props, lamps, doors, pipes, decals, elevators and quest objects. | `buildLevel`, `place*`, `questSetup`, `disposeWorld` | 4 |
@@ -56,11 +56,11 @@ flowchart LR
 | Enemies | Patient, still (mannequin), crawler, wraith, weeper. State machines with perception (LOS, beam, noise), search plans and path following. | `spawnEnemy`, `updWalker`, `updStill`, `updWraith`, `updWeeper`, `searchPlan` | 4 |
 | Bosses | Six bespoke fights, each with its own mechanic. | `bossSetup`, `updBoss`, `b*` | 4 |
 | The Echo | A stalker NPC that mimics the player, carries a light and remembers where you hide. | `echo*`, `updEcho` | 4 |
-| Horror pacing | Random scares, sanity phantoms, set-piece events, the unseen-change director, and the fear director (`DIR`) with its signature scares. | `updScares`, `updPhantom`, `updEvents`, `updAnom`, `updDirector`, `sig*` | 3: the fear director's scares are not cleaned up when the player leaves a floor |
-| UI and HUD | DOM HUD, meters, belt, map canvas, prompts, screens (`show(id)`), the shop. | `updHUD`, `drawMap`, `renderShop`, `show` | 4 |
-| Flow | Starting and finishing floors, death, ending, menu, pause. | `startFloor`, `completeFloor`, `die`, `toMenu`, `pause`, `resume` | 3: `toMenu` does not reset the fear director |
-| Safety nets | A self-test that falls back to safe mode (no post-processing). Dynamic resolution. | `selfTest`, `enterSafeMode`, `perf` | 3: the resolution drop is one-way |
-| Input | Keyboard and mouse with pointer lock, plus a fallback when the lock is refused. No gamepad, no rebinding. | `bindUI` | 3 |
+| Horror pacing | Random scares, sanity phantoms, set-piece events, the unseen-change director, and the fear director (`DIR`). The signature scares are stalker, cascade and fake crash; the fake crash runs at most once per session and scares never repeat back to back. `dirReset` cleans up on every flow change. | `updScares`, `updPhantom`, `updEvents`, `updAnom`, `updDirector`, `sig*`, `dirReset` | 4 |
+| UI and HUD | DOM HUD, meters, belt, map canvas (shape-coded markers), captions, prompts, screens (`show(id)`), the shop. One-shot contextual tips. | `updHUD`, `drawMap`, `renderShop`, `show`, `updTips` | 4 |
+| Flow | Starting and finishing floors, death, ending, menu, pause. A crash-recovery panel (`fatal`). | `startFloor`, `completeFloor`, `die`, `toMenu`, `pause`, `resume`, `fatal` | 4 |
+| Safety nets | A self-test that falls back to safe mode (no post-processing). Dynamic quality with hysteresis, recovery and a per-floor ceiling. No rendering while a floor loads. A CDN fallback to `vendor/`. | `selfTest`, `enterSafeMode`, `perf`, `perfSettle` | 4 |
+| Input | Keyboard and mouse with pointer lock (plus a fallback when the lock is refused). Gamepad with standard mapping, through one shared action path (`playKey`). D-pad and A drive menus. No rebinding UI. | `bindUI`, `playKey`, `pollPad` | 4 |
 
 ## Update order (one frame in `play`)
 1. `updPlayer`
@@ -72,14 +72,15 @@ flowchart LR
 7. `updPhantom`
 8. `updScares`
 9. `updDirector`
-10. `updLamps`
-11. `updAtmos`
-12. `updEcho`
-13. `updAnom`
-14. `updListen`
-15. `updPeek`
+10. `updTips`
+11. `updLamps`
+12. `updAtmos`
+13. `updEcho`
+14. `updAnom`
+15. `updListen`
+16. `updPeek`
 
-Then particles, then the tension drone and heartbeat, then `syncCamera`, then `updHUD`. Rendering happens after the update.
+Then particles, then the tension drone and heartbeat, then `syncCamera`, then `updHUD`. Rendering happens after the update. `pollPad` runs at the top of every frame, in every state.
 
 ## Data and save format
 `w13.save` holds:
@@ -87,7 +88,8 @@ Then particles, then the tension drone and heartbeat, then `syncCamera`, then `u
 {v:3, level, ng, obols, up:{id:grade}, inv:{medkit,pills,battery,flare,lazarus}, notes:[idx], stats:{deaths,kills,time,earned}, seed, habit?, endings?, done?}
 ```
 - A snapshot (deep clone) is taken when a floor starts. Retry and quit restore it, so progress commits only when a floor is cleared.
-- Settings: `{ui, diff, quality, sens, vol, bright, invert, calm}`.
+- Settings: `{ui, diff, quality, sens, vol, bright, invert, calm, still, fov, captions}`. Every value is validated by the schema.
+- Optional save fields: `habit`, `endings`, `done`, and `tips` (contextual tips already shown).
 
 ## How to add content
 - **Enemy:**
@@ -103,7 +105,9 @@ Then particles, then the tension drone and heartbeat, then `syncCamera`, then `u
 - **Scare:** add a `sigX()` starter and a case in `updSig`, then add it to the pick in `updDirector`. Every scare **must** clean up through `DIR.reset()` (see the change log).
 
 ## Test hook
-- With `window.__W13_TEST = 1` set before boot, the game exposes `window.__w13`. It provides access to state, save, `P`, `L`, `startFloor`, `completeFloor`, `hurt`, `spawnEnemy`, the shop functions, `DIR` and the scare starters. The QA harness depends on this.
+- With `window.__W13_TEST = 1` set before boot, the game exposes `window.__w13`. It provides access to state, save, `P`, `L`, `startFloor`, `completeFloor`, `hurt`, `spawnEnemy`, the shop functions, `DIR` and the scare starters. It also exposes `AU`, `settings`, `PERF`, `perf`, `TIPS`, `PAD`, `msg`, `renderInfo()` and `simulate(seconds, keepAlive)`. The QA harness depends on this.
+- QA: `node ward13/tests/qa.mjs` runs everything except the soaks. Add `--offline --file=ward13/Ward13.html` for the shipped file and `--shots` for screenshots. `SOAK_MIN` and `SIM_MIN` control the soak lengths.
+- **After editing `index.html`, run `node ward13/tools/build.mjs`.** The QA `buildFresh` check fails on a stale `Ward13.html`.
 
 ## Build
 - **Development:** open `index.html` in a browser. It needs internet access for the three.js CDN.
