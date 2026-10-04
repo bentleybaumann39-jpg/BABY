@@ -172,6 +172,9 @@ export class Player {
       this.yaw -= m.x * sens;
       this.pitch -= m.y * sens * (s.get('invertY') ? -1 : 1);
       this.pitch = Math.max(-1.45, Math.min(1.45, this.pitch));
+      const turn = (input.is('turnLeft') ? 1 : 0) - (input.is('turnRight') ? 1 : 0);
+      this.yaw += turn * dt * 2.4;
+      this.yaw = ((this.yaw + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
     }
     if (this.lookOverride) {
       const lo = this.lookOverride;

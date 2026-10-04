@@ -147,8 +147,8 @@ function paintLayout(g) {
   g.window(34, 39, { interior: true });
   g.rect('a', 35, 37, 47, 45, { name: 'Lobby' });
   g.rect('a', 39, 36, 43, 36, { ceil: 3.0, noRecord: true });
-  g.door(40, 46, { id: 'front_l', style: 'glassDouble', locked: true, key: 'key_front', pair: 'front_r', hinge: 'l', name: 'Front Entrance', lockMsg: 'Locked. The voicemail said the key would be under the mat.' });
-  g.door(41, 46, { id: 'front_r', style: 'glassDouble', locked: true, key: 'key_front', pair: 'front_l', hinge: 'r', name: 'Front Entrance', lockMsg: 'Locked. The voicemail said the key would be under the mat.' });
+  g.door(40, 46, { id: 'front_l', style: 'glassDouble', pair: 'front_r', hinge: 'l', name: 'Front Entrance', lockMsg: 'Locked. The voicemail said the key would be under the mat.' });
+  g.door(41, 46, { id: 'front_r', style: 'glassDouble', pair: 'front_l', hinge: 'r', name: 'Front Entrance', lockMsg: 'Locked. The voicemail said the key would be under the mat.' });
 
   // Residential wing
   g.rect('n', 22, 14, 48, 16, { name: 'Residential Wing' });

@@ -198,6 +198,7 @@ export class Game {
   setMode(m) {
     this.mode = m;
     const playing = m === 'play';
+    this.input.wantLock = playing;
     this.ui.hud.classList.toggle('show', ['play', 'reader', 'terminal', 'journal', 'cutscene'].includes(m));
     // Keep the pointer locked while reading or at a terminal; free it for menus and the journal.
     if (['title', 'pause', 'death', 'ending', 'journal', 'settings', 'gallery'].includes(m)) this.input.exitLock();

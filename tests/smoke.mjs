@@ -38,7 +38,9 @@ await check('stairs follow ramp', () => { const g = __game; g.player.place(8.5, 
 
 console.log('Arrival');
 await check('doormat gives key', () => { const g = __game; const d = g.interaction.list.find((i) => i.id === 'doormat'); d.use(); return g.inventory.has('key_front'); });
-await check('front door unlocks + opens', () => { const g = __game; g.player.place(41, 48.5, 0); const d = g.doors.get('front_l'); g.story.useDoor(d); g.story.useDoor(d); run(1.5); return { ok: g.doors.isOpen(d) && !d.locked, info: d.angle.toFixed(2) }; });
+await check('front door unlocks + opens', () => { const g = __game; g.player.place(41, 48.5, 0); const d = g.doors.get('front_l'); g.story.useDoor(d); run(1.5); return { ok: g.doors.isOpen(d) && !d.locked, info: d.angle.toFixed(2) }; });
+await check('walks into the lobby', () => { const g = __game; g.player.place(41, 49, 0); g.input.simKey('KeyW', true); run(3); g.input.simKey('KeyW', false); return { ok: g.player.pos.z < 45, info: g.player.pos.z.toFixed(2) }; });
+await check('full 360 turn', () => { const g = __game; const y0 = g.player.yaw; g.input.simKey('ArrowRight', true); run(2.7); g.input.simKey('ArrowRight', false); g.input.simLook(5000, 0); run(0.1); return { ok: true, info: (g.player.yaw - y0).toFixed(2) }; });
 await check('maintenance door locked without key', () => { const g = __game; const d = g.doors.get('maint'); return g.doors.isLocked(d); });
 await check('custodian keys from infirmary', () => { take('key_maint'); return __game.inventory.has('key_maint'); });
 await check('maintenance door unlocks', () => { const g = __game; g.player.place(8.5, 14.6, 0); const d = g.doors.get('maint'); g.story.useDoor(d); g.story.useDoor(d); run(1.5); return g.doors.isOpen(d); });

@@ -2,8 +2,10 @@
 export const BINDINGS = {
   forward: ['KeyW', 'ArrowUp'],
   back: ['KeyS', 'ArrowDown'],
-  left: ['KeyA', 'ArrowLeft'],
-  right: ['KeyD', 'ArrowRight'],
+  left: ['KeyA'],
+  right: ['KeyD'],
+  turnLeft: ['ArrowLeft'],
+  turnRight: ['ArrowRight'],
   sprint: ['ShiftLeft', 'ShiftRight'],
   crouch: ['KeyC', 'ControlLeft'],
   interact: ['KeyE'],
@@ -43,12 +45,11 @@ export class Input {
       this.released.add(e.code);
     });
     window.addEventListener('blur', () => { this.down.clear(); this.mouseDown = [false, false, false]; });
-    canvas.addEventListener('mousedown', (e) => this.onMouseDown(e));
+    canvas.addEventListener('mousedown', (e) => { this.onMouseDown(e); if (!this.locked && this.wantLock) this.requestLock(); });
     window.addEventListener('mouseup', (e) => {
       if (e.button < 3) { this.mouseDown[e.button] = false; this.mouseReleased[e.button] = true; }
     });
     window.addEventListener('mousemove', (e) => {
-      if (!this.locked && !this.synthetic) return;
       if (this.synthetic && !this.locked) return;
       // Ignore the bogus first deltas Chrome reports right after locking.
       if (performance.now() - this.lockedAt < 120) return;
