@@ -1,0 +1,1624 @@
+{
+  "rooms": [
+    {
+      "file": "build/rooms/playroom_wide.png",
+      "description": "Poppy's Playroom, the bright TV-studio set of the show, wide master shot. A three-walled kids'-show set: back wall sky blue on top with puffy painted white clouds and a big painted sun (plain yellow disc with rays, no face) top-left, mint-green wainscot on the lower third, light wood floor. A red-painted wooden door in the back wall right of centre (closed). A window flat at back-left with a painted meadow backdrop (green hills, tiny red flowers). A felt board on a wooden easel at far left. A low toy shelf at right with chunky wooden blocks, a ball and a stacking-ring toy. A small yellow child's chair near the right. A round rainbow-striped rug at centre. Everything chunky, rounded, saturated and a little cheap (visible seams between set flats).",
+      "camera": "Eye level 1.25 m, 3.8 m from the back wall, centred, ~32 mm lens, level horizon, no tilt. Save the camera in the .blend: playroom_wide_ajar and playroom_dark must match it pixel-for-pixel.",
+      "lighting": "Bright, flat TV-studio light: large soft key front-left, strong fill front-right, soft top light, almost no visible shadows, slightly warm white (~4500 K). Bright but no clipped whites on the back wall.",
+      "notes": "Leave the rug centre completely clear: Poppy is composited standing on the rug with her feet at about (320, 445) and her head top near y=115 (height ~330 px), so nothing tall may stand behind her between x=220-420. The red door must be a separate object fully visible at about x=430-520 (the variants open it). Felt board at far left (about x=20-170). Write the Poppy foot anchor, door rectangle, board rectangle and chair centre into build/rooms/rooms_meta.json (keyed by room name, pixel coordinates of this image).",
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "2b",
+        "2e",
+        "2f",
+        "3a",
+        "8a"
+      ]
+    },
+    {
+      "file": "build/rooms/playroom_wide_ajar.png",
+      "description": "Identical to playroom_wide in every pixel except the red back-wall door, which now stands open about 15 degrees showing a narrow, pitch-black gap (nothing visible inside). This is the 'something moved between shots' seed: nobody on the show mentions it.",
+      "camera": "Exactly the playroom_wide camera.",
+      "lighting": "Exactly playroom_wide. No light spills through the door gap.",
+      "notes": "Re-render the playroom_wide .blend with only the door rotated. Poppy composites at the same foot anchor as playroom_wide.",
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "6b",
+        "6f"
+      ]
+    },
+    {
+      "file": "build/rooms/playroom_board.png",
+      "description": "Closer angle of the same set, turned toward the felt board: a big sky-blue felt board in a chunky pine frame on an easel fills the left ~70% of the frame (board surface roughly x=20-450, y=60-370) and is BLANK (every flower and face is composited later). The right ~30% shows the set wall (clouds, mint wainscot) and the end of the toy shelf.",
+      "camera": "Eye level 1.1 m, ~2.2 m from the board, ~40 mm, camera about 15 degrees right of the board's normal so the board still reads as a flat surface facing us.",
+      "lighting": "Same bright flat studio light as playroom_wide; the felt surface evenly lit with no hot spots.",
+      "notes": "The board surface must be flat, evenly lit, uncluttered felt: the compositor pins five items in a row on it (slot centres about x=70,155,240,325,410 at y~215, each ~80x120 px). Poppy is composited at the right edge, cropped at the knees, head centre around (545,150): keep x=460-640 free of tall foreground props. Record the board's four corner pixels and the five slot centres in build/rooms/rooms_meta.json.",
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "4b",
+        "4c",
+        "4d",
+        "5b",
+        "5c",
+        "5d",
+        "5e",
+        "5f",
+        "5g"
+      ]
+    },
+    {
+      "file": "build/rooms/playroom_dark.png",
+      "description": "Poppy's Playroom after the turn: the exact playroom_wide set and camera, but every studio light is off. The only light is one red work light high on the right plus a faint cold spill from the doorway. The red back door stands WIDE open onto pure black. The small yellow chair has been turned to face the back wall. Colours desaturated, long deep shadows, painted clouds and sun barely visible, the felt board at left blank and dim.",
+      "camera": "Exactly the playroom_wide camera, rendered at 1280x960 so the compositor can crop 2x close-ups (chair, open doorway, felt board) without blur.",
+      "lighting": "One red (#FF2A1A) area/spot light high right at low power with hard-ish shadows; very faint blue-grey rim from the doorway; black world. Dark but readable on a TV: the rug, chair, board and door frame must still read.",
+      "notes": "Rug centre clear for the wrong-Poppy cutout (same foot anchor as playroom_wide, doubled for this resolution). The doorway interior must be pure black. Record in build/rooms/rooms_meta.json (in this image's 1280x960 pixel space): Poppy foot anchor, chair centre, door-opening rectangle, board rectangle.",
+      "size": [
+        1280,
+        960
+      ],
+      "used_in": [
+        "8b",
+        "8c",
+        "8d",
+        "8h",
+        "8j",
+        "10b",
+        "10c",
+        "10d",
+        "10e",
+        "10f"
+      ]
+    },
+    {
+      "file": "build/rooms/studio_night.png",
+      "description": "Camcorder footage location: the TV studio after hours, seen from the studio floor. The Poppy's Playroom set (same set model) is a dim island in the middle distance, seen from ~8 m back and ~30 degrees to the left, so the raw plywood backs and braces of the set flats show at the set's right edge. A theatre ghost light (bare bulb in a wire cage on a pole stand) stands on the set rug and is the main light. Two studio TV cameras on pedestals are dark silhouettes in the left foreground; cables snake across a concrete floor; a lighting grid with hanging lamps disappears into black above. The right third of the frame is mostly dark empty floor with the edge of a tall light stand and a road case.",
+      "camera": "Handheld camcorder height 1.5 m, ~28 mm equivalent, 2-degree roll (handheld feel).",
+      "lighting": "Ghost light: warm 2700 K point light at set centre; a faint green exit-sign glow at far right (plain green box, no readable text); everything else falls off to black.",
+      "notes": "The compositor crops 1.4x into the dark right third (x~640-960) for the whip-pan beat, so put a few faint shapes there (light stand, road case) but nothing figure-like. Rendered larger than 640x480 for that crop.",
+      "size": [
+        960,
+        720
+      ],
+      "used_in": [
+        "7b",
+        "7c",
+        "7d"
+      ]
+    },
+    {
+      "file": "build/rooms/backstage_corridor.png",
+      "description": "A narrow backstage service corridor: painted cinderblock walls (pale institutional green-cream), speckled linoleum floor, three fluorescent tube fixtures on the ceiling (the farthest one dimmer), doors on both sides with small blank name plaques, a mop bucket and a folded chair against the left wall, a closed door at the far end. Worn, scuffed, grimy (use the grime material from horror/render_scenes.py).",
+      "camera": "Camcorder eye height 1.55 m, looking straight down the corridor, slightly left of centre, ~30 mm.",
+      "lighting": "Cool greenish fluorescent (~4100 K, green tint) from the tubes; the far end slightly darker; no daylight.",
+      "notes": "Keep the far end of the floor clear and lit (around x=290-350, y=230-300): costume_standing (~70 px tall) is composited there under the far tube. The compositor also MIRRORS this render horizontally for the 'looking back' shots, so avoid any readable text. Record the far-end foot anchor in build/rooms/rooms_meta.json.",
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "7e",
+        "7i",
+        "7j",
+        "7k",
+        "7m"
+      ]
+    },
+    {
+      "file": "build/rooms/dressing_room.png",
+      "description": "A small performer's dressing room: a long counter along the left wall with a makeup mirror ringed by round bulbs (about half burnt out); a plain wooden chair at centre-right facing the camera, EMPTY; a metal clothes rack at screen-left with wire hangers and a spare pair of big yellow overalls; a foam wig head on the counter wearing a spare ring of red felt poppy petals; a sink, a small trash can, a door at the right edge. Grimy, cramped.",
+      "camera": "Camcorder 1.5 m high in the doorway, ~28 mm, looking slightly down at the chair.",
+      "lighting": "Mirror bulbs warm (a few on), one cold overhead fluorescent, greenish cast overall; corners fall off to dark.",
+      "notes": "The chair seat and backrest must be completely empty and clearly visible: costume_slumped is composited sitting in it (seat top centre roughly at (400, 330); the backrest should rise behind where a slumped figure's shoulders would be). The same render is reused with no costume ('the chair is empty'). Record the seat point in build/rooms/rooms_meta.json.",
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "7f",
+        "7h",
+        "7l",
+        "7n",
+        "7p"
+      ]
+    },
+    {
+      "file": "build/rooms/bedroom_night.png",
+      "description": "A child's bedroom at night (the viewer's home): a single bed against the right wall with the covers thrown back and the pillow dented, as if someone just got up; a low dresser at left with a small 1990s CRT TV on top, screen facing the room; toys on the rug (wooden blocks, a stuffed bunny lying on its side); a window with half-open curtains and blue moonlight; a star-shaped nightlight by the bed; a few plain posters (abstract shapes only, no characters or logos). Plenty of dark corners.",
+      "camera": "From the bedroom doorway corner, 1.4 m high, ~30 mm, looking diagonally across the room so both the TV (left) and the bed (right) are in frame.",
+      "lighting": "Cold blue moonlight through the window; the TV screen is an emissive dim blue-grey rectangle (strength ~1.5) casting a soft blue glow on the dresser and floor; a tiny warm nightlight. Otherwise dark.",
+      "notes": "The TV screen must be a flat, uniformly emissive plane facing roughly toward the camera and at least 110 px wide in this 960x720 render: the compositor replaces it with the show picture by perspective warp. Record its four corner pixels (clockwise from top-left) and the bed centre in build/rooms/rooms_meta.json. Rendered larger than 640x480 so the 1.5x push toward the bed stays sharp.",
+      "size": [
+        960,
+        720
+      ],
+      "used_in": [
+        "8d",
+        "8e",
+        "8j"
+      ]
+    },
+    {
+      "file": "build/rooms/hallway_night.png",
+      "description": "An upstairs house hallway at night: carpet runner, cream walls with a few picture frames (blank or abstract), two doors on the left (one ajar onto black), one on the right, a small plug-in nightlight low on the right wall casting a warm pool on the carpet, the far end dark with a closed door. A small side table at near-left with a lamp (off) and a plastic toy on it.",
+      "camera": "Child's eye height 1.1 m, looking down the hallway, ~30 mm, centred.",
+      "lighting": "Warm nightlight pool (near right), faint blue moonlight from an unseen window at the far end, everything else dark.",
+      "notes": "The compositor pushes in toward the far end (1.0 to 1.2), so keep the far door centred around (320, 200). Keep the near-left table edge in frame: the false-scare sound (a toy falling) comes from screen-left.",
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "8f",
+        "8g"
+      ]
+    },
+    {
+      "file": "build/rooms/closet_door.png",
+      "description": "A child's closet door at night, front-on: a pale yellow painted panel door standing slightly ajar (~8 cm) so a vertical pitch-black gap runs down the centre of the frame (gap roughly x=305-340). A small stuffed toy and a sneaker on the floor in front; the edge of the bed at the right frame edge; a star nightlight low-left up-lighting the door with cool light.",
+      "camera": "1.2 m high, 2.0 m from the door, ~35 mm, square-on, centred on the gap. Same camera as closet_door_open.",
+      "lighting": "Cool blue-white nightlight from low-left, faint moonlight; the gap is absolutely black.",
+      "notes": "The gap must be pure black with no visible interior. The compositor pushes in 1.0 to 1.1 toward the gap.",
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "8i",
+        "8k"
+      ]
+    },
+    {
+      "file": "build/rooms/closet_door_open.png",
+      "description": "Identical to closet_door except the door has swung open wider (~35 cm): a tall black slot in which the barely visible shapes of hanging clothes and wire hangers can just be made out in the dark.",
+      "camera": "Exactly the closet_door camera.",
+      "lighting": "Exactly closet_door; the interior gets only a faint edge of nightlight.",
+      "notes": "The hard cut from closet_door to this frame is the 'it moved between cuts' beat right before scare 2. No face or figure inside.",
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "8l"
+      ]
+    }
+  ],
+  "poppy_art": [
+    {
+      "file": "build/art/poppy/poppy_idle.png",
+      "description": "Normal Poppy (Stage 1), full body, standing facing the viewer, arms relaxed at her sides, white four-fingered gloves (fingers 1.4x too long) hanging near mid-thigh, mouth closed in a wide painted smile (corners under the eye centres, lower lids flat), glossy black button pupils on white felt eyes with a catchlight at the same pixel in both eyes; her left eye (screen right) 7% bigger and 3 px higher; one pupil offset outward so she looks just past the lens; head tilted 12 degrees and held. Friendly at a glance. REGISTRATION for every full-body frame: canvas 420x640, feet bottom centre at (210, 628), identical pixels except the parts that change.",
+      "transparent": true,
+      "size": [
+        420,
+        640
+      ],
+      "used_in": [
+        "3a",
+        "5d",
+        "5g",
+        "6b",
+        "8a"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_talk.png",
+      "description": "Identical to poppy_idle except the mouth: open in a rounded D shape, dark maroon inside with a pink felt tongue, no teeth. Lip-flap partner of poppy_idle.",
+      "transparent": true,
+      "size": [
+        420,
+        640
+      ],
+      "used_in": [
+        "3a",
+        "5g",
+        "6b"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_blink.png",
+      "description": "Identical to poppy_idle but both eyes closed (felt lids with a stitched curved line). Used for 2-frame blinks and for the held eyes-closed shot in the theme song.",
+      "transparent": true,
+      "size": [
+        420,
+        640
+      ],
+      "used_in": [
+        "2e",
+        "3a"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_wave_a.png",
+      "description": "Poppy full body waving: her right arm (screen left) raised beside her head with the glove tilted outward, other arm at her side, mouth open in a happy smile (same open mouth as poppy_talk). Same canvas and foot anchor as poppy_idle.",
+      "transparent": true,
+      "size": [
+        420,
+        640
+      ],
+      "used_in": [
+        "2b",
+        "2g",
+        "11c"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_wave_b.png",
+      "description": "Same as poppy_wave_a but the raised glove tilted the other way (inward). Alternate with poppy_wave_a to make the wave.",
+      "transparent": true,
+      "size": [
+        420,
+        640
+      ],
+      "used_in": [
+        "2b",
+        "2g",
+        "11c"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_point.png",
+      "description": "Poppy full body pointing: her right arm extended to screen-left at shoulder height, the too-long index finger pointing, body turned 15 degrees toward screen-left, head still facing the viewer, mouth closed smile. Used beside the felt board.",
+      "transparent": true,
+      "size": [
+        420,
+        640
+      ],
+      "used_in": [
+        "4b",
+        "4d",
+        "5b",
+        "5c"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_point_talk.png",
+      "description": "Identical to poppy_point but with the open mouth (same mouth shape as poppy_talk).",
+      "transparent": true,
+      "size": [
+        420,
+        640
+      ],
+      "used_in": [
+        "4b",
+        "4d",
+        "5b",
+        "5c"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_close.png",
+      "description": "Normal Poppy (Stage 1) head-and-shoulders close-up. Head centre at (320, 210), felt face ~300 px wide, petal ring ~460 px wide, shoulders cut by the bottom edge. Mouth closed smile, button eyes with catchlights at the same pixel in both eyes, pupils aimed 5-10 degrees past the lens (camera-left), 12-degree head tilt held, felt fibres visible at this size. Pleasant but slightly too still. REGISTRATION for every close-up: identical canvas and head position.",
+      "transparent": true,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "2f",
+        "4c",
+        "5f"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_close_talk.png",
+      "description": "Identical to poppy_close but with the mouth open (D shape, maroon inside, pink tongue).",
+      "transparent": true,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "5f"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_close_wink.png",
+      "description": "Identical to poppy_close but ONLY her left eye (screen right) is closed; the other eye stays open and staring. Shown for exactly 2 frames as a one-eyed blink.",
+      "transparent": true,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "4c"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_close_stare.png",
+      "description": "Stage 2 'turned' close-up, same framing as poppy_close: the eyes are now realistic painted human eyes (sclera #ECE5D3 visible all round the iris, iris with 40-60 fine radial strokes and a dark limbal ring, pinpoint pupils 14% of eye width, NO catchlight), eyes 22% of head width, aimed just beside the lens; smile wider, corners 5-10% of head width past the outer eye edges, lips parted on a row of 18-20 identical small square white teeth; lower lids flat; head tilt 25 degrees. She speaks with this face completely unmoving.",
+      "transparent": true,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "6f"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_wrong_idle.png",
+      "description": "Stage 2 'wrong' Poppy, full body, same canvas and foot anchor as poppy_idle, for the dark red-lit playroom: neck stretched ~25% (head higher), head tilted 25 degrees, eyes are big flat glossy BLACK buttons with no catchlight (22% of head width), smile stretched past the outer eye edges over a thin row of small square teeth, arms hanging to the knees, glove fingers long and slightly spread, felt dirtier and faded. Drawn under neutral light (the compositor grades it red). Mouth closed: in the story she never opens it again.",
+      "transparent": true,
+      "size": [
+        420,
+        640
+      ],
+      "used_in": [
+        "8b"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_cover_eyes.png",
+      "description": "Wrong Poppy (same Stage 2 body as poppy_wrong_idle) counting for hide-and-seek: both gloved hands pressed over her eyes, the too-long fingers spread across her face; through one gap between two fingers ONE realistic human eye (sclera all round, pinpoint pupil) peeks straight at the viewer. Closed smile visible below the hands. Same canvas and foot anchor; the compositor crops it to waist-up and head-only, so the head and hands need the most detail.",
+      "transparent": true,
+      "size": [
+        420,
+        640
+      ],
+      "used_in": [
+        "8c",
+        "8d",
+        "8h"
+      ]
+    },
+    {
+      "file": "build/art/poppy/costume_slumped.png",
+      "description": "The EMPTY Poppy costume slumped in a chair (do not draw the chair): the hollow mascot head has fallen onto its right shoulder, its neck opening a dark hole; same petal ring and seed-pod nose, but the eyes are black mesh vision holes; the body deflated and folded at the waist, the overalls' bib sagging, empty white gloves hanging limp where the chair arms would be, legs bent forward and flattened toward the viewer. Clearly nobody inside. Seat contact point (bottom centre of the pelvis) at (210, 330) in the canvas.",
+      "transparent": true,
+      "size": [
+        420,
+        480
+      ],
+      "used_in": [
+        "7f"
+      ]
+    },
+    {
+      "file": "build/art/poppy/costume_standing.png",
+      "description": "The empty Poppy costume standing upright by itself, to be shown far away (~70 px tall): facing the viewer, head tilted 20 degrees, arms hanging limp to the knees, black mesh eye holes. Feet bottom centre at (120, 630). A simple, readable silhouette under neutral light (the compositor grades it).",
+      "transparent": true,
+      "size": [
+        240,
+        640
+      ],
+      "used_in": [
+        "7i"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_scare_costume.png",
+      "description": "JUMP SCARE 1 (camcorder). The costume head lunging into the lens and filling ~85% of the frame, lit flat and hard from the front by a camcorder's on-camera light (bright face, hard shadow, black background). Crumpled felt, petal ring crushed on one side, mouth hanging open as a dark stretched hole; deep inside each black mesh eye hole a glinting realistic eye with a pinpoint pupil stares dead centre. Centre razor sharp, slight motion blur only at the edges. The sharpest, best-lit image in the tape so far. No blood or gore.",
+      "transparent": false,
+      "size": [
+        800,
+        600
+      ],
+      "used_in": [
+        "7o"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_scare_closet.png",
+      "description": "JUMP SCARE 2 (closet). Stage 3 Poppy face pushed through the closet gap: fills ~75% of the frame height, stretched vertically ~12%, underlit cold blue-white from below (nightlight), realistic wide eyes (27% of head width, sclera all round, 8% pinpoint pupils), dead-centre gaze into the lens, smile 30% wider than normal with 22 identical small square white teeth filling the mouth, petals crushed by dark painted door edges at the left and right frame edges, black closet interior around. No blood or gore.",
+      "transparent": false,
+      "size": [
+        800,
+        600
+      ],
+      "used_in": [
+        "8i",
+        "8m"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_scare_final.png",
+      "description": "JUMP SCARE 3 (dark playroom). Stage 3 Poppy at her worst: head tilted 25 degrees and filling ~90% of the frame; huge, fully BLACK glossy eyes (27% of head width, no catchlight); mouth gaping open in a silent scream, a tall dark oval lined with rows of identical small square teeth; face stretched vertically ~15%; red key light from below-left plus a hard white rim light on the petals, which flare outward like a threat display; dark red-black background. No blood or gore.",
+      "transparent": false,
+      "size": [
+        800,
+        600
+      ],
+      "used_in": [
+        "10g"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_final_close.png",
+      "description": "The last image of the tape. Ordinary friendly Poppy (Stage 1 face, button eyes WITH catchlights again, gentle closed smile) impossibly close to the lens: the face overfills the frame (forehead and chin cut off, petals only in the corners), slight wide-angle bulge, both pupils now dead centre on the lens, soft warm bedside-lamp light from the left, the dark bedroom (moonlit window, bed edge) faintly visible and blurred at the edges. Calm and still: dread, not a scare.",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "11g"
+      ]
+    }
+  ],
+  "misc_art": [
+    {
+      "file": "build/art/misc/ident_sunny_meadow.png",
+      "description": "Sunny Meadow Home Video ident card, early-90s airbrushed look: sky gradient (pale yellow at the horizon to warm blue), a big cheerful sun with a simple smiling face rising behind two rolling green meadow hills dotted with tiny red, white and yellow flowers, soft rays; the wordmark 'Sunny Meadow' in rounded bold lettering (white with an orange outline and soft drop shadow) across the lower third, and 'HOME VIDEO' in small letter-spaced caps beneath. Original design, no resemblance to any real company's logo.",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "1e"
+      ]
+    },
+    {
+      "file": "build/art/misc/sm_logo.png",
+      "description": "Logo-only version of the Sunny Meadow mark (small smiling sun over two hills plus the 'Sunny Meadow' wordmark), for the home-viewing card and the advisory cards.",
+      "transparent": true,
+      "size": [
+        240,
+        160
+      ],
+      "used_in": [
+        "1f",
+        "9a"
+      ]
+    },
+    {
+      "file": "build/art/misc/title_card.png",
+      "description": "Show title card: sky-blue radial sunburst (alternating light/dark blue rays), a border of red poppies and green leaves along the bottom-left corner; 'THE WORLD OF' in small white rounded caps above a huge bubbly 'POPPY!' in red with a thick yellow outline, white highlights and a dark drop shadow, slightly arched; a few twinkle stars. Leave the lower-right area (x=420-640, y=220-480) as clear sky for the composited waving Poppy, and keep the bottom 60 px calm for sing-along captions.",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "2a",
+        "2g",
+        "11b"
+      ]
+    },
+    {
+      "file": "build/art/misc/bumper_bg.png",
+      "description": "Segment bumper background: bright yellow-orange radial sunburst with a felt-flower border (red poppies, daisies), and a rounded white panel in the centre (about x=90-550, y=150-330) left BLANK for compositor text ('COUNTING TIME!' etc.), bouncing flowers, or a friend portrait.",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "2c",
+        "2d",
+        "4a",
+        "5a",
+        "6a",
+        "6c",
+        "6d",
+        "6e"
+      ]
+    },
+    {
+      "file": "build/art/misc/flower_1.png",
+      "description": "Felt cut-out flower 1: a white daisy with a yellow centre that has a simple cute face (two black dot eyes, small smile), on a green felt stem with two leaves, stitched edges, felt texture. Stem bottom at the canvas bottom centre.",
+      "transparent": true,
+      "size": [
+        200,
+        320
+      ],
+      "used_in": [
+        "2c",
+        "4b"
+      ]
+    },
+    {
+      "file": "build/art/misc/flower_2.png",
+      "description": "Felt cut-out flower 2: a pink tulip with the cute dot-eyed face on the cup; same stem, style and anchor as flower_1.",
+      "transparent": true,
+      "size": [
+        200,
+        320
+      ],
+      "used_in": [
+        "2c",
+        "4b"
+      ]
+    },
+    {
+      "file": "build/art/misc/flower_3.png",
+      "description": "Felt cut-out flower 3: a sunflower with the cute face on its brown centre; same stem, style and anchor as flower_1.",
+      "transparent": true,
+      "size": [
+        200,
+        320
+      ],
+      "used_in": [
+        "2c",
+        "4b"
+      ]
+    },
+    {
+      "file": "build/art/misc/flower_4.png",
+      "description": "Felt cut-out flower 4: a blue bell-flower cluster with the cute face on the biggest bloom; same stem, style and anchor as flower_1.",
+      "transparent": true,
+      "size": [
+        200,
+        320
+      ],
+      "used_in": [
+        "2c",
+        "4b"
+      ]
+    },
+    {
+      "file": "build/art/misc/flower_5_eye.png",
+      "description": "Felt cut-out flower 5: a red felt poppy, same felt style and stem as flowers 1-4 but with NO cute face: its black seed-pod centre is replaced by a single realistic human eye (wet look, detailed iris, sclera visible all round, pinpoint pupil, small pink corners) looking to screen-left, toward Poppy and not at the viewer.",
+      "transparent": true,
+      "size": [
+        200,
+        320
+      ],
+      "used_in": [
+        "4b",
+        "4d"
+      ]
+    },
+    {
+      "file": "build/art/misc/flower_5_eye_look.png",
+      "description": "Identical to flower_5_eye (same pixels) except the eye now looks straight out at the viewer, pupil dead centre.",
+      "transparent": true,
+      "size": [
+        200,
+        320
+      ],
+      "used_in": [
+        "4d"
+      ]
+    },
+    {
+      "file": "build/art/misc/feel_happy.png",
+      "description": "Feelings face card: a round sunny-yellow felt face with a big smile and rosy cheeks on a pale card, with a word strip underneath in rounded hand-cut felt letters: 'HAPPY'.",
+      "transparent": true,
+      "size": [
+        240,
+        300
+      ],
+      "used_in": [
+        "5c"
+      ]
+    },
+    {
+      "file": "build/art/misc/feel_sad.png",
+      "description": "Feelings face card, same format: light-blue felt face, downturned mouth, one felt tear. Label 'SAD'.",
+      "transparent": true,
+      "size": [
+        240,
+        300
+      ],
+      "used_in": [
+        "5c"
+      ]
+    },
+    {
+      "file": "build/art/misc/feel_angry.png",
+      "description": "Feelings face card, same format: orange-red felt face, slanted brows, frown. Label 'ANGRY'.",
+      "transparent": true,
+      "size": [
+        240,
+        300
+      ],
+      "used_in": [
+        "5c"
+      ]
+    },
+    {
+      "file": "build/art/misc/feel_scared.png",
+      "description": "Feelings face card, same format: lavender felt face, round eyes, wavy mouth. Label 'SCARED'.",
+      "transparent": true,
+      "size": [
+        240,
+        300
+      ],
+      "used_in": [
+        "5c"
+      ]
+    },
+    {
+      "file": "build/art/misc/feel_hungry.png",
+      "description": "The fifth feelings face that should not exist. Same card format, but the felt is a sickly pale cream-grey; realistic human eyes (sclera all round, pinpoint pupils, no catchlight); a smile far too wide packed with ~24 identical small square white teeth; the label 'HUNGRY' hand-lettered in marker, crooked and slightly too big. Must read at ~80 px tall on the board and also hold up as a full-screen insert.",
+      "transparent": true,
+      "size": [
+        240,
+        300
+      ],
+      "used_in": [
+        "5d",
+        "5e",
+        "10e"
+      ]
+    },
+    {
+      "file": "build/art/misc/friend_mr_buttons.png",
+      "description": "Friend portrait card: a sky-blue scalloped picture frame around Mr. Buttons, a brown felt teddy bear with mismatched button eyes (one big blue four-hole button, one small black one), cream muzzle with a stitched smile, red bow tie, one ear patched with plaid. Name banner 'MR. BUTTONS' across the bottom.",
+      "transparent": true,
+      "size": [
+        320,
+        360
+      ],
+      "used_in": [
+        "2d",
+        "6c"
+      ]
+    },
+    {
+      "file": "build/art/misc/friend_dot.png",
+      "description": "Friend portrait card, same frame style in pink: Dot, a round red felt ladybug with black spots, big friendly eyes, curly pipe-cleaner antennae with pom-poms, rosy cheeks, sitting on a leaf. Banner 'DOT'.",
+      "transparent": true,
+      "size": [
+        320,
+        360
+      ],
+      "used_in": [
+        "2d",
+        "6d"
+      ]
+    },
+    {
+      "file": "build/art/misc/friend_pip_scribbled.png",
+      "description": "Friend portrait card, same frame style in yellow: Pip, a small round sky-blue felt bird with an orange beak and a feather tuft, but the whole portrait is violently scribbled over with heavy black crayon loops (face completely covered, strokes overrunning the frame), the card creased and one corner torn off; the banner 'PIP' is still readable.",
+      "transparent": true,
+      "size": [
+        320,
+        360
+      ],
+      "used_in": [
+        "6e"
+      ]
+    },
+    {
+      "file": "build/art/misc/memo_card.png",
+      "description": "Typed internal memo, photographed: off-white, slightly yellowed paper filling the frame, typewriter font (uneven ink, a couple of struck-over letters), a coffee ring, a strip of tape across the top. EXACT TEXT ('/' = new line, '//' = blank line): SUNNY MEADOW HOME VIDEO / INTERNAL MEMO // TO: \"The World of Poppy\" crew, Studio B / FROM: R. Hollis, Production Office / DATE: June 12, 1996 / RE: After-hours rules // 1. Return all props to the prop room after taping. / 2. Craft services closes at 6:00 PM on Fridays. / 3. Do not leave the Poppy costume unattended in Studio B or the dressing rooms. / 4. If the costume speaks when no one is inside it, do not answer it. // Handwritten in blue ballpoint below: \"Dana says it finished the song without her. - R.\" Put items 3-4 and the handwritten line in the lower half, because the compositor's pan ends on them. Keep the type large enough to read at 640x480 after VHS blur (body ~20 px cap height).",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "7g"
+      ]
+    },
+    {
+      "file": "build/art/misc/end_card.png",
+      "description": "End card in the same style as title_card (sky-blue sunburst, poppy border): 'SEE YOU TOMORROW, FRIEND!' in bubbly red letters with a yellow outline over two lines, upper half. Same lower-right clear area as title_card for the waving Poppy.",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "11c"
+      ]
+    },
+    {
+      "file": "build/art/misc/end_card_cracked.png",
+      "description": "end_card broken: identical layout, but the picture is cracked like a smashed plastic/glass screen, with dark fracture lines radiating from the lower right (where Poppy stood, now empty); colours drained to a sickly sepia-green; a few chipped letters (still readable); grimy grey smudges (not red).",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "11d"
+      ]
+    },
+    {
+      "file": "build/art/misc/sub_crayon_house.png",
+      "description": "Child's crayon drawing on off-white paper (3-frame subliminal): a simple house with a peaked roof; in an upstairs window a small stick-figure child; right behind the child, inside the house, a much taller figure with a ring of red petals around a round face, black dot eyes, a huge toothy smile and very long arms; a yellow sun in the corner; scrawled kid handwriting 'POPPY IS IN MY HOUSE' with a backwards S. Heavy waxy crayon texture.",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "11e"
+      ]
+    },
+    {
+      "file": "build/art/misc/sub_eyes_dark.png",
+      "description": "Near-black subliminal frame: two realistic wide human eyes (sclera all round, pinpoint pupils) glinting out of darkness in the left third, set in the barely visible edge of a felt face with a hint of red petals. Everything else black.",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "6g"
+      ]
+    },
+    {
+      "file": "build/art/misc/sub_teeth.png",
+      "description": "Subliminal extreme close-up: cream felt with visible fibres around a too-wide mouth packed with ~24 identical small square white teeth (too white, too clean) and dark maroon felt inside; red petals at the frame corners. No blood.",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "7c"
+      ]
+    }
+  ],
+  "audio": [
+    {
+      "file": "build/audio/mus_ident_chime.wav",
+      "kind": "music",
+      "description": "Sunny Meadow ident jingle, 5.0 s: a bright rising 4-note toy-piano/glockenspiel motif (C-E-G-C') over a warm pad and a soft shaker, ending on a sparkle and a held major chord that decays. Clean (Act 1). Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 5.0,
+      "used_in": [
+        "1e"
+      ]
+    },
+    {
+      "file": "build/audio/mus_theme.wav",
+      "kind": "music",
+      "description": "THE WORLD OF POPPY theme song, FULL MIX with vocals, exactly 23.0 s. Original 2-bars-per-line tune in C major pentatonic on toy piano (sine + partials x2 and x3, 0.3-0.6 s decays), simple bass, handclaps, a glockenspiel counter-melody; 160 bpm (1 bar = 1.5 s). Structure: 2.0 s intro; six sung lines starting at 2.0, 5.0, 8.0, 11.0, 14.0 and 17.0 s (poppy_sung voice, robotic sing-song); outro 20.0-23.0 s with the spoken 'Hi, friend!' (poppy preset) at 20.4 s and a button ending. Only Act-1 wrongness: notes detuned randomly by +-15 cents, nothing more. Write the actual line start times into build/audio/manifest.json as 'lyrics': [[start, text], ...]. Peak -1 dBFS.",
+      "text": "Poppy, Poppy, red and bright, / in the meadow, warm and light! / Count the flowers, one, two, three, / feel your feelings, friends with me! / Close your eyes and hide away, / Poppy finds you every day! / (spoken) Hi, friend!",
+      "voice": "poppy_sung",
+      "target_seconds": 23.0,
+      "used_in": [
+        "2a"
+      ]
+    },
+    {
+      "file": "build/audio/mus_bumper.wav",
+      "kind": "music",
+      "description": "Segment bumper sting, 2.0 s: quick toy-piano arpeggio up, slide whistle, 'ta-da' chord. Clean. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 2.0,
+      "used_in": [
+        "4a",
+        "5a",
+        "6a"
+      ]
+    },
+    {
+      "file": "build/audio/mus_playroom_bed.wav",
+      "kind": "music",
+      "description": "Background music bed for the show, 30.0 s seamless loop: gentle toy piano and glockenspiel noodling on the theme melody in C major pentatonic, soft bass, 100 bpm, light +-15 cent detune. Must loop without a click. Peak -6 dBFS (the compositor mixes it at about -24 dBFS under dialogue).",
+      "text": "",
+      "voice": "",
+      "target_seconds": 30.0,
+      "used_in": [
+        "3a"
+      ]
+    },
+    {
+      "file": "build/audio/mus_playroom_bed_wrong.wav",
+      "kind": "music",
+      "description": "The same bed gone wrong, 30.0 s loop: mus_playroom_bed resampled x0.94 (about 1 semitone flat) and slowed to ~80% tempo, random +-30 cent detune per note, noise-driven wow (0.5-1.5 Hz, depth 1.5%) and flutter (6-12 Hz, 0.2%), a few notes dropping out, low-passed at 3 kHz. Peak -6 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 30.0,
+      "used_in": [
+        "8b"
+      ]
+    },
+    {
+      "file": "build/audio/mus_music_box.wav",
+      "kind": "music",
+      "description": "Music-box version of the theme melody, exactly 19.5 s: sine partials plus inharmonic metallic partials at x2.76 and x5.40, faint mechanism clicks. Plays normally for ~14 s, then winds down (tempo and pitch decay exponentially) and stops mid-phrase on a half-struck note at exactly 19.5 s (no fade, no tail). Peak -6 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 19.5,
+      "used_in": [
+        "9a"
+      ]
+    },
+    {
+      "file": "build/audio/mus_reprise.wav",
+      "kind": "music",
+      "description": "Theme reprise for the ending, ~17.0 s: the theme slowed to 0.8x tempo and ~1.5 semitones flat, each note detuned +-25 cents, noise-driven wow/flutter growing from 0.3% to 2%, vocals deeper and slower (poppy_sung resampled x0.85). Intro 1.0 s; four sung lines starting at 1.0, 4.6, 8.2 and 11.8 s; the last note (~14.8 s) a tritone off; then the instrument winds down like a dying tape and is silent by 16.5 s, followed by 0.5 s of hiss. Write the line starts into manifest.json 'lyrics'. Peak -3 dBFS.",
+      "text": "Poppy, Poppy, red and bright, / in your house, and out of sight. / Close your eyes and hide away, / Poppy found you. Now you stay.",
+      "voice": "poppy_sung",
+      "target_seconds": 17.0,
+      "used_in": [
+        "11b"
+      ]
+    },
+    {
+      "file": "build/audio/amb_room_tone.wav",
+      "kind": "ambience",
+      "description": "Room tone, 20 s seamless loop: brown noise low-passed at 500 Hz plus a very faint 120 Hz hum. Normalised to -20 dBFS RMS; the compositor places it around -42 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 20.0,
+      "used_in": [
+        "4c",
+        "6f"
+      ]
+    },
+    {
+      "file": "build/audio/amb_studio_night.wav",
+      "kind": "ambience",
+      "description": "Empty TV studio at night, 20 s loop: low HVAC rumble, faint ghost-light filament buzz (120 Hz + harmonics), a distant metal tick every ~6 s, big-room reverb. Peak -6 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 20.0,
+      "used_in": [
+        "7b"
+      ]
+    },
+    {
+      "file": "build/audio/amb_fluorescent.wav",
+      "kind": "ambience",
+      "description": "Fluorescent ballast hum, 20 s loop: 120 Hz + harmonics, slightly crunchy, with occasional flicker ticks; small-room reflections. Peak -6 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 20.0,
+      "used_in": [
+        "7e",
+        "7f",
+        "7g",
+        "7h"
+      ]
+    },
+    {
+      "file": "build/audio/amb_house_night.wav",
+      "kind": "ambience",
+      "description": "Quiet house at night, 20 s loop: distant fridge hum, a slow far-away clock tick (1 Hz), soft wind against a window. Peak -6 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 20.0,
+      "used_in": [
+        "8d",
+        "11g"
+      ]
+    },
+    {
+      "file": "build/audio/amb_drone.wav",
+      "kind": "ambience",
+      "description": "Dread drone, 20 s loop: sines at 41 and 42 Hz (1 Hz beating) plus 82/83 Hz partials and band-passed noise 60-300 Hz with slow movement; nothing below 30 Hz. Steady level so the compositor can swell and cut it. Peak -6 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 20.0,
+      "used_in": [
+        "4c",
+        "7h",
+        "8c",
+        "10b"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_vcr_insert.wav",
+      "kind": "sfx",
+      "description": "VCR cassette insert: plastic clack, mechanism clunk, short motor whirr, 1.2 s. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 1.2,
+      "used_in": [
+        "1a"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_vcr_stop.wav",
+      "kind": "sfx",
+      "description": "VCR STOP button: mechanism clunk plus a short motor wind-down, 0.6 s. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 0.6,
+      "used_in": [
+        "11h"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_bars_tone.wav",
+      "kind": "sfx",
+      "description": "Colour-bars reference tone: 1 kHz sine, 4.0 s, 5 ms fades. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 4.0,
+      "used_in": [
+        "1d"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_static_burst.wav",
+      "kind": "sfx",
+      "description": "TV static, 1.5 s: uniform noise band-limited 200-9000 Hz with a hard ceiling (like snow() in horror/make_video.py), slight amplitude flutter. Peak -1 dBFS; the compositor trims it.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 1.5,
+      "used_in": [
+        "1c",
+        "6g",
+        "7p",
+        "11a",
+        "11f"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_tracking_garble.wav",
+      "kind": "sfx",
+      "description": "Tracking-error garble, 0.6 s: chopped, pitch-wobbled noise plus a smeared fragment of toy piano, warbling. Peak -1 dBFS; trimmed freely by the compositor.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 0.6,
+      "used_in": [
+        "1c",
+        "1g",
+        "5d",
+        "6g",
+        "8a",
+        "8i",
+        "9c",
+        "10a",
+        "11e"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_pop.wav",
+      "kind": "sfx",
+      "description": "Cartoon felt 'boing-pop' for items appearing on the felt board, 0.35 s (sine pitch blip up plus soft noise puff). Peak -1 dBFS. The compositor plays it resampled x0.7 for flower 5.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 0.35,
+      "used_in": [
+        "2c",
+        "4b",
+        "5c",
+        "6c",
+        "6d"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_scribble.wav",
+      "kind": "sfx",
+      "description": "Harsh, fast, angry crayon scribbling on paper, 1.5 s. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 1.5,
+      "used_in": [
+        "6e"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_cam_beep.wav",
+      "kind": "sfx",
+      "description": "Camcorder record-start: two short 2.6 kHz beeps (0.1 s each, 0.08 s apart) plus a tiny tape-transport click. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 0.4,
+      "used_in": [
+        "7a"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_footsteps.wav",
+      "kind": "sfx",
+      "description": "Slow nervous footsteps on concrete/linoleum heard through a camcorder mic, 8.0 s, ~1.7 steps per second, loopable. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 8.0,
+      "used_in": [
+        "7b",
+        "7e"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_clunk.wav",
+      "kind": "sfx",
+      "description": "FALSE SCARE 1: a tall metal light stand toppling in a big empty studio: short creak, loud clang on concrete, rattling tail with reverb, 1.5 s. Normalised to peak -1 dBFS; the compositor plays it at -12 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 1.5,
+      "used_in": [
+        "7c"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_hanger.wav",
+      "kind": "sfx",
+      "description": "Wire hangers jangling on a metal clothes rail, 0.8 s. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 0.8,
+      "used_in": [
+        "7n"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_cam_drop.wav",
+      "kind": "sfx",
+      "description": "Camcorder dropped: plastic thud on a hard floor, rattle, microphone crunch/overload, 0.8 s. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 0.8,
+      "used_in": [
+        "7p"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_toy_fall.wav",
+      "kind": "sfx",
+      "description": "FALSE SCARE 2: a hard plastic toy hits a wooden floor and bounces twice, then its voice box chirps a warped two-note 'hee-hee' (synth, not a real toy sample), 1.2 s. Peak -1 dBFS; played at -12 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 1.2,
+      "used_in": [
+        "8g"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_door_creak.wav",
+      "kind": "sfx",
+      "description": "Slow wooden door creak (friction-modulated resonances), 2.0 s. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 2.0,
+      "used_in": [
+        "8l",
+        "10f"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_stinger_1.wav",
+      "kind": "sfx",
+      "description": "Scare-1 stinger (camcorder), ~1.0 s: attack under 5 ms; 0.3 s noise burst, 45 Hz decaying thump, 3 detuned saws 900-2400 Hz with 10 Hz vibrato and a downward glide, plus camcorder-mic overload crunch; through tanh. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 1.0,
+      "used_in": [
+        "7o"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_stinger_2.wav",
+      "kind": "sfx",
+      "description": "Scare-2 stinger (closet), ~1.0 s: attack under 5 ms; sharper and higher: 5 detuned saws 1200-3000 Hz with 12 Hz vibrato and a downward glide, short noise burst, 45 Hz thump; through tanh. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 1.0,
+      "used_in": [
+        "8m"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_stinger_3.wav",
+      "kind": "sfx",
+      "description": "Scare-3 stinger (the biggest), ~1.4 s: attack under 5 ms; 0.3 s noise burst, 45 Hz thump with a long decay, 5 detuned saws 800-3000 Hz with 8-14 Hz vibrato gliding down an octave; through tanh. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 1.4,
+      "used_in": [
+        "10g"
+      ]
+    },
+    {
+      "file": "build/audio/sfx_scream.wav",
+      "kind": "sfx",
+      "description": "Synthetic scream, under 1.5 s: espeak 'aaa' at -p 99 ring-modulated by a 40-70 Hz sine, plus noise through formant band-passes at ~800/1200/2500 Hz with 6-9 Hz vibrato at 4%, and a copy resampled x0.5 underneath as a growl. Attack under 5 ms. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 1.4,
+      "used_in": [
+        "10g"
+      ]
+    },
+    {
+      "file": "build/audio/vo_narr_ident.wav",
+      "kind": "voice",
+      "description": "NARRATOR - Sunny Meadow announcer: warm, calm, corporate. Preset 'narrator' (see STORYBOARD.md section 5).",
+      "text": "Sunny Meadow Home Video presents...",
+      "voice": "narrator",
+      "target_seconds": 2.6,
+      "used_in": [
+        "1e"
+      ]
+    },
+    {
+      "file": "build/audio/vo_greet_1.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
+      "text": "Hi, friend! It's me, Poppy! Welcome to my playroom!",
+      "voice": "poppy",
+      "target_seconds": 4.2,
+      "used_in": [
+        "3a"
+      ]
+    },
+    {
+      "file": "build/audio/vo_greet_2.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
+      "text": "I'm so glad you came over. You look ready to play!",
+      "voice": "poppy",
+      "target_seconds": 3.4,
+      "used_in": [
+        "3a"
+      ]
+    },
+    {
+      "file": "build/audio/vo_greet_3.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
+      "text": "Today we're going to have so much fun!",
+      "voice": "poppy",
+      "target_seconds": 2.6,
+      "used_in": [
+        "3a"
+      ]
+    },
+    {
+      "file": "build/audio/vo_count_intro.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
+      "text": "Let's count my flower friends! Count with me, friend!",
+      "voice": "poppy",
+      "target_seconds": 3.5,
+      "used_in": [
+        "4b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_count_1.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5). Bright and bouncy, rising pitch on each number.",
+      "text": "One!",
+      "voice": "poppy",
+      "target_seconds": 0.9,
+      "used_in": [
+        "4b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_count_2.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5). Bright and bouncy, rising pitch on each number.",
+      "text": "Two!",
+      "voice": "poppy",
+      "target_seconds": 0.9,
+      "used_in": [
+        "4b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_count_3.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5). Bright and bouncy, rising pitch on each number.",
+      "text": "Three!",
+      "voice": "poppy",
+      "target_seconds": 0.9,
+      "used_in": [
+        "4b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_count_4.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5). Bright and bouncy, rising pitch on each number.",
+      "text": "Four!",
+      "voice": "poppy",
+      "target_seconds": 0.9,
+      "used_in": [
+        "4b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_count_5.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5). Same bright delivery as 1-4; nothing in the voice reacts to the wrong flower.",
+      "text": "Five!",
+      "voice": "poppy",
+      "target_seconds": 0.9,
+      "used_in": [
+        "4b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_count_done.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5). Delivered exactly as cheerfully as before the freeze, as if nothing happened.",
+      "text": "Five flower friends! Great counting, friend!",
+      "voice": "poppy",
+      "target_seconds": 3.4,
+      "used_in": [
+        "4d"
+      ]
+    },
+    {
+      "file": "build/audio/vo_feel_intro.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
+      "text": "How do we feel today? Let's look at our feelings faces!",
+      "voice": "poppy",
+      "target_seconds": 3.9,
+      "used_in": [
+        "5b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_feel_happy.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
+      "text": "This is happy!",
+      "voice": "poppy",
+      "target_seconds": 1.1,
+      "used_in": [
+        "5c"
+      ]
+    },
+    {
+      "file": "build/audio/vo_feel_sad.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5). Mock-sad 'aww' inflection (lower pitch -p 70).",
+      "text": "This is sad.",
+      "voice": "poppy",
+      "target_seconds": 1.1,
+      "used_in": [
+        "5c"
+      ]
+    },
+    {
+      "file": "build/audio/vo_feel_angry.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
+      "text": "This is angry!",
+      "voice": "poppy",
+      "target_seconds": 1.1,
+      "used_in": [
+        "5c"
+      ]
+    },
+    {
+      "file": "build/audio/vo_feel_scared.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
+      "text": "This is scared.",
+      "voice": "poppy",
+      "target_seconds": 1.1,
+      "used_in": [
+        "5c"
+      ]
+    },
+    {
+      "file": "build/audio/vo_feel_hungry.wav",
+      "kind": "voice",
+      "description": "POPPY - flat: same voice, slower, no melody, a little too close. Preset 'poppy_flat' (see STORYBOARD.md section 5).",
+      "text": "This is hungry.",
+      "voice": "poppy_flat",
+      "target_seconds": 1.4,
+      "used_in": [
+        "5f"
+      ]
+    },
+    {
+      "file": "build/audio/vo_feel_hungry_2.wav",
+      "kind": "voice",
+      "description": "POPPY - flat: same voice, slower, no melody, a little too close. Preset 'poppy_flat' (see STORYBOARD.md section 5).",
+      "text": "It's okay to feel hungry, friend.",
+      "voice": "poppy_flat",
+      "target_seconds": 2.8,
+      "used_in": [
+        "5g"
+      ]
+    },
+    {
+      "file": "build/audio/vo_friends_intro.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
+      "text": "Let's say hello to all my friends!",
+      "voice": "poppy",
+      "target_seconds": 2.2,
+      "used_in": [
+        "6b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_friends_buttons.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
+      "text": "Hello, Mister Buttons!",
+      "voice": "poppy",
+      "target_seconds": 1.8,
+      "used_in": [
+        "6c"
+      ]
+    },
+    {
+      "file": "build/audio/vo_friends_dot.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
+      "text": "Hello, Dot!",
+      "voice": "poppy",
+      "target_seconds": 1.3,
+      "used_in": [
+        "6d"
+      ]
+    },
+    {
+      "file": "build/audio/vo_friends_pip.wav",
+      "kind": "voice",
+      "description": "POPPY - flat: same voice, slower, no melody, a little too close. Preset 'poppy_flat' (see STORYBOARD.md section 5).",
+      "text": "Pip didn't follow the rules.",
+      "voice": "poppy_flat",
+      "target_seconds": 2.1,
+      "used_in": [
+        "6e"
+      ]
+    },
+    {
+      "file": "build/audio/vo_friends_pip_2.wav",
+      "kind": "voice",
+      "description": "POPPY - flat: same voice, slower, no melody, a little too close. Preset 'poppy_flat' (see STORYBOARD.md section 5). Slightly drier and closer than vo_friends_pip.",
+      "text": "You follow the rules. Don't you, friend?",
+      "voice": "poppy_flat",
+      "target_seconds": 3.3,
+      "used_in": [
+        "6f"
+      ]
+    },
+    {
+      "file": "build/audio/vo_crew_1.wav",
+      "kind": "voice",
+      "description": "CREW (camcorder operator) - nervous whisper, close to a cheap camcorder mic. Preset 'crew' (see STORYBOARD.md section 5).",
+      "text": "Okay. It's almost midnight. Studio B. Everybody went home.",
+      "voice": "crew",
+      "target_seconds": 5.0,
+      "used_in": [
+        "7b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_crew_2.wav",
+      "kind": "voice",
+      "description": "CREW (camcorder operator) - nervous whisper, close to a cheap camcorder mic. Preset 'crew' (see STORYBOARD.md section 5). Louder than the other crew lines, called out into the dark.",
+      "text": "Hello?",
+      "voice": "crew",
+      "target_seconds": 0.7,
+      "used_in": [
+        "7d"
+      ]
+    },
+    {
+      "file": "build/audio/vo_crew_3.wav",
+      "kind": "voice",
+      "description": "CREW (camcorder operator) - nervous whisper, close to a cheap camcorder mic. Preset 'crew' (see STORYBOARD.md section 5). Relieved, a breathy half-laugh feel.",
+      "text": "It's just a light stand.",
+      "voice": "crew",
+      "target_seconds": 1.6,
+      "used_in": [
+        "7d"
+      ]
+    },
+    {
+      "file": "build/audio/vo_crew_4.wav",
+      "kind": "voice",
+      "description": "CREW (camcorder operator) - nervous whisper, close to a cheap camcorder mic. Preset 'crew' (see STORYBOARD.md section 5).",
+      "text": "Dana left it in dressing room two. She won't touch it anymore.",
+      "voice": "crew",
+      "target_seconds": 4.2,
+      "used_in": [
+        "7e"
+      ]
+    },
+    {
+      "file": "build/audio/vo_crew_5.wav",
+      "kind": "voice",
+      "description": "CREW (camcorder operator) - nervous whisper, close to a cheap camcorder mic. Preset 'crew' (see STORYBOARD.md section 5).",
+      "text": "There it is.",
+      "voice": "crew",
+      "target_seconds": 0.9,
+      "used_in": [
+        "7f"
+      ]
+    },
+    {
+      "file": "build/audio/vo_crew_6.wav",
+      "kind": "voice",
+      "description": "CREW (camcorder operator) - nervous whisper, close to a cheap camcorder mic. Preset 'crew' (see STORYBOARD.md section 5). Barely audible.",
+      "text": "Where did it go?",
+      "voice": "crew",
+      "target_seconds": 1.2,
+      "used_in": [
+        "7h"
+      ]
+    },
+    {
+      "file": "build/audio/vo_wrong_welcome.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5).",
+      "text": "Welcome back, friend. I missed you.",
+      "voice": "poppy_wrong",
+      "target_seconds": 4.0,
+      "used_in": [
+        "8b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_wrong_game.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5).",
+      "text": "Let's play hide and seek, friend! I'll count.",
+      "voice": "poppy_wrong",
+      "target_seconds": 4.0,
+      "used_in": [
+        "8b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_hs_1.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5). Hide-and-seek count number 1: poppy_wrong preset but resample x0.90 instead of x0.82 (each number lower and slower than the last); octave-down double at -18 dB.",
+      "text": "One.",
+      "voice": "poppy_wrong",
+      "target_seconds": 0.68,
+      "used_in": [
+        "8c",
+        "10c"
+      ]
+    },
+    {
+      "file": "build/audio/vo_hs_2.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5). Hide-and-seek count number 2: poppy_wrong preset but resample x0.88 instead of x0.82 (each number lower and slower than the last); octave-down double at -16 dB.",
+      "text": "Two.",
+      "voice": "poppy_wrong",
+      "target_seconds": 0.76,
+      "used_in": [
+        "8d",
+        "10d"
+      ]
+    },
+    {
+      "file": "build/audio/vo_hs_3.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5). Hide-and-seek count number 3: poppy_wrong preset but resample x0.86 instead of x0.82 (each number lower and slower than the last); octave-down double at -15 dB.",
+      "text": "Three.",
+      "voice": "poppy_wrong",
+      "target_seconds": 0.84,
+      "used_in": [
+        "8e",
+        "10e"
+      ]
+    },
+    {
+      "file": "build/audio/vo_hs_4.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5). Hide-and-seek count number 4: poppy_wrong preset but resample x0.84 instead of x0.82 (each number lower and slower than the last); octave-down double at -14 dB.",
+      "text": "Four.",
+      "voice": "poppy_wrong",
+      "target_seconds": 0.92,
+      "used_in": [
+        "8f"
+      ]
+    },
+    {
+      "file": "build/audio/vo_hs_5.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5). Hide-and-seek count number 5: poppy_wrong preset but resample x0.81 instead of x0.82 (each number lower and slower than the last); octave-down double at -12 dB.",
+      "text": "Five.",
+      "voice": "poppy_wrong",
+      "target_seconds": 1.0,
+      "used_in": [
+        "8g"
+      ]
+    },
+    {
+      "file": "build/audio/vo_hs_6.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5). Hide-and-seek count number 6: poppy_wrong preset but resample x0.78 instead of x0.82 (each number lower and slower than the last); octave-down double at -10 dB.",
+      "text": "Six.",
+      "voice": "poppy_wrong",
+      "target_seconds": 1.08,
+      "used_in": [
+        "8h"
+      ]
+    },
+    {
+      "file": "build/audio/vo_hs_7.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5). Hide-and-seek count number 7: poppy_wrong preset but resample x0.75 instead of x0.82 (each number lower and slower than the last); octave-down double at -9 dB.",
+      "text": "Seven.",
+      "voice": "poppy_wrong",
+      "target_seconds": 1.16,
+      "used_in": [
+        "8i"
+      ]
+    },
+    {
+      "file": "build/audio/vo_hs_8.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5). Hide-and-seek count number 8: poppy_wrong preset but resample x0.72 instead of x0.82 (each number lower and slower than the last); octave-down double at -8 dB. Completely dry and close, as if spoken in the room right next to you.",
+      "text": "Eight.",
+      "voice": "poppy_wrong",
+      "target_seconds": 1.24,
+      "used_in": [
+        "8j"
+      ]
+    },
+    {
+      "file": "build/audio/vo_hs_9.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5). Hide-and-seek count number 9: poppy_wrong preset but resample x0.68 instead of x0.82 (each number lower and slower than the last); octave-down double at -6 dB. Completely dry and close, as if spoken in the room right next to you.",
+      "text": "Nine.",
+      "voice": "poppy_wrong",
+      "target_seconds": 1.32,
+      "used_in": [
+        "8k"
+      ]
+    },
+    {
+      "file": "build/audio/vo_hs_10.wav",
+      "kind": "voice",
+      "description": "POPPY (WHISPER) - dry whisper right at the microphone, hard attack. Preset 'poppy_whisper' (see STORYBOARD.md section 5). Lands on the first frame of scare 2. Must start with a hard consonant attack.",
+      "text": "Ten.",
+      "voice": "poppy_whisper",
+      "target_seconds": 0.7,
+      "used_in": [
+        "8m"
+      ]
+    },
+    {
+      "file": "build/audio/vo_narr_adv_a.wav",
+      "kind": "voice",
+      "description": "NARRATOR - Sunny Meadow announcer: warm, calm, corporate. Preset 'narrator' (see STORYBOARD.md section 5).",
+      "text": "This videocassette was recalled in nineteen ninety-six. If you are watching it, please stop the tape.",
+      "voice": "narrator",
+      "target_seconds": 6.6,
+      "used_in": [
+        "9a"
+      ]
+    },
+    {
+      "file": "build/audio/vo_narr_adv_e.wav",
+      "kind": "voice",
+      "description": "NARRATOR - Sunny Meadow announcer: warm, calm, corporate. Preset 'narrator' (see STORYBOARD.md section 5).",
+      "text": "Thank you for watching Sunny Meadow Home Video. Please stop the tape.",
+      "voice": "narrator",
+      "target_seconds": 4.8,
+      "used_in": [
+        "9e"
+      ]
+    },
+    {
+      "file": "build/audio/vo_wrong_stop.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5).",
+      "text": "You didn't stop the tape, friend.",
+      "voice": "poppy_wrong",
+      "target_seconds": 3.2,
+      "used_in": [
+        "10b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_wrong_again.wav",
+      "kind": "voice",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5).",
+      "text": "That's okay. Let's count again.",
+      "voice": "poppy_wrong",
+      "target_seconds": 3.4,
+      "used_in": [
+        "10b"
+      ]
+    },
+    {
+      "file": "build/audio/vo_end_see_you.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5). Bright and cheerful (wrong in its cheerfulness); then resample x0.9 with light wow so it sits in the dying reprise.",
+      "text": "See you tomorrow, friend!",
+      "voice": "poppy",
+      "target_seconds": 1.9,
+      "used_in": [
+        "11c"
+      ]
+    }
+  ]
+}

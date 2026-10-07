@@ -1,0 +1,296 @@
+{
+ "_note": "Pixel coordinates in each room image's own resolution, origin top-left. Written by poppy/render_rooms.py from the Blender cameras.",
+ "backstage_corridor": {
+  "costume_head_top_for_1p8m": [
+   326.9,
+   217.1
+  ],
+  "far_door_rect": [
+   307.2,
+   207.1,
+   343.7,
+   283.8
+  ],
+  "far_end_foot": [
+   326.9,
+   290.1
+  ],
+  "far_end_foot_mirrored": [
+   313.1,
+   290.1
+  ],
+  "note": "The compositor mirrors this image horizontally for 'looking back' shots; use far_end_foot_mirrored there.",
+  "px_per_m_at_far_end": 40.6,
+  "size": [
+   640,
+   480
+  ]
+ },
+ "dressing_room": {
+  "backrest_top": [
+   398.4,
+   227.4
+  ],
+  "chair_rect": [
+   348.5,
+   225.3,
+   458.5,
+   438.4
+  ],
+  "door_rect": [
+   588.7,
+   -12.4,
+   489.1,
+   328.9
+  ],
+  "note": "seat_point = top centre of the empty chair's seat (costume_slumped sits here).",
+  "seat_point": [
+   400.1,
+   330.0
+  ],
+  "seat_px_per_m": 203.4,
+  "size": [
+   640,
+   480
+  ]
+ },
+ "playroom_board": {
+  "board_corners_tl_tr_br_bl": [
+   [
+    27.8,
+    58.3
+   ],
+   [
+    458.6,
+    45.9
+   ],
+   [
+    458.6,
+    386.8
+   ],
+   [
+    27.8,
+    370.3
+   ]
+  ],
+  "poppy_head_center": [
+   545,
+   150
+  ],
+  "poppy_note": "Poppy cropped at the knees at the right edge",
+  "size": [
+   640,
+   480
+  ],
+  "slot_centers": [
+   [
+    67.6,
+    214.5
+   ],
+   [
+    149.2,
+    214.9
+   ],
+   [
+    233.7,
+    215.3
+   ],
+   [
+    321.2,
+    215.7
+   ],
+   [
+    411.9,
+    216.1
+   ]
+  ],
+  "slot_size": [
+   80,
+   120
+  ]
+ },
+ "playroom_dark": {
+  "board_corners_tl_tr_br_bl": [
+   [
+    51.3,
+    366.8
+   ],
+   [
+    330.3,
+    376.2
+   ],
+   [
+    330.3,
+    574.0
+   ],
+   [
+    51.3,
+    608.2
+   ]
+  ],
+  "board_rect": [
+   51.3,
+   366.8,
+   330.3,
+   608.2
+  ],
+  "chair_center": [
+   1124.9,
+   777.5
+  ],
+  "chair_seat_rect": [
+   1039.9,
+   673.3,
+   1219.1,
+   920.8
+  ],
+  "door_opening_rect": [
+   859.8,
+   237.5,
+   1040.8,
+   741.8
+  ],
+  "door_rect": [
+   775.0,
+   240.5,
+   864.1,
+   738.6
+  ],
+  "note": "1280x960 render; all coordinates in this pixel space.",
+  "poppy_foot": [
+   640.0,
+   890.0
+  ],
+  "poppy_head_top_for_1p75m": [
+   640.0,
+   230.0
+  ],
+  "poppy_px_per_m": 377.2,
+  "size": [
+   1280,
+   960
+  ]
+ },
+ "playroom_wide": {
+  "board_corners_tl_tr_br_bl": [
+   [
+    25.7,
+    183.4
+   ],
+   [
+    165.1,
+    188.1
+   ],
+   [
+    165.1,
+    287.0
+   ],
+   [
+    25.7,
+    304.1
+   ]
+  ],
+  "board_rect": [
+   25.7,
+   183.4,
+   165.1,
+   304.1
+  ],
+  "chair_center": [
+   562.4,
+   388.7
+  ],
+  "chair_seat_rect": [
+   525.5,
+   324.2,
+   604.3,
+   463.2
+  ],
+  "door_opening_rect": [
+   429.9,
+   118.8,
+   520.4,
+   370.9
+  ],
+  "door_rect": [
+   429.6,
+   119.9,
+   519.6,
+   369.9
+  ],
+  "poppy_foot": [
+   320.0,
+   445.0
+  ],
+  "poppy_head_top_for_1p75m": [
+   320.0,
+   115.0
+  ],
+  "poppy_px_per_m": 188.6,
+  "size": [
+   640,
+   480
+  ]
+ },
+ "playroom_wide_ajar": {
+  "board_corners_tl_tr_br_bl": [
+   [
+    25.7,
+    183.4
+   ],
+   [
+    165.1,
+    188.1
+   ],
+   [
+    165.1,
+    287.0
+   ],
+   [
+    25.7,
+    304.1
+   ]
+  ],
+  "board_rect": [
+   25.7,
+   183.4,
+   165.1,
+   304.1
+  ],
+  "chair_center": [
+   562.4,
+   388.7
+  ],
+  "chair_seat_rect": [
+   525.5,
+   324.2,
+   604.3,
+   463.2
+  ],
+  "door_opening_rect": [
+   429.9,
+   118.8,
+   520.4,
+   370.9
+  ],
+  "door_rect": [
+   429.0,
+   120.0,
+   510.5,
+   369.8
+  ],
+  "poppy_foot": [
+   320.0,
+   445.0
+  ],
+  "poppy_head_top_for_1p75m": [
+   320.0,
+   115.0
+  ],
+  "poppy_px_per_m": 188.6,
+  "size": [
+   640,
+   480
+  ]
+ }
+}
