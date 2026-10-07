@@ -6,11 +6,17 @@ Run with the bpy module (Blender 5.x as a Python module), headless:
     VENV/bin/python poppy/render_rooms.py                     # every room
     VENV/bin/python poppy/render_rooms.py playroom_wide dressing_room
 
-Room names are the manifest file stems (see poppy/assets.json "rooms").
+Room names are the manifest file stems (see poppy/assets.json "rooms"):
+    playroom_wide  playroom_wide_ajar  playroom_board  playroom_dark   (one set model, shared camera)
+    studio_night   (the same set model seen from the dark studio floor)
+    backstage_corridor  dressing_room
+    bedroom_night  hallway_night  closet_door  closet_door_open        (the viewer's home)
+Variants that must match pixel-for-pixel (playroom_wide_ajar, closet_door_open) are re-rendered from the
+same scene and then composited onto their base image outside the changed door region.
 Writes:
     poppy/build/rooms/<room>.png         the renders (sizes from the manifest)
     poppy/build/rooms/rooms_meta.json    pixel anchors for the compositor
-    poppy/build/rooms/blend/<set>.blend  the scene files (playroom, closet, ...)
+    poppy/build/rooms/blend/<set>.blend  the scene files (cameras saved with them)
 
 Environment knobs: POPPY_SAMPLES (default 48), POPPY_PREVIEW=1 (quarter-cost
 test renders written to build/rooms/preview/ instead of the real files).
@@ -31,13 +37,13 @@ from mathutils import Euler, Quaternion, Vector
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "build", "rooms")
 BLEND_DIR = os.path.join(OUT, "blend")
-META_PATH = os.path.join(OUT, "rooms_meta.json")
 SAMPLES = int(os.environ.get("POPPY_SAMPLES", "48"))
 PREVIEW = os.environ.get("POPPY_PREVIEW", "") == "1"
 if PREVIEW:
     OUT_IMG = os.path.join(OUT, "preview")
 else:
     OUT_IMG = OUT
+META_PATH = os.path.join(OUT_IMG, "rooms_meta.json")
 
 
 # ============================================================== colour utils
@@ -673,13 +679,13 @@ def save_blend(name):
     if PREVIEW:
         return
     os.makedirs(BLEND_DIR, exist_ok=True)
+    bpy.context.preferences.filepaths.save_version = 0  # no .blend1 backups
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(BLEND_DIR, name + ".blend"),
                                 compress=True, check_existing=False)
 
 
 def write_meta(room, data):
-    if PREVIEW:
-        return
+    os.makedirs(OUT_IMG, exist_ok=True)
     meta = {}
     if os.path.exists(META_PATH):
         with open(META_PATH) as f:
@@ -856,7 +862,7 @@ class Playroom:
     # ------------------------------------------------------------ materials
     def materials(self):
         M = {}
-        dark = self.variant == "dark"
+        dark = self.variant in ("dark", "studio")
         sky_back = sky_texture(2 * PR_BACK_X, PR_WALL_H - 0.95, -PR_BACK_X, 0.95, 300,
                                clouds=[(0.12, 2.47, 0.95), (1.25, 2.56, 0.6), (-0.72, 2.64, 0.36),
                                        (1.85, 2.22, 0.4)],
@@ -1735,7 +1741,7 @@ def render_dressing_room():
         cyl(f"Socket{i}", (X0 + 0.045, y, z), 0.02, 0.03, mframe, rot=(0, 90, 0), verts=12)
         sphere(f"Bulb{i}", (X0 + 0.08, y, z), 0.032, bulb_on if on else bulb_off, segs=16, rings=10)
         if on:
-            light(f"BulbL{i}", "POINT", (X0 + 0.13, y, z), 7.0, warm, size=0.03)
+            light(f"BulbL{i}", "POINT", (X0 + 0.13, y, z), 4.5, warm, size=0.03)
 
     # --- things on the counter: foam wig head wearing a ring of red felt petals, makeup clutter
     foam = make_mat("Foam", hexc("#D6D1C6"), 0.85, var=0.05, grime=0.35, grime_scale=6.0, bump=0.15,
@@ -1783,31 +1789,46 @@ def render_dressing_room():
     for x in (rx0, rx1):
         cyl(f"RackPost{x}", (x, ry, rz / 2), 0.014, rz, rack_m, verts=12)
         cyl(f"RackFoot{x}", (x, ry, 0.03), 0.012, 0.5, rack_m, rot=(90, 0, 0), verts=10)
-    for k, x in enumerate(np.linspace(rx0 + 0.12, rx1 - 0.12, 6)):
-        wire_hanger(f"Hanger{k}", (x + 0.02 * math.sin(k * 2.1), ry, rz - 0.01), rack_m, yaw=90 + 6 * math.sin(k))
-    # overalls hanging from one hanger (a flat-ish slab shape: bib + legs) in Poppy yellow
-    ov = make_mat("OverallsYellow", hexc("#E3B52A"), 0.9, var=0.07, var_scale=8, grime=0.35, sheen=0.3,
+    for k, x in enumerate((-0.68, -0.36, -0.29, -0.22)):
+        wire_hanger(f"Hanger{k}", (x, ry, rz - 0.01), rack_m, yaw=90 + 9 * math.sin(k * 1.7))
+    # spare overalls hanging limp from a hanger (cloth sheets with folds), turned partly side-on so they read
+    # as a garment on a rack and not as a figure
+    ov = make_mat("OverallsYellow", hexc("#E3B52A"), 0.9, var=0.08, var_scale=8, grime=0.4, sheen=0.3,
                   bump=0.25, bump_scale=60)
-    btn = make_mat("ButtonWhite", hexc("#EDE8DA"), 0.3, var=0.02, coat=0.3)
-    ovx = rx0 + 0.45
-    ovr = empty("Overalls", (ovx, ry, rz - 0.02), (0, 0, 38))
+    ovx = rx0 + 0.42
+    ovr = empty("Overalls", (ovx, ry, rz - 0.02), (0, 0, 62))
     wire_hanger("OvHanger", (0, 0, 0.0), rack_m, parent=ovr)
+
+    def folds(n, amp, sag=0.0):
+        def f(u, v):
+            return amp * math.sin(u * math.pi * n + v * 1.3) * (0.4 + 0.6 * (1 - v)) + sag * (u - 0.5) ** 2
+        return f
     for sx in (-1, 1):
-        box(f"OvStrap{sx}", (sx * 0.1, 0, -0.2), (0.035, 0.012, 0.3), ov, rot=(0, sx * 14, 0), parent=ovr)
-        cyl(f"OvBtn{sx}", (sx * 0.12, -0.02, -0.375), 0.016, 0.01, btn, rot=(90, 0, 0), verts=16, parent=ovr)
-    box("OvBib", (0, 0, -0.5), (0.32, 0.03, 0.3), ov, bevel=0.012, parent=ovr)
-    box("OvPocket", (0.05, -0.018, -0.55), (0.15, 0.008, 0.12), ov, bevel=0.005, parent=ovr)
-    cyl("OvPatch", (0.06, -0.025, -0.555), 0.035, 0.008, petal, rot=(90, 0, 0), verts=16, parent=ovr)
-    box("OvWaist", (0, 0, -0.74), (0.46, 0.05, 0.2), ov, bevel=0.015, parent=ovr)
+        cloth_grid(f"OvStrap{sx}", 0.04, 0.2, 2, 6, ov, loc=(sx * 0.15, 0.0, -0.11), rot=(90, sx * 12, 0),
+                   subsurf=0, parent=ovr)
+        cyl(f"OvClip{sx}", (sx * 0.135, -0.012, -0.2), 0.012, 0.006, rack_m, rot=(90, 0, 0), verts=12, parent=ovr)
+    cloth_grid("OvBib", 0.32, 0.26, 12, 10, ov, loc=(0, 0, -0.33), rot=(90, 0, 0), height_fn=folds(3, 0.012),
+               subsurf=1, parent=ovr)
+    # small felt flower patch low on the bib pocket (as on Poppy's own overalls)
+    fl = empty("OvFlower", (0.07, -0.016, -0.41), (90, 0, 0), parent=ovr)
+    for k in range(5):
+        a_ = 2 * math.pi * k / 5
+        sphere(f"OvPetal{k}", (0.016 * math.cos(a_), 0.016 * math.sin(a_), 0), 0.013, petal,
+               scale=(1, 0.8, 0.3), parent=fl)
+    cloth_grid("OvHip", 0.5, 0.24, 16, 8, ov, loc=(0, 0.005, -0.58), rot=(90, 0, 0), height_fn=folds(4, 0.02),
+               subsurf=1, parent=ovr)
     for sx in (-1, 1):
-        box(f"OvLeg{sx}", (sx * 0.115, 0.01 * sx, -1.08), (0.2, 0.045, 0.52), ov, rot=(4 * sx, sx * 2.5, 0),
-            bevel=0.015, parent=ovr)
-        box(f"OvCuff{sx}", (sx * 0.125, 0.012 * sx, -1.33), (0.21, 0.05, 0.05), ov, rot=(4 * sx, sx * 2.5, 0),
-            bevel=0.012, parent=ovr)
-    for k, (x, c, ln) in enumerate(((rx1 - 0.16, "#3E4A57", 0.75), (rx1 - 0.26, "#6B5A48", 0.65),
-                                     (rx0 + 0.14, "#4F4A44", 0.95))):
-        box(f"Shirt{k}", (x, ry, rz - 0.1 - ln / 2), (0.07, 0.44, ln), make_mat(f"Shirt{k}", hexc(c), 0.85,
-            var=0.08, grime=0.3, bump=0.25, bump_scale=25), rot=(0, 0, 4 * k - 3), bevel=0.03)
+        cloth_grid(f"OvLeg{sx}", 0.23, 0.56, 8, 16, ov, loc=(sx * 0.125, 0.008 * sx, -0.97),
+                   rot=(90, sx * 3.0, 0), height_fn=folds(2.5, 0.025), subsurf=1, parent=ovr)
+    # other garments on the rack: hung edge-on with a little twist, cloth sheets with folds
+    for k, (x, c, ln, tw) in enumerate(((rx1 - 0.1, "#3E4A57", 0.75, 70), (rx1 - 0.2, "#6B5A48", 0.65, 80),
+                                         (rx1 - 0.3, "#5A6150", 0.8, 74), (rx0 + 0.12, "#4F4A44", 0.95, 76),
+                                         (rx0 + 0.2, "#7A6A5A", 0.7, 84))):
+        g = empty(f"Garment{k}", (x, ry, rz - 0.01), (0, 0, tw))
+        wire_hanger(f"GHanger{k}", (0, 0, 0.0), rack_m, parent=g)
+        cloth_grid(f"Shirt{k}", 0.44, ln, 12, 16, make_mat(f"Shirt{k}", hexc(c), 0.85, var=0.08, grime=0.3,
+                   bump=0.2, bump_scale=25, sheen=0.2), loc=(0, 0, -0.13 - ln / 2), rot=(90, 0, 0),
+                   height_fn=folds(3 + k % 2, 0.02), subsurf=1, parent=g)
 
     # --- the empty chair, facing the camera
     wood = make_mat("ChairWood", hexc("#6E4A2E"), 0.45, var=0.08, grime=0.35, coat=0.15,
@@ -1817,7 +1838,7 @@ def render_dressing_room():
 
     # --- overhead cold fluorescent + practical bits
     col = tint(kelvin(5200), (0.75, 1.0, 0.8), 0.35)
-    fluoro("DRTube", (0.15, 2.0, H - 0.04), length=1.22, axis="y", power=34, color=col, glow=5.0)
+    fluoro("DRTube", (0.15, 2.0, H - 0.04), length=1.22, axis="y", power=28, color=col, glow=4.5)
     box("Outlet", (X1 - 0.005, 1.4, 0.35), (0.01, 0.08, 0.12), make_mat("Outlet", hexc("#D8D2C0"), 0.4))
     # a few things on the back wall: hook with a cardigan, a blank poster, a clock with no hands
     poster = make_mat("PosterBlank", hexc("#C9B98F"), 0.7, var=0.1, grime=0.5, grime_scale=4.0)
@@ -1907,7 +1928,8 @@ def stuffed_bunny(name, loc, yaw, mat, inner, eye, lying=True):
 
 
 def crt_tv(name, loc, yaw, screen_mat, body_mat, w=0.56, h=0.48, d=0.46, scr=(0.42, 0.315)):
-    """A small 90s CRT: boxy body, bezel, flat emissive screen plane. Returns (root, screen_obj)."""
+    """A small 90s CRT: boxy body, bezel, flat emissive screen plane. Returns (root, screen_obj).
+    Local -Y is the front; the screen plane is centred at (0, -0.03, h/2 + 0.03)."""
     root = empty(name, loc, (0, 0, yaw))
     box(name + "Body", (0, d / 2 - 0.02, h / 2), (w, d - 0.04, h), body_mat, bevel=0.025, parent=root)
     box(name + "Back", (0, d - 0.05, h / 2 - 0.02), (w * 0.7, 0.2, h * 0.7), body_mat, bevel=0.03, parent=root)
@@ -1916,45 +1938,56 @@ def crt_tv(name, loc, yaw, screen_mat, body_mat, w=0.56, h=0.48, d=0.46, scr=(0.
     box(name + "ScreenSurround", (0, -0.026, h / 2 + 0.03), (scr[0] + 0.03, 0.004, scr[1] + 0.03), blk,
         parent=root)
     scr_obj = box(name + "Screen", (0, -0.03, h / 2 + 0.03), (scr[0], 0.002, scr[1]), screen_mat, parent=root)
-    for k in range(3):
-        cyl(f"{name}Knob{k}", (w / 2 - 0.06, -0.03, 0.08 + k * 0.0), 0.0, 0.0, blk) if False else None
     box(name + "Panel", (0, -0.028, 0.035), (w - 0.1, 0.006, 0.03), blk, parent=root)
     for k in range(3):
         cyl(f"{name}Btn{k}", (w / 2 - 0.08 - k * 0.05, -0.034, 0.035), 0.008, 0.01, body_mat, rot=(90, 0, 0),
             verts=10, parent=root)
+    sphere(name + "Led", (-w / 2 + 0.06, -0.033, 0.035), 0.004, emit_mat(name + "LedM", (1.0, 0.05, 0.02, 1), 4.0),
+           parent=root)
     metal = bpy.data.materials.get("Chrome") or make_mat("Chrome", hexc("#C8C8C4"), 0.15, metallic=1.0, var=0.0)
     for sx in (-1, 1):
-        cyl(f"{name}Ear{sx}", (sx * 0.12, d / 2, h + 0.2), 0.004, 0.45, metal, rot=(0, sx * 28, 0), verts=6,
+        cyl(f"{name}Ear{sx}", (sx * 0.075, d / 2, h + 0.16), 0.003, 0.32, metal, rot=(0, sx * 24, 0), verts=6,
             parent=root)
-    sphere(name + "EarBase", (0, d / 2, h + 0.01), 0.04, blk, scale=(1.4, 1, 0.5), parent=root)
+    sphere(name + "EarBase", (0, d / 2, h + 0.015), 0.045, blk, scale=(1.4, 1, 0.5), parent=root)
     return root, scr_obj
+
+
+def crumpled(name, w, d, mat, loc, yaw=0.0, lump=0.06, seed=0.0, n=18):
+    """A crumpled piece of cloth lying on the floor (a sweater, a sock pile)."""
+    def hf(u, v):
+        r = math.hypot(u - 0.5, v - 0.5)
+        return lump * max(0.0, 1.0 - 1.8 * r) * (0.7 + 0.3 * math.sin(u * 11 + seed) * math.cos(v * 9 + seed))
+    return cloth_grid(name, w, d, n, n, mat, loc=loc, rot=(0, 0, yaw), height_fn=hf, displace=0.04,
+                      disp_scale=0.12)
 
 
 # ============================================================== BEDROOM AT NIGHT
 def render_bedroom():
-    reset(960, 720, samples=96, look="AgX - Medium High Contrast", exposure=0.6)
+    reset(960, 720, samples=96, look="AgX - Medium High Contrast", exposure=0.45)
     X1, Y1, H = 3.4, 3.3, 2.45
-    moon = (0.42, 0.55, 1.0)
-    wall = make_mat("BedWall", rough=0.85, var=0.05, grime=0.15, space="world",
-                    base=lambda b, v: b.mix(b.rgb(hexc("#C9C6D8")), b.rgb(hexc("#B6B3C8")),
-                                            b.maprange(b.node("ShaderNodeTexWave", wave_type="BANDS",
-                                                                bands_direction="X").outputs[1], 0.45, 0.55, 0, 1)))
-    # simpler, robust striped wallpaper via a dedicated function
+    moon = (0.40, 0.55, 1.0)
+
     def paper(u_axis):
         def fn(b, vec):
             uv, p = _uv(b, u_axis)
-            w = b.node("ShaderNodeTexWave", wave_type="BANDS", bands_direction="X", wave_profile="SQUARE")
+            w = b.node("ShaderNodeTexWave", wave_type="BANDS", bands_direction="X", wave_profile="SIN")
             b.set(w.inputs["Vector"], uv)
             w.inputs["Scale"].default_value = 6.0
             w.inputs["Distortion"].default_value = 0.0
-            return b.mix(b.rgb(hexc("#C8CBE0")), b.rgb(hexc("#B3B8D6")), w.outputs[1])
+            stripes = b.mix(b.rgb(hexc("#CFD0DE")), b.rgb(hexc("#B9BCD3")), b.maprange(w.outputs[1], 0.45, 0.55, 0, 1))
+            # small sprigs between the stripes so the paper reads as 'a child's room' wallpaper
+            dots = b.maprange(b.noise(b.mapping(uv, scale=(1, 1, 1)), 14.0, 0.0, 0.5), 0.70, 0.72, 0.0, 0.35)
+            return b.mix(stripes, b.rgb(hexc("#9AA6C8")), dots)
         return fn
-    wall_x = make_mat("PaperX", rough=0.85, var=0.05, grime=0.15, base=paper("x"), space="world")
-    wall_y = make_mat("PaperY", rough=0.85, var=0.05, grime=0.15, base=paper("y"), space="world")
-    floor = make_mat("BedFloor", rough=0.4, var=0.05, coat=0.1, space="world",
+
+    wall_x = make_mat("PaperX", rough=0.85, var=0.07, grime=0.25, grime_scale=1.4, floor_dirt=0.25,
+                      base=paper("x"), space="world")
+    wall_y = make_mat("PaperY", rough=0.85, var=0.07, grime=0.25, grime_scale=1.4, floor_dirt=0.25,
+                      base=paper("y"), space="world")
+    floor = make_mat("BedFloor", rough=0.4, var=0.06, coat=0.1, space="world", grime=0.2,
                      base=planks_base(hexc("#9A6D45"), hexc("#7A5232"), hexc("#3A2618"), plank_w=0.11))
-    ceil = make_mat("BedCeil", hexc("#D8D6DE"), 0.9, var=0.04)
-    trim = make_mat("BedTrim", hexc("#EEEAE0"), 0.4, var=0.03)
+    ceil = make_mat("BedCeil", hexc("#D8D6DE"), 0.9, var=0.05, grime=0.2)
+    trim = make_mat("BedTrim", hexc("#EEEAE0"), 0.4, var=0.04, grime=0.2)
     win_x0, win_x1, win_z0, win_z1 = 1.62, 2.42, 0.95, 2.05
     wall_with_holes("BWallBack", "x", Y1, -0.2, X1 + 0.2, 0.0, H, 0.15, [(win_x0, win_x1, win_z0, win_z1)], wall_x)
     box2("BWallL", (-0.15, -0.5, 0.0), (0.0, Y1, H), wall_y)
@@ -1965,7 +1998,12 @@ def render_bedroom():
     for nm, lo, hi in (("SkirtB", (0, Y1 - 0.015, 0), (X1, Y1, 0.1)), ("SkirtL", (0, -0.5, 0), (0.015, Y1, 0.1)),
                        ("SkirtR", (X1 - 0.015, -0.5, 0), (X1, Y1, 0.1))):
         box2(nm, lo, hi, trim)
-    # window frame, sill, night sky outside, curtains
+    # ceiling light (off) and a smoke detector
+    cyl("CeilDome", (1.7, 1.5, H - 0.04), 0.17, 0.08, make_mat("DomeGlass", hexc("#E8E4D8"), 0.3, var=0.03),
+        verts=32, radius2=0.12)
+    cyl("Smoke", (2.6, 0.9, H - 0.015), 0.06, 0.03, trim, verts=20)
+
+    # --- window frame, sill, night sky outside, tree branches, curtains
     cas = 0.06
     box2("BWinL", (win_x0 - cas, Y1 - 0.03, win_z0 - cas), (win_x0, Y1, win_z1 + cas), trim)
     box2("BWinR", (win_x1, Y1 - 0.03, win_z0 - cas), (win_x1 + cas, Y1, win_z1 + cas), trim)
@@ -1977,17 +2015,24 @@ def render_bedroom():
     box2("BWinRail", (win_x0, Y1 + 0.04, (win_z0 + win_z1) / 2 - 0.02), (win_x1, Y1 + 0.084,
          (win_z0 + win_z1) / 2 + 0.02), trim)
     sky = make_mat("NightSky", rough=1.0, var=0.0, spec=0.0, emission=1.0,
-                   base=lambda b, v: b.mix(b.rgb((0.004, 0.008, 0.03, 1)), b.rgb((0.02, 0.035, 0.09, 1)),
+                   base=lambda b, v: b.mix(b.rgb((0.003, 0.006, 0.025, 1)), b.rgb((0.025, 0.04, 0.10, 1)),
                                            b.maprange(b.sep(b.coords("world"))[2], 0.8, 2.6, 0.0, 1.0)))
     nt = sky.node_tree
     bsdf = nt.nodes["Principled BSDF"]
     nt.links.new(bsdf.inputs["Base Color"].links[0].from_socket, bsdf.inputs["Emission Color"])
-    box2("NightSkyPlane", (win_x0 - 1.5, Y1 + 2.0, -1.0), (win_x1 + 1.5, Y1 + 2.05, 3.5), sky)
-    tree = make_mat("TreeSil", hexc("#020203"), 1.0, var=0.0, spec=0.0)
-    for k, (x0, z0, a, ln, r) in enumerate(((1.3, 1.1, 35, 1.6, 0.05), (2.0, 1.75, -20, 1.0, 0.025),
-                                             (1.75, 1.45, 60, 0.9, 0.02), (2.6, 2.1, -50, 0.8, 0.018))):
-        cyl(f"Branch{k}", (x0, Y1 + 1.2, z0), r, ln, tree, rot=(0, a, 0), verts=8)
-    curtain = make_mat("Curtain", hexc("#5C6FA8"), 0.9, var=0.08, sheen=0.4, bump=0.1, bump_scale=60)
+    box2("NightSkyPlane", (win_x0 - 2.5, Y1 + 3.0, -1.0), (win_x1 + 2.5, Y1 + 3.05, 4.5), sky)
+    sky_obj = bpy.data.objects["NightSkyPlane"]
+    sky_obj.visible_shadow = False
+    # neighbour's roofline and a bare tree as black silhouettes outside
+    tree = make_mat("TreeSil", hexc("#03040A"), 1.0, var=0.0, spec=0.0)
+    prism("Roofline", [(-1.5, 0.0), (3.0, 0.0), (3.0, 1.15), (1.4, 1.55), (-1.5, 1.2)], 0.05, tree,
+          loc=(0.6, Y1 + 2.6, 0.0), rot=(90, 0, 0))
+    for k, (x0, z0, a, ln, r) in enumerate(((2.25, 1.0, 8, 2.4, 0.06), (2.1, 1.75, -38, 0.9, 0.025),
+                                             (2.35, 1.55, 50, 0.8, 0.02), (2.25, 2.0, -15, 0.7, 0.015),
+                                             (2.0, 2.05, 62, 0.6, 0.012))):
+        b = cyl(f"Branch{k}", (x0, Y1 + 1.6, z0), r, ln, tree, rot=(0, a, 0), verts=8)
+        b.visible_shadow = False
+    curtain = make_mat("Curtain", hexc("#4E5F96"), 0.9, var=0.08, sheen=0.4, bump=0.1, bump_scale=60)
     for side, (cx, cw) in ((-1, (win_x0 - 0.02, 0.5)), (1, (win_x1 + 0.08, 0.38))):
         def pleats(u, v, side=side):
             return 0.03 * math.sin(u * math.pi * 7) + 0.02 * (1 - v) * math.sin(u * 3)
@@ -1995,8 +2040,8 @@ def render_bedroom():
                    height_fn=pleats, subsurf=0)
     cyl("CurtainRod", ((win_x0 + win_x1) / 2, Y1 - 0.12, 2.23), 0.012, 1.5, trim, rot=(0, 90, 0), verts=10)
 
-    # --- dresser + CRT TV (left), screen is a flat uniformly emissive plane
-    wood = make_mat("DresserWood", rough=0.45, var=0.05, coat=0.15,
+    # --- dresser + CRT TV (left); the screen is a flat, uniformly emissive plane
+    wood = make_mat("DresserWood", rough=0.45, var=0.06, coat=0.15, grime=0.2,
                     base=streak_wood(hexc("#8C6A4A"), hexc("#6E5036"), "x"))
     dx0, dx1, dy0, dy1, dtop = 0.18, 1.32, Y1 - 0.5, Y1 - 0.02, 0.72
     box2("Dresser", (dx0, dy0, 0.06), (dx1, dy1, dtop), wood, bevel=0.01)
@@ -2005,103 +2050,820 @@ def render_bedroom():
         box2(f"Drawer{k}", (dx0 + 0.03, dy0 - 0.012, z0), (dx1 - 0.03, dy0 + 0.01, z0 + 0.18), wood, bevel=0.006)
         for sx in (0.3, 0.7):
             sphere(f"DrawerKnob{k}{sx}", (dx0 + (dx1 - dx0) * sx, dy0 - 0.03, z0 + 0.09), 0.018, trim)
+    # top drawer pulled out a little with a sock hanging over its lip
     for sx in (dx0 + 0.04, dx1 - 0.04):
         box2(f"DresserFoot{sx}", (sx - 0.03, dy0 + 0.02, 0.0), (sx + 0.03, dy1 - 0.02, 0.06), wood)
-    tv_body = make_mat("TVPlastic", hexc("#2B2A28"), 0.45, var=0.04, grime=0.2)
-    screen = emit_mat("TVScreen", (0.55, 0.62, 0.78, 1), 1.5)
-    tv_root, tv_scr = crt_tv("TV", ((dx0 + dx1) / 2 + 0.05, dy0 + 0.04, dtop), 14.0, screen, tv_body)
-    tv_light = light("TVGlow", "AREA", (0, 0, 0), 4.0, (0.55, 0.62, 0.78), size=0.42, size_y=0.315)
+    tv_body = make_mat("TVPlastic", hexc("#2B2A28"), 0.45, var=0.05, grime=0.25)
+    screen = emit_mat("TVScreen", (0.085, 0.105, 0.15, 1), 1.5)
+    tv_root, tv_scr = crt_tv("TV", ((dx0 + dx1) / 2 + 0.1, dy0 + 0.1, dtop), -6.0, screen, tv_body,
+                             w=0.6, h=0.5, d=0.48, scr=(0.46, 0.345))
+    tv_light = light("TVGlow", "AREA", (0, 0, 0), 5.0, (0.45, 0.55, 0.78), size=0.42, size_y=0.315)
     tv_light.parent = tv_scr
-    tv_light.location = (0, -0.02, 0)
+    tv_light.location = (0, -0.03, 0)
     tv_light.rotation_euler = (math.radians(-90), 0, 0)
-    # toys on top of the dresser, a lamp (off)
-    cyl("DresserLampBase", (dx0 + 0.15, dy0 + 0.25, dtop + 0.02), 0.07, 0.04, trim, verts=20)
-    cyl("DresserLampStem", (dx0 + 0.15, dy0 + 0.25, dtop + 0.15), 0.012, 0.24, trim, verts=10)
-    cyl("DresserLampShade", (dx0 + 0.15, dy0 + 0.25, dtop + 0.3), 0.11, 0.14, make_mat("Shade", hexc("#E8D9A8"),
-        0.8, var=0.05), radius2=0.07, verts=24)
+    # lamp (off) and a cup on the dresser
+    lx, ly = dx0 + 0.13, dy0 + 0.25
+    cyl("DresserLampBase", (lx, ly, dtop + 0.02), 0.07, 0.04, trim, verts=20)
+    cyl("DresserLampStem", (lx, ly, dtop + 0.15), 0.012, 0.24, trim, verts=10)
+    cyl("DresserLampShade", (lx, ly, dtop + 0.3), 0.11, 0.14, make_mat("Shade", hexc("#E8D9A8"), 0.8, var=0.05),
+        radius2=0.07, verts=24)
+    cyl("DresserCup", (dx1 - 0.1, dy0 + 0.12, dtop + 0.05), 0.035, 0.1,
+        make_mat("CupPlastic", hexc("#D25A4A"), 0.35, var=0.05, coat=0.2), verts=20)
     # posters: abstract shapes only
-    pmat = make_mat("PosterPaper", hexc("#E3DCC8"), 0.7, var=0.06, grime=0.2)
-    box("PosterA", (0.75, Y1 - 0.006, 1.6), (0.5, 0.008, 0.66), pmat)
+    pmat = make_mat("PosterPaper", hexc("#E3DCC8"), 0.7, var=0.07, grime=0.3)
+    box("PosterA", (0.75, Y1 - 0.006, 1.62), (0.5, 0.008, 0.66), pmat, rot=(0, 2.5, 0))
     for k, (dx, dz, r, c) in enumerate(((-0.1, 0.12, 0.11, "#D2483C"), (0.1, -0.05, 0.08, "#3F7FC4"),
                                          (-0.05, -0.18, 0.06, "#E9C23B"))):
-        cyl(f"PosterDot{k}", (0.75 + dx, Y1 - 0.012, 1.6 + dz), r, 0.004, make_mat(f"PD{k}", hexc(c), 0.7),
+        cyl(f"PosterDot{k}", (0.75 + dx, Y1 - 0.012, 1.62 + dz), r, 0.004, make_mat(f"PD{k}", hexc(c), 0.7),
             rot=(90, 0, 0), verts=24)
-    box("PosterB", (X1 - 0.006, 2.3, 1.55), (0.008, 0.55, 0.45), pmat)
+    box("PosterB", (X1 - 0.006, 2.25, 1.6), (0.008, 0.55, 0.45), pmat)
     prism("PosterTri", [(-0.15, -0.12), (0.15, -0.12), (0.0, 0.15)], 0.004, make_mat("PTri", hexc("#4FA36A"), 0.7),
-          loc=(X1 - 0.012, 2.3, 1.55), rot=(90, 0, -90))
+          loc=(X1 - 0.012, 2.25, 1.6), rot=(90, 0, -90))
+    # a shelf on the right wall above the bed with a few plain toys (shapes, no characters)
+    box2("WallShelf", (X1 - 0.2, 1.25, 1.48), (X1, 2.0, 1.5), wood)
+    for k, (y, h, c) in enumerate(((1.35, 0.16, "#C8453A"), (1.5, 0.12, "#3A78C2"), (1.62, 0.2, "#E3B93A"))):
+        box(f"ShelfBook{k}", (X1 - 0.1, y, 1.5 + h / 2), (0.15, 0.04, h), make_mat(f"Book{k}", hexc(c), 0.6,
+            var=0.08, grime=0.2), rot=(0, 0, 0 if k < 2 else 0))
+    sphere("ShelfBall", (X1 - 0.1, 1.85, 1.57), 0.07, make_mat("ShelfBallM", hexc("#E58A2E"), 0.4, coat=0.3))
 
-    # --- the bed (right), covers thrown back, pillow dented
-    frame_m = make_mat("BedFrame", hexc("#E6E1D4"), 0.45, var=0.04, grime=0.1)
-    sheet = make_mat("Sheet", hexc("#E4E6EE"), 0.85, var=0.05, sheen=0.3, bump=0.08, bump_scale=30)
-    duvet = make_mat("Duvet", hexc("#7FA0D6"), 0.9, var=0.06, sheen=0.4, bump=0.12, bump_scale=25,
-                     base=lambda b, v: b.mix(b.rgb(hexc("#86A6DA")), b.rgb(hexc("#F1D36A")),
+    # --- the bed (right), covers thrown back, pillow dented, pitch-dark gap underneath
+    frame_m = make_mat("BedFrame", hexc("#E6E1D4"), 0.45, var=0.05, grime=0.2)
+    sheet = make_mat("Sheet", hexc("#E4E6EE"), 0.85, var=0.06, sheen=0.3, bump=0.08, bump_scale=30, grime=0.12)
+    duvet = make_mat("Duvet", rough=0.9, var=0.06, sheen=0.4, bump=0.12, bump_scale=25,
+                     base=lambda b, v: b.mix(b.rgb(hexc("#7F98C6")), b.rgb(hexc("#D9C27A")),
                                              b.maprange(b.node("ShaderNodeTexChecker").outputs[1], 0.4, 0.6, 0, 1)))
+    ck = [n for n in duvet.node_tree.nodes if n.bl_idname == "ShaderNodeTexChecker"][0]
+    ck.inputs["Scale"].default_value = 6.0
     bx0, bx1, by0, by1 = X1 - 1.02, X1 - 0.02, Y1 - 2.05, Y1 - 0.04
-    box2("BedBase", (bx0, by0, 0.12), (bx1, by1, 0.36), frame_m, bevel=0.015)
-    for (x, y) in ((bx0 + 0.04, by0 + 0.04), (bx1 - 0.04, by0 + 0.04), (bx0 + 0.04, by1 - 0.04), (bx1 - 0.04, by1 - 0.04)):
-        box2(f"BedLeg{x}{y}", (x - 0.03, y - 0.03, 0.0), (x + 0.03, y + 0.03, 0.14), frame_m)
-    box2("Headboard", (bx0, by1 - 0.04, 0.12), (bx1, by1, 0.95), frame_m, bevel=0.02)
-    box2("Footboard", (bx0, by0, 0.12), (bx1, by0 + 0.04, 0.55), frame_m, bevel=0.02)
-    box2("Mattress", (bx0 + 0.03, by0 + 0.05, 0.36), (bx1 - 0.03, by1 - 0.05, 0.52), sheet, bevel=0.04)
-    # pillow with a dent
-    pillow = make_mat("Pillow", hexc("#EDEFF5"), 0.85, var=0.04, sheen=0.3)
-    pl = empty("Pillow", ((bx0 + bx1) / 2, by1 - 0.3, 0.55), (0, 0, 3))
+    zb0, zb1 = 0.24, 0.40
+    box2("BedBase", (bx0, by0, zb0), (bx1, by1, zb1), frame_m, bevel=0.015)
+    for (x, y) in ((bx0 + 0.04, by0 + 0.04), (bx1 - 0.04, by0 + 0.04), (bx0 + 0.04, by1 - 0.04),
+                   (bx1 - 0.04, by1 - 0.04)):
+        box2(f"BedLeg{x}{y}", (x - 0.03, y - 0.03, 0.0), (x + 0.03, y + 0.03, zb0 + 0.02), frame_m)
+    box2("Headboard", (bx0, by1 - 0.04, zb0), (bx1, by1, 1.0), frame_m, bevel=0.02)
+    box2("Footboard", (bx0, by0, zb0), (bx1, by0 + 0.04, 0.62), frame_m, bevel=0.02)
+    box2("Mattress", (bx0 + 0.03, by0 + 0.05, zb1), (bx1 - 0.03, by1 - 0.05, zb1 + 0.17), sheet, bevel=0.04)
+    zt = zb1 + 0.17
+    # the space under the bed is black (a dark box hugging the floor under the frame)
+    box2("UnderBed", (bx0 + 0.05, by0 + 0.08, 0.001), (bx1 - 0.02, by1 - 0.08, zb0 - 0.01), void_mat())
+    pillow = make_mat("Pillow", hexc("#EDEFF5"), 0.85, var=0.05, sheen=0.3, grime=0.1)
+    pl = empty("Pillow", ((bx0 + bx1) / 2, by1 - 0.3, zt + 0.04), (0, 0, 5))
     sphere("PillowL", (-0.18, 0, 0.0), 0.2, pillow, scale=(1.0, 0.85, 0.42), parent=pl)
     sphere("PillowR", (0.18, 0, 0.0), 0.2, pillow, scale=(1.0, 0.85, 0.42), parent=pl)
-    sphere("PillowMid", (0.0, 0.06, -0.01), 0.18, pillow, scale=(1.0, 0.7, 0.3), parent=pl)
-    # duvet thrown back toward the foot and over the side
-    def throw(u, v):
-        # u across the bed (x), v along the bed (y, 0 = foot)
-        fold = 0.0
-        if v > 0.55:
-            fold = 0.0
-        hump = 0.14 * math.exp(-((v - 0.42) / 0.12) ** 2) + 0.05 * math.sin(u * 9 + v * 4) * (1 - v)
-        drop = 0.0
-        if u > 0.86:
-            drop = -min(0.45, (u - 0.86) * 3.4)
-        return (0.0, 0.0, hump + drop + fold)
-    cloth_grid("Duvet", 1.15, 1.1, 46, 40, duvet, loc=((bx0 + bx1) / 2 - 0.04, by0 + 0.6, 0.56),
-               height_fn=throw, displace=0.06, disp_scale=0.25)
-    box2("SheetFold", (bx0 + 0.05, by0 + 1.12, 0.52), (bx1 - 0.05, by0 + 1.22, 0.55), sheet, bevel=0.02)
+    sphere("PillowMid", (0.0, 0.06, -0.012), 0.18, pillow, scale=(1.0, 0.7, 0.3), parent=pl)
 
-    # --- rug and toys
-    rugm = make_mat("BedRug", hexc("#7C5A7E"), 0.95, var=0.08, var_scale=8, sheen=0.4, bump=0.2, bump_scale=200)
-    cyl("BedRug", (1.55, 1.75, 0.006), 0.9, 0.012, rugm, verts=64).scale = (1.25, 0.85, 1.0)
-    blk = [make_mat(f"BBlock{c}", hexc(c), 0.45, var=0.05, coat=0.2) for c in ("#C8453A", "#3A78C2", "#E3B93A", "#4E9E55")]
-    for k, (x, y, r, z) in enumerate(((1.25, 1.55, 15, 0.0), (1.38, 1.62, -20, 0.0), (1.3, 1.6, 40, 0.09),
-                                      (1.55, 1.35, 5, 0.0), (1.1, 1.85, 30, 0.0))):
+    def throw(u, v):
+        # u across the bed (x), v along the bed (y, 0 = foot). Thrown back toward the foot: a thick rolled
+        # edge where it was flung, spilling off the side nearest the room.
+        roll = 0.17 * math.exp(-((v - 0.86) / 0.1) ** 2) * (0.8 + 0.2 * math.sin(u * 7))
+        hump = roll + 0.04 * math.sin(u * 9 + v * 4) * (1 - v)
+        drop = 0.0
+        if u < 0.14:
+            drop = -min(0.5, (0.14 - u) * 4.2) * (0.75 + 0.25 * (1 - v))
+        return (0.0, 0.0, hump + drop)
+    cloth_grid("Duvet", 1.15, 0.98, 46, 36, duvet, loc=((bx0 + bx1) / 2 - 0.06, by0 + 0.54, zt + 0.03),
+               height_fn=throw, displace=0.05, disp_scale=0.25)
+
+    def slept_in(u, v):
+        # rumpled sheet with a shallow body-shaped hollow where someone was lying a moment ago
+        hollow = -0.03 * math.exp(-(((u - 0.45) / 0.22) ** 2 + ((v - 0.45) / 0.42) ** 2))
+        edge = min(1.0, min(u, 1 - u) / 0.06, min(v, 1 - v) / 0.06)
+        return 0.034 * edge + 0.008 * math.sin(u * 23 + v * 7) * math.cos(v * 17 - u * 5) + hollow
+    cloth_grid("SheetRumple", bx1 - bx0 - 0.08, 0.98, 30, 30, sheet,
+               loc=((bx0 + bx1) / 2, by0 + 1.05 + 0.49 - 0.02, zt + 0.004), height_fn=slept_in, subsurf=1)
+    box2("SheetFold", (bx0 + 0.05, by0 + 0.98, zt), (bx1 - 0.05, by0 + 1.08, zt + 0.035), sheet, bevel=0.02)
+
+    # --- rug and toys on the floor in front of the bed
+    rugm = make_mat("BedRug", hexc("#7C5A7E"), 0.95, var=0.1, var_scale=8, sheen=0.4, bump=0.2, bump_scale=200,
+                    grime=0.2)
+    rug = cyl("BedRug", (1.75, 1.95, 0.006), 0.85, 0.012, rugm, verts=64)
+    rug.scale = (1.25, 0.85, 1.0)
+    blk = [make_mat(f"BBlock{c}", hexc(c), 0.45, var=0.06, coat=0.2, grime=0.15)
+           for c in ("#C8453A", "#3A78C2", "#E3B93A", "#4E9E55")]
+    for k, (x, y, r, z) in enumerate(((1.55, 2.0, 15, 0.0), (1.68, 2.07, -20, 0.0), (1.6, 2.04, 40, 0.09),
+                                      (1.9, 1.75, 5, 0.0), (1.38, 2.25, 30, 0.0), (2.05, 2.3, 62, 0.0))):
         box(f"Toy{k}", (x, y, 0.057 + z), (0.09, 0.09, 0.09), blk[k % 4], rot=(0, 0, r), bevel=0.008)
-    bunny = make_mat("BunnyFelt", hexc("#BDAFA8"), 0.95, var=0.06, var_scale=20, sheen=0.5, bump=0.15, bump_scale=200)
+    bunny = make_mat("BunnyFelt", hexc("#BDAFA8"), 0.95, var=0.07, var_scale=20, sheen=0.5, bump=0.15,
+                     bump_scale=200, grime=0.25)
     inner = make_mat("BunnyInner", hexc("#D9A3A8"), 0.95, var=0.04, sheen=0.4)
     eye = make_mat("BunnyEye", hexc("#0A0A0A"), 0.1, coat=0.6)
-    stuffed_bunny("Bunny", (1.9, 1.5, 0.11), 130, bunny, inner, eye, lying=True)
+    stuffed_bunny("Bunny", (2.15, 1.6, 0.075), 120, bunny, inner, eye, lying=True)
+    # a sweater on the floor by the dresser, slippers by the bed, a picture book
+    crumpled("Sweater", 0.55, 0.45, make_mat("SweaterM", hexc("#B4483E"), 0.95, var=0.1, sheen=0.3, bump=0.3,
+             bump_scale=90), (1.05, 2.3, 0.01), yaw=25, lump=0.07)
+    slip = make_mat("Slipper", hexc("#6D86B8"), 0.9, var=0.06, sheen=0.4)
+    for k, (x, y, r) in enumerate(((bx0 - 0.18, 1.55, 80), (bx0 - 0.12, 1.72, 100))):
+        sphere(f"Slipper{k}", (x, y, 0.035), 0.12, slip, scale=(0.45, 1.0, 0.3), rot=(0, 0, r - 90))
+    box("PictureBook", (1.3, 1.6, 0.012), (0.24, 0.3, 0.018), make_mat("BookCover", hexc("#E0B040"), 0.5,
+        var=0.06), rot=(0, 0, -22))
+    box("PictureBookP", (1.3, 1.6, 0.023), (0.22, 0.28, 0.004), make_mat("BookPages", hexc("#EDE6D2"), 0.8),
+        rot=(0, 0, -22))
 
     # --- star nightlight by the bed (warm, tiny)
     star_m = emit_mat("StarLight", (*kelvin(2400), 1), 6.0)
-    prism("NightStar", star_points(0.055, 0.024), 0.015, star_m, loc=(bx0 - 0.25, Y1 - 0.02, 0.32), rot=(90, 0, 0))
-    box("Outlet", (bx0 - 0.25, Y1 - 0.004, 0.32), (0.07, 0.008, 0.11), trim)
-    light("StarL", "POINT", (bx0 - 0.25, Y1 - 0.12, 0.32), 1.2, kelvin(2400), size=0.03)
+    nlx = bx0 - 0.3
+    prism("NightStar", star_points(0.055, 0.024), 0.015, star_m, loc=(nlx, Y1 - 0.02, 0.32), rot=(90, 0, 0))
+    box("Outlet", (nlx, Y1 - 0.004, 0.32), (0.07, 0.008, 0.11), trim)
+    light("StarL", "POINT", (nlx, Y1 - 0.1, 0.32), 1.0, kelvin(2400), size=0.03)
 
     # --- moonlight through the window (blue), very low ambient
-    sun = light("Moon", "SUN", (2.0, Y1 + 3.0, 4.0), 0.9, moon, size=1.0)
-    look_at(sun, (1.6, 1.4, 0.0))
-    light("MoonSpill", "AREA", ((win_x0 + win_x1) / 2, Y1 - 0.05, (win_z0 + win_z1) / 2), 6.0, moon,
+    sun = light("Moon", "SUN", (2.0, Y1 + 3.0, 4.0), 2.2, moon, size=0.8)
+    look_at(sun, (2.0 + 0.9, Y1 - 1.3, 3.4 - 3.3))
+    sun.location = (2.0, Y1 + 3.0, 4.0)
+    light("MoonSpill", "AREA", ((win_x0 + win_x1) / 2, Y1 - 0.05, (win_z0 + win_z1) / 2), 1.0, moon,
           target=(1.7, 1.2, 0.3), size=0.8, size_y=1.1)
     s = scene()
-    s.world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.01, 0.014, 0.03, 1)
+    s.world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.006, 0.009, 0.02, 1)
 
-    cam = camera((0.32, 0.25, 1.4), rot=(83.0, 0.0, -31.5), lens=30.0)
+    cam = camera((0.3, 0.2, 1.4), rot=(78.5, 0.0, -31.0), lens=28.0)
     render("bedroom_night")
     bpy.context.view_layer.update()
     mw = tv_scr.matrix_world
-    hw, hh = 0.21, 0.1575
+    hw, hh = 0.23, 0.1725
     quad = [proj(mw @ Vector((x, -0.0011, z))) for x, z in ((-hw, hh), (hw, hh), (hw, -hh), (-hw, -hh))]
-    bed_c = ((bx0 + bx1) / 2, (by0 + by1) / 2, 0.55)
+    bed_c = ((bx0 + bx1) / 2, (by0 + by1) / 2, zt)
     meta = dict(tv_screen_quad_tl_tr_br_bl=quad, tv_screen_width_px=round(quad[1][0] - quad[0][0], 1),
-                bed_center=proj(bed_c), pillow_center=proj(((bx0 + bx1) / 2, by1 - 0.3, 0.6)),
-                bed_rect=proj_obj_bbox(bpy.data.objects["Mattress"]))
+                bed_center=proj(bed_c), pillow_center=proj(((bx0 + bx1) / 2, by1 - 0.3, zt + 0.05)),
+                bed_rect=proj_obj_bbox(bpy.data.objects["Mattress"]),
+                note="tv_screen_quad is clockwise from top-left; the screen is a flat emissive plane.")
     save_blend("bedroom_night")
     write_meta("bedroom_night", meta)
+
+
+def home_door(name, origin, wall_axis, facing, slab, trim, knob, width=0.8, height=2.03, wall_t=0.12,
+              ajar=0.0, hinge_side=-1, void=None, casing=0.07, panels=True):
+    """Painted interior panel door in a house wall (same local frame as inst_door: door plane = local XZ,
+    the room the camera is in toward local -Y, the wall thickness toward local +Y).
+    ajar > 0 swings the slab away from the camera side (into the room behind)."""
+    ox, oy = origin
+    yaw = {("y", 1): 90.0, ("y", -1): -90.0, ("x", 1): 180.0, ("x", -1): 0.0}[(wall_axis, facing)]
+    root = empty(name, (ox, oy, 0.0), (0, 0, yaw))
+    # casing (proud of the wall on the camera side) and jamb lining the opening
+    box(name + "CasL", (-width / 2 - casing / 2, -0.01, (height + casing) / 2), (casing, 0.02, height + casing), trim,
+        bevel=0.006, parent=root)
+    box(name + "CasR", (width / 2 + casing / 2, -0.01, (height + casing) / 2), (casing, 0.02, height + casing), trim,
+        bevel=0.006, parent=root)
+    box(name + "CasT", (0, -0.011, height + casing / 2), (width + 2 * casing + 0.01, 0.022, casing), trim,
+        bevel=0.006, parent=root)
+    for sx in (-1, 1):
+        box(f"{name}Jamb{sx}", (sx * (width / 2 + 0.01), wall_t / 2, height / 2), (0.02, wall_t, height), trim,
+            parent=root)
+    box(name + "JambT", (0, wall_t / 2, height + 0.01), (width + 0.04, wall_t, 0.02), trim, parent=root)
+    m = 1.0 if hinge_side < 0 else -1.0
+    t = 0.036
+    hinge = empty(name + "Hinge", (-m * width / 2, 0.025, 0.0), (0, 0, m * ajar), parent=root)
+    sw = width - 0.006
+    box(name + "Slab", (m * sw / 2, t / 2, height / 2 + 0.004), (sw, t, height - 0.01), slab, bevel=0.003,
+        parent=hinge)
+    if panels:
+        # four raised panels (two tall, two short) on the camera-side face
+        cxs = (m * sw * 0.29, m * sw * 0.71)
+        for k, cx in enumerate(cxs):
+            for zc, ph in ((height * 0.70, height * 0.40), (height * 0.27, height * 0.33)):
+                box(f"{name}Panel{k}{zc:.2f}", (cx, -0.004, zc), (sw * 0.30, 0.012, ph), slab, bevel=0.012, segs=2,
+                    parent=hinge)
+    kx = m * (sw - 0.065)
+    cyl(name + "Rose", (kx, -0.006, 0.95), 0.028, 0.012, knob, rot=(90, 0, 0), verts=20, parent=hinge)
+    sphere(name + "Knob", (kx, -0.045, 0.95), 0.03, knob, scale=(1, 0.8, 1), parent=hinge)
+    cyl(name + "KnobStem", (kx, -0.022, 0.95), 0.009, 0.03, knob, rot=(90, 0, 0), verts=10, parent=hinge)
+    return root, hinge
+
+
+def void_room(name, lo, hi, mat, open_side="-y", t=0.02):
+    """Five thin boxes of `mat` enclosing lo..hi with one side left open (where the doorway is)."""
+    (x0, y0, z0), (x1, y1, z1) = lo, hi
+    faces = {"-x": ((x0 - t, y0, z0), (x0, y1, z1)), "+x": ((x1, y0, z0), (x1 + t, y1, z1)),
+             "-y": ((x0, y0 - t, z0), (x1, y0, z1)), "+y": ((x0, y1, z0), (x1, y1 + t, z1)),
+             "-z": ((x0, y0, z0 - t), (x1, y1, z0)), "+z": ((x0, y0, z1), (x1, y1, z1 + t))}
+    out = []
+    for k, (a, b) in faces.items():
+        if k != open_side:
+            out.append(box2(f"{name}{k}", a, b, mat))
+    return out
+
+
+def paint_wall_mat(name, color, u_axis, grime=0.35, dirt=0.35):
+    """Flat interior wall paint with a slight orange-peel bump, smudges and darker skirting dirt."""
+    return make_mat(name, hexc(color), 0.8, var=0.06, var_scale=1.5, grime=grime, grime_scale=1.6,
+                    floor_dirt=dirt, space="world", bump=0.06, bump_scale=160, streak=0.15)
+
+
+def picture_frame(name, loc, yaw, w, h, frame_m, art_fn=None, mat_m=None, glass=True):
+    """A framed picture on a wall. loc = centre on the wall surface; local -Y faces the room."""
+    root = empty(name, loc, (0, 0, yaw))
+    fw = 0.03
+    for nm, c, s in (("T", (0, -0.012, h / 2 - fw / 2), (w, 0.024, fw)), ("B", (0, -0.012, -h / 2 + fw / 2), (w, 0.024, fw)),
+                     ("L", (-w / 2 + fw / 2, -0.012, 0), (fw, 0.024, h)), ("R", (w / 2 - fw / 2, -0.012, 0), (fw, 0.024, h))):
+        box(name + nm, c, s, frame_m, bevel=0.004, parent=root)
+    mat_m = mat_m or bpy.data.materials.get("FrameMat") or make_mat("FrameMat", hexc("#E9E2CF"), 0.8, var=0.05,
+                                                                    grime=0.2)
+    box(name + "Mat", (0, -0.006, 0), (w - 2 * fw, 0.006, h - 2 * fw), mat_m, parent=root)
+    if art_fn:
+        art_fn(root, w - 2 * fw - 0.06, h - 2 * fw - 0.06)
+    if glass:
+        g = bpy.data.materials.get("FrameGlass") or make_mat("FrameGlass", hexc("#101214"), 0.04, var=0.0, spec=0.9)
+        gm = g
+        gl = box(name + "Glass", (0, -0.0205, 0), (w - 2 * fw, 0.001, h - 2 * fw), gm, parent=root)
+        # glass: transparent-ish via a mix with transparency is costly; use a very dark glossy film with low alpha
+        gl.visible_diffuse = False
+        gl.hide_render = True
+    return root
+
+
+def abstract_art(shapes):
+    """shapes: list of (kind, dx, dz, size, hex). Returns an art_fn for picture_frame."""
+    def fn(root, w, h):
+        for k, (kind, dx, dz, sz, c) in enumerate(shapes):
+            m = bpy.data.materials.get("Art" + c) or make_mat("Art" + c, hexc(c), 0.75, var=0.08, grime=0.15)
+            if kind == "disc":
+                cyl(f"{root.name}Art{k}", (dx * w, -0.011, dz * h), sz * w, 0.003, m, rot=(90, 0, 0), verts=28,
+                    parent=root)
+            elif kind == "tri":
+                prism(f"{root.name}Art{k}", [(-sz * w, -sz * w * 0.8), (sz * w, -sz * w * 0.8), (0, sz * w)], 0.003, m,
+                      loc=(dx * w, -0.011, dz * h), rot=(90, 0, 0), parent=root)
+            else:
+                box(f"{root.name}Art{k}", (dx * w, -0.011, dz * h), (sz * w, 0.003, sz * w * 0.7), m, parent=root)
+    return fn
+
+
+def plug_nightlight(name, loc, yaw, shell_m, glow_m, star=False):
+    """A small plug-in nightlight on an outlet plate. loc on the wall surface, local -Y into the room."""
+    root = empty(name, loc, (0, 0, yaw))
+    box(name + "Plate", (0, -0.004, 0), (0.07, 0.008, 0.115), shell_m, bevel=0.003, parent=root)
+    if star:
+        prism(name + "Star", star_points(0.05, 0.022), 0.018, glow_m, loc=(0, -0.012, 0.0), rot=(90, 0, 0),
+              parent=root)
+    else:
+        box(name + "Body", (0, -0.025, -0.01), (0.06, 0.035, 0.07), shell_m, bevel=0.01, parent=root)
+        sphere(name + "Dome", (0, -0.03, 0.035), 0.032, glow_m, scale=(1, 0.7, 0.7), parent=root)
+    return root
+
+
+def toy_car(name, loc, yaw, body_m, cabin_m, wheel_m):
+    root = empty(name, loc, (0, 0, yaw))
+    box(name + "Body", (0, 0, 0.04), (0.17, 0.08, 0.04), body_m, bevel=0.012, parent=root)
+    box(name + "Cabin", (-0.015, 0, 0.075), (0.08, 0.07, 0.04), cabin_m, bevel=0.012, parent=root)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            cyl(f"{name}W{sx}{sy}", (sx * 0.055, sy * 0.042, 0.02), 0.02, 0.014, wheel_m, rot=(90, 0, 0), verts=14,
+                parent=root)
+    return root
+
+
+def sneaker(name, loc, yaw, upper_m, sole_m, lace_m, tilt=0.0):
+    root = empty(name, loc, (tilt, 0, yaw))
+    box(name + "Sole", (0, 0, 0.012), (0.26, 0.095, 0.024), sole_m, bevel=0.01, parent=root)
+    sphere(name + "Toe", (0.075, 0, 0.035), 0.06, upper_m, scale=(1.3, 0.75, 0.55), parent=root)
+    sphere(name + "Heel", (-0.07, 0, 0.055), 0.06, upper_m, scale=(1.15, 0.78, 0.95), parent=root)
+    box(name + "Tongue", (0.0, 0, 0.075), (0.09, 0.06, 0.03), upper_m, bevel=0.012, rot=(0, -14, 0), parent=root)
+    cyl(name + "Collar", (-0.075, 0, 0.1), 0.035, 0.012, sole_m, verts=16, parent=root)
+    for k in range(3):
+        box(f"{name}Lace{k}", (0.01 + 0.025 * k, 0, 0.088 - 0.006 * k), (0.008, 0.065, 0.006), lace_m,
+            rot=(0, -14, 0), parent=root)
+    return root
+
+
+# ============================================================== HALLWAY AT NIGHT
+def render_hallway():
+    reset(640, 480, samples=96, look="AgX - Medium High Contrast", exposure=1.15)
+    W, L, H, T = 0.6, 6.0, 2.45, 0.12
+    wall_y = paint_wall_mat("HallWallY", "#E2D6BC", "y", grime=0.4)
+    wall_x = paint_wall_mat("HallWallX", "#E2D6BC", "x", grime=0.4)
+    trim = make_mat("HallTrim", hexc("#F1ECE0"), 0.4, var=0.04, grime=0.3, floor_dirt=0.3)
+    floor = make_mat("HallFloor", rough=0.35, var=0.06, coat=0.15, space="world", grime=0.25,
+                     base=planks_base(hexc("#7B5636"), hexc("#5E3F26"), hexc("#2A1A10"), plank_w=0.09,
+                                      axes=("y", "x")))
+    ceil = make_mat("HallCeil", hexc("#E4E0D6"), 0.9, var=0.05, grime=0.3, grime_scale=1.0)
+    void = void_mat()
+    slab = make_mat("HallDoor", hexc("#EDE7DA"), 0.4, var=0.05, grime=0.35, grime_scale=2.5, coat=0.1)
+    brass = make_mat("HallBrass", hexc("#B8913A"), 0.3, metallic=0.8, var=0.06, grime=0.3)
+
+    left_doors = [(2.35, 24.0), (4.25, 0.0)]      # (y centre, ajar degrees)
+    right_doors = [(3.75, 0.0)]
+    stair = (5.05, 5.85)                           # opening on the left near the end (landing, unseen window)
+    dw, dh = 0.8, 2.03
+    holes_l = [(y - dw / 2, y + dw / 2, -0.1, dh) for y, _ in left_doors] + [(stair[0], stair[1], -0.1, 2.12)]
+    holes_r = [(y - dw / 2, y + dw / 2, -0.1, dh) for y, _ in right_doors]
+    wall_with_holes("HWallL", "y", -W - T, -1.0, L, 0.0, H, T, holes_l, wall_y)
+    wall_with_holes("HWallR", "y", W, -1.0, L, 0.0, H, T, holes_r, wall_y)
+    wall_with_holes("HWallE", "x", L, -W - T, W + T, 0.0, H, T, [(-dw / 2, dw / 2, -0.1, dh)], wall_x)
+    box2("HFloor", (-W - 1.5, -1.0, -0.05), (W + 0.3, L + 0.3, 0.0), floor)
+    box2("HCeil", (-W - 1.5, -1.0, H), (W + 0.3, L + 0.3, H + 0.05), ceil)
+    # skirting boards
+    for sx in (-1, 1):
+        x0 = sx * W
+        holes = holes_l if sx < 0 else holes_r
+        cuts = sorted({-1.0, L, *[h[0] for h in holes], *[h[1] for h in holes]})
+        for a, b in zip(cuts[:-1], cuts[1:]):
+            mid = (a + b) / 2
+            if any(h[0] <= mid <= h[1] for h in holes):
+                continue
+            box2(f"Skirt{sx}{a:.2f}", (min(x0, x0 - sx * 0.014), a, 0.0), (max(x0, x0 - sx * 0.014), b, 0.1), trim)
+    box2("SkirtE1", (-W, L - 0.014, 0), (-dw / 2 - 0.07, L, 0.1), trim)
+    box2("SkirtE2", (dw / 2 + 0.07, L - 0.014, 0), (W, L, 0.1), trim)
+
+    # doors
+    for i, (y, aj) in enumerate(left_doors):
+        home_door(f"HDoorL{i}", (-W, y), "y", 1, slab, trim, brass, width=dw, height=dh, wall_t=T,
+                  ajar=aj, hinge_side=-1)
+        if aj:
+            # the dark bedroom behind the ajar door: pitch black
+            void_room(f"HVoidRoom{i}", (-W - T - 2.4, y - 1.0, 0.001), (-W - T, y + 1.0, H - 0.001), void,
+                      open_side="+x")
+    for i, (y, aj) in enumerate(right_doors):
+        home_door(f"HDoorR{i}", (W, y), "y", -1, slab, trim, brass, width=dw, height=dh, wall_t=T, hinge_side=-1)
+    home_door("HDoorEnd", (0.0, L), "x", -1, slab, trim, brass, width=dw, height=dh, wall_t=T)
+
+    # the landing beyond the left opening: a dark space with a banister and the top of the stairs
+    land = make_mat("Landing", hexc("#3A3530"), 0.8, var=0.08, grime=0.3)
+    box2("LandWallFar", (-W - 2.2, stair[1] + 0.3, 0.0), (-W - T, stair[1] + 0.42, H), wall_x)
+    box2("LandWallSide", (-W - 2.3, stair[0] - 0.6, 0.0), (-W - 2.2, stair[1] + 0.4, H), wall_y)
+    box2("LandWallNear", (-W - 2.2, stair[0] - 0.62, 0.0), (-W - T, stair[0] - 0.5, H), wall_x)
+    for k in range(5):
+        cyl(f"Baluster{k}", (-W - 0.45, stair[0] + 0.12 + k * 0.17, 0.45), 0.014, 0.9, trim, verts=10)
+    box2("Handrail", (-W - 0.49, stair[0] + 0.05, 0.9), (-W - 0.41, stair[1] - 0.05, 0.95), land, bevel=0.01)
+    cyl("NewelPost", (-W - 0.45, stair[0] + 0.03, 0.55), 0.04, 1.1, trim, verts=4)
+    # a cold window light from the landing (the window itself is out of view)
+    moon = (0.2, 0.36, 1.0)
+    light("LandingMoon", "AREA", (-W - 1.6, (stair[0] + stair[1]) / 2 + 0.1, 1.9), 9.0, moon,
+          target=(W, stair[0] + 0.1, 0.3), size=0.6, size_y=0.9)
+    light("LandingMoonSoft", "AREA", (-W - 1.9, (stair[0] + stair[1]) / 2, 1.2), 2.0, moon,
+          target=(0.0, 4.5, 0.6), size=1.2, size_y=1.2)
+
+    # carpet runner with a border
+    def runner_base(b, vec):
+        p = b.sep(b.coords("world"))
+        ax = b.math("ABSOLUTE", p[0])
+        stops = [(0.0, hexc("#7A2630")), (0.27, hexc("#7A2630")), (0.30, hexc("#D8C7A0")), (0.32, hexc("#2E3A5A")),
+                 (0.355, hexc("#D8C7A0")), (0.365, hexc("#5E1A22"))]
+        base = b.ramp(b.math("DIVIDE", ax, 1.0), stops, "CONSTANT")
+        motif = b.maprange(b.noise(b.mapping(b.coords("world"), scale=(6.0, 3.0, 1.0)), 1.0, 1.0, 0.5), 0.55, 0.6,
+                           0.0, 0.25)
+        inner = b.maprange(ax, 0.26, 0.27, 1.0, 0.0)
+        return b.mix(base, b.rgb(hexc("#B89A60")), b.math("MULTIPLY", motif, inner))
+    runner = make_mat("Runner", rough=0.95, var=0.08, var_scale=3.0, sheen=0.4, spec=0.15, grime=0.3,
+                      grime_scale=1.2, bump=0.25, bump_scale=300, base=runner_base)
+    box2("RunnerCarpet", (-0.37, 0.1, 0.0), (0.37, L - 0.25, 0.012), runner, bevel=0.004)
+
+    # pictures: abstract shapes only
+    fr_dark = make_mat("FrameWood", hexc("#3C2A1E"), 0.45, var=0.08, grime=0.2)
+    fr_gold = make_mat("FrameGold", hexc("#9C7B3C"), 0.35, metallic=0.5, var=0.08, grime=0.3)
+    picture_frame("PicL1", (-W, 3.3, 1.5), -90, 0.42, 0.52, fr_dark,
+                  abstract_art([("disc", -0.1, 0.1, 0.22, "#C25B48"), ("rect", 0.12, -0.18, 0.4, "#5C7FA6")]))
+    picture_frame("PicR1", (W, 1.45, 1.52), 90, 0.5, 0.4, fr_gold,
+                  abstract_art([("tri", 0.0, -0.05, 0.25, "#5E8F5A"), ("disc", 0.25, 0.25, 0.1, "#D8B04A")]))
+    picture_frame("PicR2", (W, 2.7, 1.55), 90, 0.32, 0.42, fr_dark,
+                  abstract_art([("rect", 0.0, 0.0, 0.6, "#8B6A9A")]))
+    picture_frame("PicR3", (W, 4.75, 1.45), 90, 0.25, 0.3, fr_gold, None)
+
+    # ceiling lights (off), smoke detector, a thermostat
+    dome = make_mat("DomeOff", hexc("#E6E1D2"), 0.3, var=0.04, grime=0.2)
+    for y in (1.6, 4.4):
+        cyl(f"Dome{y}", (0, y, H - 0.04), 0.16, 0.08, dome, verts=32, radius2=0.11)
+    cyl("Smoke", (0.0, 3.0, H - 0.015), 0.06, 0.03, trim, verts=20)
+    box("Thermostat", (W - 0.01, 2.0, 1.45), (0.02, 0.09, 0.12), trim, bevel=0.005)
+
+    # nightlight low on the right wall: warm pool on the runner
+    warm = kelvin(2300)
+    nly = 2.3
+    plug_nightlight("HallNL", (W, nly, 0.3), 90, trim, emit_mat("NLGlow", (*warm, 1.0), 10.0))
+    light("NLPoint", "POINT", (W - 0.07, nly, 0.33), 0.45, warm, size=0.02)
+    light("NLPool", "SPOT", (W - 0.06, nly, 0.34), 1.8, warm, target=(0.0, nly + 0.2, 0.0), size=0.02, spot=110.0,
+          blend=1.0)
+    # the faintest cold fill from behind the camera (a bedroom door behind us) so the near table reads
+    light("BehindFill", "AREA", (0.35, -0.9, 1.6), 2.2, (0.45, 0.55, 0.85), target=(-0.45, 1.4, 0.7), size=0.6,
+          size_y=1.2)
+
+    # near-left side table with a lamp (off) and a plastic toy near the edge
+    tw = make_mat("TableWood", rough=0.4, var=0.06, coat=0.2, grime=0.2,
+                  base=streak_wood(hexc("#6B4A30"), hexc("#4E3420"), "y"))
+    tx0, tx1, ty0, ty1, tz = -W + 0.01, -W + 0.32, 1.05, 1.5, 0.7
+    box2("STableTop", (tx0, ty0, tz - 0.03), (tx1, ty1, tz), tw, bevel=0.006)
+    box2("STableApron", (tx0 + 0.02, ty0 + 0.02, tz - 0.12), (tx1 - 0.02, ty1 - 0.02, tz - 0.03), tw)
+    for (x, y) in ((tx0 + 0.035, ty0 + 0.035), (tx1 - 0.035, ty0 + 0.035), (tx0 + 0.035, ty1 - 0.035),
+                   (tx1 - 0.035, ty1 - 0.035)):
+        cyl(f"STableLeg{x}{y}", (x, y, (tz - 0.03) / 2), 0.016, tz - 0.03, tw, verts=10)
+    lamp_m = make_mat("LampCeramic", hexc("#9DB3A8"), 0.3, var=0.05, coat=0.3)
+    shade_m = make_mat("LampShadeOff", hexc("#D9CCA8"), 0.85, var=0.06, grime=0.25)
+    lx, ly = tx0 + 0.16, ty0 + 0.33
+    sphere("LampBody", (lx, ly, tz + 0.08), 0.065, lamp_m, scale=(1, 1, 1.25))
+    cyl("LampNeck", (lx, ly, tz + 0.18), 0.01, 0.08, brass, verts=10)
+    cyl("LampShade", (lx, ly, tz + 0.27), 0.11, 0.14, shade_m, radius2=0.07, verts=28)
+    toy_car("ToyCar", (tx1 - 0.08, ty0 + 0.1, tz), 75,
+            make_mat("ToyRed", hexc("#D23A2E"), 0.3, var=0.04, coat=0.4),
+            make_mat("ToyYellow", hexc("#EFC531"), 0.3, var=0.04, coat=0.4),
+            make_mat("ToyBlack", hexc("#1A1A1A"), 0.5, var=0.0))
+    box("Keys", (tx0 + 0.1, ty0 + 0.12, tz + 0.004), (0.06, 0.03, 0.008), brass, rot=(0, 0, 30))
+
+    s = scene()
+    s.world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.004, 0.005, 0.009, 1)
+    cam = camera((0.0, 0.0, 1.1), rot=(90.0, 0.0, 0.0), lens=30.0, shift_y=-0.075)
+    far_door_c = (0.0, L, dh / 2)
+    print("far door centre at", proj(far_door_c))
+    render("hallway_night")
+    meta = dict(far_door_center=proj(far_door_c), far_door_rect=[*proj((-dw / 2, L, dh)), *proj((dw / 2, L, 0.0))],
+                table_rect=proj_obj_bbox(bpy.data.objects["STableTop"]),
+                ajar_door_rect=[*proj((-W, left_doors[0][0] - dw / 2, dh)), *proj((-W, left_doors[0][0] + dw / 2, 0.0))],
+                nightlight=proj((W, nly, 0.3)))
+    save_blend("hallway_night")
+    write_meta("hallway_night", meta)
+
+
+# ============================================================== CLOSET DOOR
+CL = dict(dx0=-0.82, dx1=0.0, dh=2.03, T=0.12, cam_d=2.4, cam_h=1.2, lens=28.0, ajar=-34.0, open=-56.0)
+
+
+def render_closet(variant):
+    """variant: 'ajar' (closet_door) or 'open' (closet_door_open). Same camera."""
+    reset(640, 480, samples=96, look="AgX - Medium High Contrast", exposure=0.8)
+    dx0, dx1, dh, T = CL["dx0"], CL["dx1"], CL["dh"], CL["T"]
+    dw = dx1 - dx0
+    is_open = variant == "open"
+
+    def paper(b, vec):
+        uv, p = _uv(b, "x")
+        w = b.node("ShaderNodeTexWave", wave_type="BANDS", bands_direction="X", wave_profile="SIN")
+        b.set(w.inputs["Vector"], uv)
+        w.inputs["Scale"].default_value = 6.0
+        stripes = b.mix(b.rgb(hexc("#CFD0DE")), b.rgb(hexc("#B9BCD3")), b.maprange(w.outputs[1], 0.45, 0.55, 0, 1))
+        dots = b.maprange(b.noise(uv, 14.0, 0.0, 0.5), 0.70, 0.72, 0.0, 0.35)
+        return b.mix(stripes, b.rgb(hexc("#9AA6C8")), dots)
+    wall = make_mat("ClWall", rough=0.85, var=0.07, grime=0.3, grime_scale=1.4, floor_dirt=0.3, base=paper,
+                    space="world", streak=0.15)
+    trim = make_mat("ClTrim", hexc("#EEEAE0"), 0.4, var=0.04, grime=0.3, floor_dirt=0.3)
+    floor = make_mat("ClFloor", rough=0.4, var=0.06, coat=0.1, space="world", grime=0.25,
+                     base=planks_base(hexc("#9A6D45"), hexc("#7A5232"), hexc("#3A2618"), plank_w=0.11))
+    door_m = make_mat("ClosetDoorYellow", hexc("#F2DA86"), 0.62, var=0.06, grime=0.4, grime_scale=2.5,
+                      floor_dirt=0.25, spec=0.3)
+    brass = make_mat("ClBrass", hexc("#B8913A"), 0.3, metallic=0.8, var=0.06, grime=0.3)
+    void = void_mat()
+
+    wall_with_holes("ClWall", "x", 0.0, -3.5, 3.5, 0.0, 2.6, T, [(dx0, dx1, -0.1, dh)], wall)
+    box2("ClFloor", (-3.5, -3.5, -0.05), (3.5, 1.2, 0.0), floor)
+    box2("ClCeil", (-3.5, -3.5, 2.6), (3.5, 1.2, 2.65), make_mat("ClCeilM", hexc("#D8D6DE"), 0.9, var=0.04))
+    box2("ClSkirtL", (-3.5, -0.014, 0.0), (dx0 - 0.07, 0.0, 0.1), trim)
+    box2("ClSkirtR", (dx1 + 0.07, -0.014, 0.0), (3.5, 0.0, 0.1), trim)
+    home_door("ClDoor", ((dx0 + dx1) / 2, 0.0), "x", -1, door_m, trim, brass, width=dw, height=dh, wall_t=T,
+              ajar=CL["open"] if is_open else CL["ajar"], hinge_side=-1)
+
+    # closet interior: in the ajar shot it is pure void; in the open shot dark clothes are barely there
+    ix0, ix1, iy0, iy1, ih = dx0 - 0.35, dx1 + 0.45, T, T + 0.68, 2.3
+    if is_open:
+        inner = make_mat("ClosetInside", hexc("#3C3A40"), 0.9, var=0.1, grime=0.5)
+        box2("InBack", (ix0, iy1, 0.0), (ix1, iy1 + 0.05, ih), inner)
+        box2("InL", (ix0 - 0.05, iy0, 0.0), (ix0, iy1, ih), inner)
+        box2("InR", (ix1, iy0, 0.0), (ix1 + 0.05, iy1, ih), inner)
+        box2("InTop", (ix0, iy0, ih), (ix1, iy1, ih + 0.05), inner)
+        box2("InFloor", (ix0, iy0, -0.01), (ix1, iy1, 0.001), inner)
+        box2("InShelf", (ix0, iy0 + 0.1, 1.85), (ix1, iy1, 1.87), inner)
+        rod_m = make_mat("ClRod", hexc("#8A8A86"), 0.3, metallic=0.8, var=0.05)
+        cyl("ClRod", ((ix0 + ix1) / 2, (iy0 + iy1) / 2 + 0.04, 1.72), 0.012, ix1 - ix0, rod_m, rot=(0, 90, 0), verts=10)
+        cloth_cols = ["#3A4458", "#5A3A3A", "#4A4A3C", "#2E3A30", "#56505C", "#3E3530", "#4C5466"]
+        rng = np.random.default_rng(7)
+        xs = np.linspace(ix0 + 0.12, ix1 - 0.1, 9)
+        for k, x in enumerate(xs):
+            x = float(x + rng.uniform(-0.03, 0.03))
+            yc = (iy0 + iy1) / 2 + 0.04
+            ln = float(rng.uniform(0.55, 1.0))
+            cm = make_mat(f"Cloth{k}", hexc(cloth_cols[k % len(cloth_cols)]), 0.9, var=0.1, sheen=0.3, bump=0.2,
+                          bump_scale=40)
+            wire_hanger(f"ClHanger{k}", (x, yc, 1.72), rod_m, yaw=90 + float(rng.uniform(-8, 8)))
+            box(f"Cloth{k}", (x, yc, 1.62 - ln / 2), (0.05, 0.42, ln), cm, rot=(0, float(rng.uniform(-3, 3)), 0),
+                bevel=0.02)
+        # the faintest edge of light inside
+        light("InsideEdge", "AREA", (dx0 + 0.25, 0.3, 0.25), 0.9, (0.65, 0.75, 1.0), target=(dx1 - 0.1, 0.6, 1.5),
+              size=0.2, size_y=0.2)
+    else:
+        void_room("InVoid", (ix0, iy0, 0.001), (ix1, iy1, ih), void, open_side="-y")
+
+    # bed edge at the right of frame, its blanket spilling over the side
+    frame_m = make_mat("ClBedFrame", hexc("#E6E1D4"), 0.45, var=0.05, grime=0.2)
+    duvet = make_mat("ClDuvet", rough=0.9, var=0.06, sheen=0.4, bump=0.12, bump_scale=25,
+                     base=lambda b, v: b.mix(b.rgb(hexc("#86A6DA")), b.rgb(hexc("#F1D36A")),
+                                             b.maprange(b.node("ShaderNodeTexChecker").outputs[1], 0.4, 0.6, 0, 1)))
+    ck = [n for n in duvet.node_tree.nodes if n.bl_idname == "ShaderNodeTexChecker"][0]
+    ck.inputs["Scale"].default_value = 6.0
+    bx0 = 1.25
+    box2("ClBedBase", (bx0, -2.2, 0.24), (bx0 + 1.0, -0.02, 0.40), frame_m, bevel=0.015)
+    box2("ClBedHead", (bx0, -0.06, 0.24), (bx0 + 1.0, -0.02, 1.0), frame_m, bevel=0.015)
+    box2("ClBedLeg", (bx0 + 0.01, -0.1, 0.0), (bx0 + 0.07, -0.04, 0.26), frame_m)
+    box2("ClBedLeg2", (bx0 + 0.01, -2.18, 0.0), (bx0 + 0.07, -2.12, 0.26), frame_m)
+    box2("ClUnderBed", (bx0 + 0.04, -2.1, 0.001), (bx0 + 1.0, -0.1, 0.23), void)
+    box2("ClMattress", (bx0 + 0.03, -2.15, 0.40), (bx0 + 0.97, -0.08, 0.57), make_mat("ClSheet", hexc("#E4E6EE"),
+         0.85, var=0.06, sheen=0.3), bevel=0.04)
+
+    def hang(u, v):
+        drop = 0.0
+        if u < 0.25:
+            drop = -min(0.5, (0.25 - u) * 2.4)
+        return (0.0, 0.0, drop + 0.03 * math.sin(v * 13 + u * 4))
+    cloth_grid("ClDuvetObj", 1.2, 1.9, 30, 40, duvet, loc=(bx0 + 0.55, -1.15, 0.6), height_fn=hang, displace=0.05,
+               disp_scale=0.25)
+
+    # star nightlight low-left: cool light up across the door
+    cool = (0.62, 0.74, 1.0)
+    nl_x = -1.35
+    plug_nightlight("ClNL", (nl_x, 0.0, 0.32), 0, trim, emit_mat("ClNLGlow", (*cool, 1.0), 4.0), star=True)
+    light("ClNLPoint", "POINT", (nl_x + 0.03, -0.2, 0.36), 2.2, cool, size=0.05)
+    # faint moonlight from an unseen window at the right
+    light("ClMoon", "AREA", (2.6, -2.2, 1.9), 7.0, (0.42, 0.55, 1.0), target=(-0.3, 0.0, 0.9), size=0.8, size_y=1.2)
+
+    # floor clutter in front of the door: a sneaker and a small stuffed toy on its side
+    sneaker("Sneaker", (-1.05, -0.3, 0.0), 28, make_mat("SneakerUpper", hexc("#D9DDE4"), 0.7, var=0.06, grime=0.4),
+            make_mat("SneakerSole", hexc("#E9E6DD"), 0.6, var=0.05, grime=0.5),
+            make_mat("SneakerAccent", hexc("#3C64B8"), 0.6, var=0.05))
+    bunny = make_mat("ClBunny", hexc("#BDAFA8"), 0.95, var=0.07, var_scale=20, sheen=0.5, bump=0.15, bump_scale=200,
+                     grime=0.25)
+    stuffed_bunny("ClToy", (0.32, -0.38, 0.075), 200, bunny, make_mat("ClBunnyIn", hexc("#D9A3A8"), 0.95),
+                  make_mat("ClBunnyEye", hexc("#0A0A0A"), 0.1, coat=0.6), lying=True)
+    # a small framed abstract picture and a growth chart strip on the wall at right
+    picture_frame("ClPic", (0.85, 0.0, 1.5), 0, 0.34, 0.42, make_mat("ClFrame", hexc("#5A3E2A"), 0.45, var=0.06),
+                  abstract_art([("disc", 0.0, 0.1, 0.25, "#D8B04A"), ("rect", 0.0, -0.25, 0.5, "#5C7FA6")]))
+    box("LightSwitch", (0.55, -0.005, 1.1), (0.075, 0.01, 0.12), trim, bevel=0.003)
+
+    s = scene()
+    s.world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.003, 0.004, 0.008, 1)
+    # square-on camera; shift so the door top sits near the frame top and the gap is centred
+    cam = camera((-0.1, -CL["cam_d"], CL["cam_h"]), rot=(90.0, 0.0, 0.0), lens=CL["lens"], shift_y=-0.097)
+    bpy.context.view_layer.update()
+    hinge = bpy.data.objects["ClDoorHinge"]
+    ang = math.radians(CL["ajar"])
+    # where the (ajar) slab's free edge is, in world space
+    edge = Vector((dx0 + dw * math.cos(ang), 0.025 + dw * math.sin(ang), 1.0))
+    print("closet edge", tuple(edge))
+    for _ in range(4):
+        e = proj(edge)
+        j = proj((dx1, 0.0, 1.0))
+        cx = (e[0] + j[0]) / 2
+        cam.data.shift_x += (cx - 322.5) / 640.0
+    bpy.context.view_layer.update()
+    name = "closet_door_open" if is_open else "closet_door"
+    render(name)
+    meta = dict(gap_rect=[proj(edge)[0], proj((dx1, 0.0, dh))[1], proj((dx1, 0.0, 1.0))[0], proj((dx1, 0.0, 0.0))[1]],
+                door_opening_rect=[*proj((dx0, 0.0, dh)), *proj((dx1, 0.0, 0.0))],
+                nightlight=proj((nl_x, 0.0, 0.32)))
+    if is_open:
+        ango = math.radians(CL["open"])
+        edge_o = Vector((dx0 + dw * math.cos(ango), 0.025 + dw * math.sin(ango), 1.0))
+        meta["gap_rect"] = [proj(edge_o)[0], meta["gap_rect"][1], meta["gap_rect"][2], meta["gap_rect"][3]]
+    save_blend(name)
+    write_meta(name, meta)
+
+
+def post_closet_open():
+    """closet_door_open = closet_door everywhere except where the door (and its shadow) changed."""
+    a = load_png(os.path.join(OUT_IMG, "closet_door.png"))
+    b = load_png(os.path.join(OUT_IMG, "closet_door_open.png"))
+    diff = np.abs(a - b).max(axis=2) > (5.0 / 255.0)
+    meta = json.load(open(META_PATH)) if os.path.exists(META_PATH) else {}
+    r = meta.get("closet_door_open", {}).get("door_opening_rect")
+    h, w = a.shape[:2]
+    sc = w / 640.0
+    region = np.zeros(diff.shape, bool)
+    if r:
+        x0, y0, x1, y1 = [v * sc for v in r]
+        dwp = abs(x1 - x0)
+        region[:, max(0, int(min(x0, x1) - 0.9 * dwp)):int(max(x0, x1) + 0.35 * dwp)] = True
+    keep = diff & region
+    k = keep.copy()
+    for dy in range(-3, 4):
+        for dx in range(-3, 4):
+            k |= np.roll(np.roll(keep, dy, 0), dx, 1)
+    k &= region
+    m = k.astype(np.float32)
+    for _ in range(2):
+        m = (m + np.roll(m, 1, 0) + np.roll(m, -1, 0) + np.roll(m, 1, 1) + np.roll(m, -1, 1)) / 5.0
+    m = np.maximum(m, keep.astype(np.float32))[..., None]
+    out = b * m + a * (1 - m)
+    save_png(os.path.join(OUT_IMG, "closet_door_open.png"), out)
+    print("closet_open: kept", int(k.sum()), "changed pixels from the open render")
+
+
+# ============================================================== STUDIO B AFTER HOURS (camcorder)
+def studio_camera_rig(name, loc, yaw, body_m, dark_m, metal_m):
+    """A 1990s studio TV camera on a pedestal: column, ring skirt, camera head, lens hood, viewfinder,
+    pan bars. Local -Y is where the lens points."""
+    root = empty(name, loc, (0, 0, yaw))
+    cyl(name + "Skirt", (0, 0, 0.12), 0.42, 0.22, dark_m, verts=32, radius2=0.36, bevel=0.02, parent=root)
+    for k in range(3):
+        a = 2 * math.pi * k / 3
+        cyl(f"{name}Foot{k}", (0.5 * math.cos(a), 0.5 * math.sin(a), 0.06), 0.06, 0.08, dark_m, verts=12,
+            parent=root)
+        box(f"{name}Leg{k}", (0.25 * math.cos(a), 0.25 * math.sin(a), 0.1), (0.5, 0.08, 0.06), dark_m,
+            rot=(0, 0, math.degrees(a)), parent=root)
+    cyl(name + "Column", (0, 0, 0.75), 0.11, 1.1, metal_m, verts=24, parent=root)
+    cyl(name + "Wheel", (0, 0, 1.0), 0.3, 0.035, metal_m, verts=32, parent=root)
+    box(name + "Head", (0, 0, 1.36), (0.24, 0.3, 0.12), dark_m, bevel=0.02, parent=root)
+    box(name + "Body", (0, 0.05, 1.6), (0.36, 0.62, 0.36), body_m, bevel=0.03, parent=root)
+    box(name + "LensHood", (0, -0.42, 1.6), (0.3, 0.26, 0.28), dark_m, bevel=0.02, parent=root)
+    cyl(name + "Lens", (0, -0.3, 1.6), 0.1, 0.25, dark_m, rot=(90, 0, 0), verts=24, parent=root)
+    box(name + "Viewfinder", (0, 0.12, 1.89), (0.3, 0.34, 0.22), body_m, bevel=0.02, parent=root)
+    box(name + "VFHood", (0, 0.32, 1.89), (0.24, 0.08, 0.18), dark_m, bevel=0.01, parent=root)
+    for sx in (-1, 1):
+        cyl(f"{name}PanBar{sx}", (sx * 0.22, 0.6, 1.45), 0.016, 0.75, metal_m, rot=(-62, 0, sx * 12), verts=10,
+            parent=root)
+        cyl(f"{name}Grip{sx}", (sx * 0.26, 0.92, 1.27), 0.022, 0.14, dark_m, rot=(-62, 0, sx * 12), verts=10,
+            parent=root)
+    tally = emit_mat(name + "Tally", (0.25, 0.0, 0.0, 1), 0.6)
+    sphere(name + "TallyL", (0.14, -0.2, 1.8), 0.015, tally, parent=root)
+    return root
+
+
+def fresnel_lamp(name, loc, rot, body_m, lens_m, metal_m, stand=False):
+    """A theatre fresnel: can, lens ring, barn doors, yoke."""
+    root = empty(name, loc, rot)
+    cyl(name + "Can", (0, 0, 0), 0.13, 0.32, body_m, rot=(90, 0, 0), verts=24, parent=root)
+    cyl(name + "Lens", (0, -0.165, 0), 0.105, 0.012, lens_m, rot=(90, 0, 0), verts=24, parent=root)
+    for k, (dx, dz, rx, ry) in enumerate(((0, 0.15, -35, 0), (0, -0.15, 35, 0), (0.15, 0, 0, 35), (-0.15, 0, 0, -35))):
+        box(f"{name}Barn{k}", (dx * 1.05, -0.24, dz * 1.05), (0.26 if dx == 0 else 0.01, 0.16, 0.01 if dx == 0 else 0.26),
+            body_m, rot=(rx, 0, -ry), parent=root)
+    cyl(name + "Yoke", (0, 0, 0.2), 0.01, 0.12, metal_m, verts=8, parent=root)
+    box(name + "YokeBar", (0, 0, 0.16), (0.32, 0.02, 0.02), metal_m, parent=root)
+    return root
+
+
+def floor_at_pixel(px, py, z, axis=2):
+    """World point where the camera ray through pixel (px, py) meets the plane {axis} = z (default: height)."""
+    s = scene()
+    cam = s.camera
+    bpy.context.view_layer.update()
+    tr, br, bl, tl = cam.data.view_frame(scene=s)
+    u, v = px / s.render.resolution_x, py / s.render.resolution_y
+    p = tl.lerp(tr, u).lerp(bl.lerp(br, u), v)
+    d = cam.matrix_world.to_3x3() @ p
+    o = cam.matrix_world.translation
+    t = (z - o[axis]) / d[axis]
+    return o + d * t
+
+
+def render_studio_night():
+    reset(960, 720, samples=96, look="AgX - Base Contrast", exposure=2.6)
+    pr = Playroom("studio", studio=True)
+    pr.build()
+    zf = -0.06
+    # camcorder: 1.5 m, ~28 mm, 2-degree roll, ~8.5 m from the set and ~22 degrees off its axis (to the right,
+    # so the plywood back and braces of the right-hand flat show at the set's right edge)
+    brg = math.radians(22.0)
+    cam = camera((8.6 * math.sin(brg), -1.5 - 8.6 * math.cos(brg), 1.5), target=(2.6, -1.0, 1.75), lens=28.0,
+                 roll=2.0)
+    # --- the studio around the set: concrete floor, black drapes, a far wall with an exit sign
+    def concrete(b, vec):
+        p = b.coords("world")
+        n1 = b.noise(p, 0.35, 6.0, 0.65)
+        n2 = b.noise(p, 3.0, 4.0, 0.6)
+        base = b.mix(b.rgb(hexc("#6E6B66")), b.rgb(hexc("#55534F")), b.maprange(n1, 0.35, 0.65, 0.0, 1.0))
+        stain = b.maprange(n2, 0.62, 0.7, 1.0, 0.72)
+        return b.scale(base, stain)
+    floor = make_mat("StudioConcrete", rough=0.55, var=0.06, var_scale=1.0, space="world", base=concrete,
+                     rough_var=0.2, bump=0.08, bump_scale=60, grime=0.25, grime_scale=0.4)
+    box2("StudioFloor", (-14.0, -14.0, zf - 0.1), (14.0, 9.0, zf), floor)
+    drape = make_mat("Drape", hexc("#1B1A1C"), 0.95, var=0.1, sheen=0.3,
+                     normal_fn=lambda b, v: _drape_normal(b))
+    box2("DrapeBack", (-14.0, 7.0, zf), (14.0, 7.2, 8.0), drape)
+    box2("DrapeLeft", (-12.0, -14.0, zf), (-11.8, 7.0, 8.0), drape)
+    wallm = make_mat("StudioWall", hexc("#2A2A2C"), 0.9, var=0.08, grime=0.4, space="world")
+    box2("WallRight", (11.0, -14.0, zf), (11.2, 9.0, 8.0), wallm)
+    box2("StudioCeil", (-14.0, -14.0, 8.0), (14.0, 9.0, 8.2), wallm)
+    # exit sign: plain green glowing box over a door on the right wall, no text
+    green = (0.12, 1.0, 0.25)
+    # exit sign + door on the back drape wall, placed so the sign sits near the right edge of frame
+    ep = floor_at_pixel(915, 330, 6.95, axis=1)
+    ex, ey, ez = ep.x, 6.95, max(2.4, ep.z)
+    box2("ExitSign", (ex - 0.3, ey - 0.15, ez), (ex + 0.3, ey, ez + 0.25), emit_mat("ExitGlow", (*green, 1.0), 5.0))
+    box2("ExitDoor", (ex - 0.5, ey - 0.06, zf), (ex + 0.5, ey, 2.2), make_mat("ExitDoorM", hexc("#3A3D3A"), 0.5,
+                                                                            var=0.06, grime=0.4))
+    light("ExitLight", "AREA", (ex, ey - 0.3, ez - 0.05), 30.0, green, target=(6.0, -1.2, 0.0), size=0.6,
+          size_y=0.3, spread=80.0)
+    # the ghost light's spill bouncing off the grid and floor faintly reveals the plywood backs of the flats
+    light("SpillBounce", "AREA", (4.6, 1.8, 3.6), 5.0, kelvin(3000), target=(2.4, -1.5, 1.0), size=2.5,
+          size_y=2.5)
+
+    # tape marks and cable runs on the floor
+    tape = make_mat("GaffTape", hexc("#C9C3A8"), 0.6, var=0.1, grime=0.4)
+    for k, (x, y, r) in enumerate(((-0.6, -4.2, 0), (-0.45, -4.35, 90), (1.2, -4.6, 0), (1.35, -4.45, 90),
+                                   (3.3, -3.0, 20), (-2.2, -5.0, 70))):
+        box(f"Tape{k}", (x, y, zf + 0.002), (0.3, 0.05, 0.003), tape, rot=(0, 0, r))
+    rubber = make_mat("CableRubber", hexc("#121212"), 0.5, var=0.05, spec=0.4)
+    rng = np.random.default_rng(4)
+    cable_paths = [
+        [(1.5, -6.4), (2.4, -6.9), (3.6, -6.2), (5.2, -6.8), (7.5, -6.0), (10.5, -5.0)],
+        [(0.9, -5.0), (1.8, -5.6), (2.8, -4.6), (4.0, -4.9), (6.5, -3.6), (9.0, -3.9)],
+        [(0.4, -3.4), (2.6, -3.7), (4.4, -2.2), (5.6, -2.9), (7.0, -1.0), (8.6, -1.4)],
+        [(-1.5, -3.6), (-0.6, -5.2), (0.5, -6.2), (0.2, -7.6), (1.0, -9.0)],
+        [(5.8, -5.4), (6.6, -4.5), (7.7, -5.1), (8.6, -4.2)],
+    ]
+    for k, path in enumerate(cable_paths):
+        pts = [(x + float(rng.uniform(-0.1, 0.1)), y, zf + 0.018) for x, y in path]
+        tube(f"Cable{k}", pts, 0.017, rubber)
+
+    # two studio TV cameras on pedestals: dark silhouettes in the left foreground
+    cam_body = make_mat("CamBody", hexc("#3B3E42"), 0.45, var=0.05, grime=0.2)
+    cam_dark = make_mat("CamDark", hexc("#141516"), 0.5, var=0.04)
+    metal = make_mat("StudioMetal", hexc("#6A6C6E"), 0.35, metallic=0.8, var=0.06, grime=0.3)
+    c1 = floor_at_pixel(-15, 655, zf)
+    c2 = floor_at_pixel(70, 575, zf)
+    studio_camera_rig("TVCam1", (c1.x, c1.y, zf), -160, cam_body, cam_dark, metal)
+    studio_camera_rig("TVCam2", (c2.x, c2.y, zf), 175, cam_body, cam_dark, metal)
+    # a monitor cart near the set's left edge
+    box2("MonCart", (-3.6, -3.2, zf), (-3.0, -2.6, 0.85), cam_dark)
+    box("Monitor", (-3.3, -2.9, 1.08), (0.5, 0.45, 0.4), cam_body, rot=(0, 0, 25), bevel=0.02)
+
+    # lighting grid: pipe battens with hanging fresnels, fading into black above
+    pipe = make_mat("GridPipe", hexc("#8A8C8E"), 0.4, metallic=0.7, var=0.06, grime=0.3)
+    lamp_body = make_mat("LampBody", hexc("#3A3B3D"), 0.45, var=0.05, grime=0.3)
+    lens_m = make_mat("FresnelLens", hexc("#5A5E62"), 0.15, var=0.03, spec=0.8, coat=0.5)
+    gz = 5.2
+    for k, y in enumerate((-4.5, -2.5, -0.5, 1.5)):
+        cyl(f"Batten{k}", (0.0, y, gz), 0.03, 16.0, pipe, rot=(0, 90, 0), verts=10)
+    for k, x in enumerate((-4.0, 0.0, 4.0)):
+        cyl(f"GridCross{k}", (x, -1.5, gz + 0.06), 0.03, 7.5, pipe, rot=(90, 0, 0), verts=10)
+    for k, (x, y) in enumerate(((-2.4, -4.5), (-0.8, -4.5), (0.9, -4.5), (2.6, -4.5), (-1.8, -2.5), (1.6, -2.5),
+                                (3.4, -2.5), (-3.0, -0.5), (-0.4, -0.5), (2.2, -0.5), (4.6, -4.5), (5.2, -2.5))):
+        fresnel_lamp(f"Grid{k}", (x, y, gz - 0.42), (-35 + 10 * math.sin(k), 0, 20 * math.cos(k * 1.7)), lamp_body,
+                     lens_m, pipe)
+        cyl(f"GridDrop{k}", (x, y, gz - 0.14), 0.012, 0.28, pipe, verts=8)
+    for k in range(5):
+        tube(f"GridCable{k}", [(-3.5 + 2.0 * k, -4.5, gz - 0.05), (-3.2 + 2.0 * k, -3.5, gz - 0.6),
+                               (-2.9 + 2.0 * k, -2.5, gz - 0.05)], 0.012, rubber)
+
+    # the ghost light: bare bulb in a wire cage on a pole, standing on the rug
+    gx, gy = PR_POPPY_MARK[0] + 0.15, PR_POPPY_MARK[1] + 0.25
+    gl = empty("GhostLight", (gx, gy, 0.016), (0, 0, 15))
+    for k in range(3):
+        a = 2 * math.pi * k / 3
+        cyl(f"GhostLeg{k}", (0.17 * math.cos(a), 0.17 * math.sin(a), 0.1), 0.012, 0.42, metal,
+            rot=(math.degrees(math.sin(a)) * -0.6, math.degrees(math.cos(a)) * 0.6, 0), verts=8, parent=gl)
+        sphere(f"GhostCaster{k}", (0.3 * math.cos(a), 0.3 * math.sin(a), 0.03), 0.03, cam_dark, parent=gl)
+    cyl("GhostBase", (0, 0, 0.2), 0.06, 0.08, cam_dark, verts=16, parent=gl)
+    cyl("GhostPole", (0, 0, 0.95), 0.018, 1.5, metal, verts=12, parent=gl)
+    cyl("GhostSocket", (0, 0, 1.74), 0.03, 0.08, cam_dark, verts=16, parent=gl)
+    bulb_z = 1.86
+    warm = kelvin(2700)
+    sphere("GhostBulb", (0, 0, bulb_z), 0.055, emit_mat("GhostBulbGlow", (*warm, 1.0), 40.0),
+           scale=(1, 1, 1.25), parent=gl)
+    wire = make_mat("CageWire", hexc("#2A2A2A"), 0.5, metallic=0.6, var=0.0)
+    for k in range(6):
+        a = 360.0 * k / 6
+        rr = empty(f"CageRib{k}", (0, 0, bulb_z), (0, 0, a), parent=gl)
+        tube(f"CageRibW{k}", [(0.0, 0.0, -0.1), (0.1, 0.0, -0.05), (0.11, 0.0, 0.05), (0.06, 0.0, 0.14),
+                              (0.0, 0.0, 0.16)], 0.003, wire).parent = rr
+    for z, r in ((bulb_z - 0.05, 0.1), (bulb_z + 0.05, 0.105)):
+        torus(f"CageRing{z:.2f}", (0, 0, z), r, 0.003, wire, seg=24, ring=6, parent=gl)
+    bpy.context.view_layer.update()
+    bulb_w = gl.matrix_world @ Vector((0, 0, bulb_z))
+    light("GhostPoint", "POINT", tuple(bulb_w), 1500.0, warm, size=0.05)
+
+    # right third: a toppled light stand and a road case in the dark (the whip-pan lands here)
+    tsp = floor_at_pixel(770, 560, zf)
+    ts = empty("ToppledStand", (tsp.x, tsp.y, zf + 0.04), (0, 0, -32))
+    metal = make_mat("StandPaint", hexc("#4E4F50"), 0.5, metallic=0.2, var=0.08, grime=0.3)
+    cyl("TSPole", (0.0, 0.0, 0.0), 0.02, 2.3, metal, rot=(0, 90, 0), verts=10, parent=ts)
+    cyl("TSPole2", (-0.6, 0.0, 0.0), 0.028, 1.1, metal, rot=(0, 90, 0), verts=10, parent=ts)
+    for k, (ry, rz) in enumerate(((60, 30), (60, -30), (110, 0))):
+        cyl(f"TSLeg{k}", (-1.35 - 0.3 * math.cos(math.radians(rz)), 0.3 * math.sin(math.radians(rz)), 0.25),
+            0.014, 0.9, metal, rot=(0, ry, rz), verts=8, parent=ts)
+    fresnel_lamp("TSLamp", (1.3, 0.05, 0.14), (0, 75, 70), lamp_body, lens_m, metal).parent = ts
+    case_m = make_mat("RoadCase", hexc("#1C1D1F"), 0.45, var=0.05, grime=0.35, bump=0.05)
+    edge_m = make_mat("CaseEdge", hexc("#8C8E90"), 0.3, metallic=0.9, var=0.05, grime=0.3)
+    rcp = floor_at_pixel(890, 515, zf)
+    rc = box("RoadCase", (rcp.x, rcp.y, zf + 0.42), (1.2, 0.7, 0.84), case_m, rot=(0, 0, -20), bevel=0.01)
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            box(f"RCEdge{sx}{sz}", (sx * 0.6, 0, sz * 0.42), (0.04, 0.72, 0.04), edge_m, parent=rc)
+    box("RoadCaseLid", (rcp.x, rcp.y, zf + 0.86), (1.24, 0.74, 0.05), case_m, rot=(0, 0, -20), bevel=0.01)
+    box("RoadCase2", (rcp.x + 0.7, rcp.y + 1.3, zf + 0.3), (0.8, 0.6, 0.6), case_m, rot=(0, 0, 10), bevel=0.01)
+    # a stack of sandbags and a coiled cable near the case
+    for k in range(3):
+        cyl(f"Sandbag2_{k}", (rcp.x - 0.7 + 0.3 * k, rcp.y + 0.8, zf + 0.06), 0.14, 0.12,
+            make_mat(f"SB{k}", hexc("#2E2A26"), 0.95, var=0.1), verts=16).scale = (1.0, 0.65, 1.0)
+    ccp = floor_at_pixel(640, 520, zf)
+    torus("CableCoil", (ccp.x, ccp.y, zf + 0.03), 0.28, 0.02, rubber, seg=40, ring=8)
+    torus("CableCoil2", (ccp.x + 0.03, ccp.y + 0.02, zf + 0.07), 0.25, 0.02, rubber, seg=40, ring=8)
+
+    s = scene()
+    s.world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.005, 0.0048, 0.0045, 1)
+    print("set centre at", proj((0.0, -1.2, 1.0)), "set right edge", proj((2.45, -3.0, 0.0)), "stand at", tuple(tsp),
+          "case at", tuple(rcp), "exit at", proj((ex, ey, ez)), "grid at", proj((0.0, -2.5, 5.2)))
+    render("studio_night")
+    meta = dict(ghost_light=proj(tuple(bulb_w)), set_rect=[*proj((-2.4, -3.0, 3.05)), *proj((2.4, 0.0, 0.0))],
+                toppled_stand=proj(tuple(tsp)), road_case=proj((rcp.x, rcp.y, 0.5)),
+                exit_sign=proj((ex, ey, ez)),
+                note="Right third (x>640) is dark floor with a toppled light stand and road cases; no figures.")
+    save_blend("studio_night")
+    write_meta("studio_night", meta)
+
+
+def _drape_normal(b):
+    """Vertical folds for black studio drapes."""
+    p = b.sep(b.coords("world"))
+    wv = b.node("ShaderNodeTexWave", wave_type="BANDS", bands_direction="X", wave_profile="SIN")
+    b.set(wv.inputs["Vector"], b.comb(b.math("ADD", p[0], p[1]), 0.0, 0.0))
+    wv.inputs["Scale"].default_value = 1.2
+    wv.inputs["Distortion"].default_value = 2.0
+    bp = b.node("ShaderNodeBump")
+    bp.inputs["Strength"].default_value = 0.6
+    b.set(bp.inputs["Height"], wv.outputs[1])
+    return bp.outputs[0]
 
 
 # ============================================================== dispatcher
@@ -2112,7 +2874,11 @@ ROOMS = {
     "playroom_dark": lambda: (render_playroom("dark"), post_dark()),
     "backstage_corridor": render_corridor,
     "dressing_room": render_dressing_room,
+    "studio_night": render_studio_night,
     "bedroom_night": render_bedroom,
+    "hallway_night": render_hallway,
+    "closet_door": lambda: render_closet("ajar"),
+    "closet_door_open": lambda: (render_closet("open"), post_closet_open()),
 }
 
 

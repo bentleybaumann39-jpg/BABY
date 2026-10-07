@@ -4,6 +4,8 @@
  *
  *   NODE_PATH=$(npm root -g) node poppy/draw/render_poppy.cjs [name ...] [--out DIR]
  *
+ * With no names every manifest entry is rendered into poppy/build/art/poppy/;
+ * --out DIR writes to a scratch folder instead (for review passes).
  * Each file is drawn at the manifest size; "transparent": true entries keep
  * their alpha (cutouts), opaque ones are flattened onto their own background.
  */
@@ -32,12 +34,18 @@ for (let i = 0; i < args.length; i++) {
   await page.setContent('<!doctype html><html><body style="margin:0;background:transparent"><canvas id="c"></canvas></body></html>');
   await page.addScriptTag({ content: fs.readFileSync(path.join(HERE, 'poppy.js'), 'utf8') });
   await page.addScriptTag({ content: fs.readFileSync(path.join(HERE, 'scenes.js'), 'utf8') });
+  const loaded = await page.evaluate(() => !!(window.Poppy && window.Poppy.ASSETS));
+  if (!loaded) {
+    console.error('poppy.js / scenes.js failed to load (see [page error] above)');
+    await browser.close(); process.exit(2);
+  }
   const missing = [];
   for (const it of items) {
     const name = path.basename(it.file, '.png');
     const [w, h] = it.size || [640, 480];
     const t0 = Date.now();
     const res = await page.evaluate(({ name, w, h, transparent }) => {
+      if (!window.Poppy || !window.Poppy.ASSETS) return { error: 'library not loaded' };
       const fn = window.Poppy.ASSETS[name];
       if (!fn) return { error: 'no preset' };
       const c = document.getElementById('c');

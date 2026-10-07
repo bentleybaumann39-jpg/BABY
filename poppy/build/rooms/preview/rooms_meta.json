@@ -1,0 +1,176 @@
+{
+ "_note": "Pixel coordinates in each room image's own resolution, origin top-left. Written by poppy/render_rooms.py from the Blender cameras.",
+ "bedroom_night": {
+  "bed_center": [
+   749.6,
+   406.1
+  ],
+  "bed_rect": [
+   534.1,
+   359.4,
+   1055.5,
+   548.8
+  ],
+  "note": "tv_screen_quad is clockwise from top-left; the screen is a flat emissive plane.",
+  "pillow_center": [
+   636.2,
+   365.5
+  ],
+  "size": [
+   960,
+   720
+  ],
+  "tv_screen_quad_tl_tr_br_bl": [
+   [
+    142.8,
+    278.3
+   ],
+   [
+    284.1,
+    273.3
+   ],
+   [
+    289.0,
+    368.0
+   ],
+   [
+    152.0,
+    380.1
+   ]
+  ],
+  "tv_screen_width_px": 141.3
+ },
+ "closet_door": {
+  "door_opening_rect": [
+   167.9,
+   5.8,
+   337.9,
+   426.8
+  ],
+  "gap_rect": [
+   307.0,
+   5.8,
+   337.9,
+   426.8
+  ],
+  "nightlight": [
+   57.9,
+   360.4
+  ],
+  "size": [
+   640,
+   480
+  ]
+ },
+ "closet_door_open": {
+  "door_opening_rect": [
+   167.9,
+   5.8,
+   337.9,
+   426.8
+  ],
+  "gap_rect": [
+   242.6,
+   5.8,
+   337.9,
+   426.8
+  ],
+  "nightlight": [
+   57.9,
+   360.4
+  ],
+  "size": [
+   640,
+   480
+  ]
+ },
+ "dressing_room": {
+  "backrest_top": [
+   398.4,
+   227.4
+  ],
+  "chair_rect": [
+   348.5,
+   225.3,
+   458.5,
+   438.4
+  ],
+  "door_rect": [
+   588.7,
+   -12.4,
+   489.1,
+   328.9
+  ],
+  "note": "seat_point = top centre of the empty chair's seat (costume_slumped sits here).",
+  "seat_point": [
+   400.1,
+   330.0
+  ],
+  "seat_px_per_m": 203.4,
+  "size": [
+   640,
+   480
+  ]
+ },
+ "hallway_night": {
+  "ajar_door_rect": [
+   155.9,
+   -62.4,
+   203.6,
+   405.3
+  ],
+  "far_door_center": [
+   320.0,
+   199.6
+  ],
+  "far_door_rect": [
+   284.4,
+   109.3,
+   355.6,
+   289.8
+  ],
+  "nightlight": [
+   459.1,
+   377.5
+  ],
+  "size": [
+   640,
+   480
+  ],
+  "table_rect": [
+   21.6,
+   334.8,
+   220.0,
+   409.4
+  ]
+ },
+ "studio_night": {
+  "exit_sign": [
+   915.0,
+   330.0
+  ],
+  "ghost_light": [
+   266.3,
+   341.7
+  ],
+  "note": "Right third (x>640) is dark floor with a toppled light stand and road cases; no figures.",
+  "road_case": [
+   890.8,
+   472.3
+  ],
+  "set_rect": [
+   -69.2,
+   195.2,
+   465.1,
+   500.0
+  ],
+  "size": [
+   960,
+   720
+  ],
+  "toppled_stand": [
+   770.0,
+   560.0
+  ]
+ }
+}
