@@ -1,0 +1,9 @@
+{
+ "text": "Let's play hide and seek, friend! I'll count.",
+ "voice": "poppy_wrong",
+ "espeak_speed": 182,
+ "pause_limit": 0.18,
+ "max_seconds": 4.0,
+ "fits": true,
+ "word_gap": 4
+}

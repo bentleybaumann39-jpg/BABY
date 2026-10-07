@@ -1,0 +1,8 @@
+{
+ "text": "You follow the rules. Don't you, friend?",
+ "voice": "poppy_flat",
+ "espeak_speed": 148,
+ "pause_limit": 0.26,
+ "max_seconds": 3.3,
+ "fits": true
+}

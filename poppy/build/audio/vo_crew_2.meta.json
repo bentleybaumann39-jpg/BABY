@@ -1,0 +1,8 @@
+{
+ "text": "Hello?",
+ "voice": "crew",
+ "espeak_speed": 450,
+ "pause_limit": 0.26,
+ "max_seconds": 0.7,
+ "fits": true
+}

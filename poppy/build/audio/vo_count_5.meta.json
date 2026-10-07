@@ -1,0 +1,8 @@
+{
+ "text": "Five!",
+ "voice": "poppy",
+ "espeak_speed": 172,
+ "pause_limit": null,
+ "max_seconds": 0.9,
+ "fits": true
+}

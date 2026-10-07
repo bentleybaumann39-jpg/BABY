@@ -355,9 +355,9 @@ function felt(g, pts, color, o) {
     const c1 = shade(color, 0.12), c2 = shade(color, -0.2);
     for (let i = 0; i < edge.length; i++) {
       if (r() > 0.75 * fz) continue;
-      const [x, y] = edge[i], [nx, ny] = N[i], L = 0.6 + r() * 1.8, a = (r() - 0.5) * 1.6;
+      const [x, y] = edge[i], [nx, ny] = N[i], L = 0.4 + r() * 1.2, a = (r() - 0.5) * 1.6;
       const ca = Math.cos(a), sa = Math.sin(a), dx = nx * ca - ny * sa, dy = nx * sa + ny * ca;
-      g.strokeStyle = rgba(r() < 0.5 ? c1 : c2, 0.35 + r() * 0.45); g.lineWidth = 0.35 + r() * 0.5;
+      g.strokeStyle = rgba(r() < 0.5 ? c1 : c2, 0.25 + r() * 0.35); g.lineWidth = 0.35 + r() * 0.45;
       g.beginPath(); g.moveTo(x - dx * 0.8, y - dy * 0.8); g.lineTo(x + dx * L, y + dy * L); g.stroke();
     }
   }
@@ -528,7 +528,7 @@ function bubbleText(g, text, o) {
       const w = l.w, hx = -w * 0.28 + (r() - 0.5) * w * 0.06, hy = -size * 0.56;
       q.lineWidth = size * 0.055;
       q.beginPath(); q.moveTo(hx, hy + size * 0.16); q.quadraticCurveTo(hx, hy, hx + size * 0.12, hy - size * 0.05); q.stroke();
-      q.beginPath(); q.arc(hx, hy + size * 0.27, size * 0.028, 0, TAU); q.fill();
+      if (o.glossDot !== false) { q.beginPath(); q.arc(hx, hy + size * 0.27, size * 0.028, 0, TAU); q.fill(); }
     });
     F.g.restore();
   }
@@ -588,51 +588,72 @@ function twinkle(g, x, y, r, o) {
 function feltPoppy(g, cx, cy, R, o) {
   o = o || {};
   const seed = o.seed || 'poppy', r = rng(seed + ':pf');
-  const n = o.petals || 5, rot0 = o.rot || r() * TAU;
-  const red = o.color || '#D7262B', dk = o.dark || '#9E1A1F';
+  const n = o.petals || 5, rot0 = o.rot === undefined ? r() * TAU : o.rot;
+  const red = o.color || '#D7262B', dk = o.dark || '#9E1A1F', line = o.outline === undefined ? '#6E0E16' : o.outline;
+  const hs = TAU / n / 2 * (o.spread || 1.45);       // half-angle of each petal (overlapping)
   const petals = [];
   for (let i = 0; i < n; i++) {
-    const th = rot0 + i / n * TAU + (r() - 0.5) * 0.25;
-    const len = R * (0.92 + r() * 0.16), mw = R * (0.62 + r() * 0.08);
-    let pts = petalPts(cx, cy, th, -R * 0.05, len, mw, { tipRound: 1.0, belly: 0.66, bw: mw * 0.3 });
-    pts = wobble(pts, 0.025, r, 2);
-    petals.push({ pts, th, len });
+    const th = rot0 + i / n * TAU + (r() - 0.5) * 0.18;
+    const k = 0.93 + r() * 0.12, ph = r() * TAU, nb = 3 + Math.floor(r() * 3);
+    const pts = [];
+    // outer edge: rounded fan with crinkles, scalloped toward the sides
+    const NE = 36;
+    for (let j = 0; j <= NE; j++) {
+      const u = j / NE * 2 - 1, a = th + u * hs;
+      const rr = R * k * (0.74 + 0.26 * Math.sqrt(Math.max(0, 1 - u * u))) * (1 + 0.03 * Math.sin(nb * Math.PI * u + ph) + 0.012 * Math.sin(17 * u + ph));
+      pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]);
+    }
+    // sides back to a narrow base
+    const base = R * 0.08;
+    for (let j = 1; j <= 6; j++) { const t = j / 6, u = lerp(1, 0.8, t), rr = lerp(R * k * 0.74, base, t); const a = th + u * hs * lerp(1, 0.9, t); pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]); }
+    for (let j = 0; j <= 6; j++) { const t = 1 - j / 6, u = -lerp(1, 0.8, t), rr = lerp(R * k * 0.74, base, t); const a = th + u * hs * lerp(1, 0.9, t); pts.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]); }
+    petals.push({ pts: pts.reverse().slice(0, pts.length), th, len: R * k });
   }
-  // back petals first (alternate), front ones over them
-  const order = [...petals.keys()].sort((a, b) => (a % 2) - (b % 2));
+  // dark underlay so no background shows between petal bases
+  g.save(); g.fillStyle = shade(red, -0.35); g.beginPath(); g.arc(cx, cy, R * 0.5, 0, TAU); g.fill(); g.restore();
+  // back petals (odd) first, then the front ones
+  const order = [...petals.keys()].sort((a, b) => (b % 2) - (a % 2));
   for (const i of order) {
-    const P = petals[i];
-    felt(g, P.pts, i % 2 ? red : shade(red, -0.06), {
-      seed: seed + ':p' + i, shadow: { blur: 3, dx: 1, dy: 1.6, color: 'rgba(40,0,0,0.35)' }, rim: 0.8, tex: o.tex,
+    const P = petals[i], back = i % 2 === 1;
+    felt(g, P.pts, back ? shade(red, -0.12) : red, {
+      seed: seed + ':p' + i, shadow: { blur: 3, dx: 0.8, dy: 1.6, color: 'rgba(60,0,0,0.45)' }, rim: 0.9, tex: o.tex === undefined ? 0.6 : o.tex, fuzz: o.fuzz === undefined ? 0.3 : o.fuzz, light: 0.4,
       paint: (q) => {
-        // crinkle veins radiating from the centre
         q.lineCap = 'round';
-        for (let k = 0; k < 7; k++) {
-          const a = P.th + (k - 3) * 0.16 + (r() - 0.5) * 0.08, l0 = R * 0.25, l1 = P.len * (0.7 + r() * 0.22);
-          q.strokeStyle = rgba(dk, 0.35 + r() * 0.2); q.lineWidth = R * 0.025;
+        // crinkle veins radiating from the centre
+        for (let k = 0; k < 9; k++) {
+          const a = P.th + (k - 4) / 4 * hs * 0.8 + (r() - 0.5) * 0.06, l0 = R * 0.22, l1 = P.len * (0.62 + r() * 0.3);
+          q.strokeStyle = rgba(dk, 0.3 + r() * 0.25); q.lineWidth = Math.max(0.5, R * 0.022);
           q.beginPath(); q.moveTo(cx + Math.cos(a) * l0, cy + Math.sin(a) * l0);
-          const mid = (l0 + l1) / 2, wob = (r() - 0.5) * R * 0.08;
+          const mid = (l0 + l1) / 2, wob = (r() - 0.5) * R * 0.07;
           q.quadraticCurveTo(cx + Math.cos(a) * mid - Math.sin(a) * wob, cy + Math.sin(a) * mid + Math.cos(a) * wob, cx + Math.cos(a) * l1, cy + Math.sin(a) * l1);
           q.stroke();
         }
+        // soft highlight band on the petal
+        const hx = cx + Math.cos(P.th - 0.25) * R * 0.62, hy = cy + Math.sin(P.th - 0.25) * R * 0.62;
+        const hg = q.createRadialGradient(hx, hy, 0, hx, hy, R * 0.35);
+        hg.addColorStop(0, 'rgba(255,190,170,0.28)'); hg.addColorStop(1, 'rgba(255,190,170,0)');
+        q.fillStyle = hg; q.fillRect(cx - R * 1.2, cy - R * 1.2, R * 2.4, R * 2.4);
         // black blotch at the base
         const bx = cx + Math.cos(P.th) * R * 0.3, by = cy + Math.sin(P.th) * R * 0.3;
-        const bg = q.createRadialGradient(bx, by, 0, bx, by, R * 0.26);
-        bg.addColorStop(0, 'rgba(20,6,8,0.9)'); bg.addColorStop(0.6, 'rgba(20,6,8,0.55)'); bg.addColorStop(1, 'rgba(20,6,8,0)');
-        q.fillStyle = bg; q.beginPath(); q.ellipse(bx, by, R * 0.28, R * 0.2, P.th, 0, TAU); q.fill();
+        const bg = q.createRadialGradient(bx, by, 0, bx, by, R * 0.27);
+        bg.addColorStop(0, 'rgba(20,6,8,0.92)'); bg.addColorStop(0.6, 'rgba(20,6,8,0.55)'); bg.addColorStop(1, 'rgba(20,6,8,0)');
+        q.fillStyle = bg; q.beginPath(); q.ellipse(bx, by, R * 0.3, R * 0.21, P.th, 0, TAU); q.fill();
       },
     });
+    if (line) { g.save(); g.strokeStyle = rgba(line, 0.85); g.lineWidth = Math.max(0.6, R * 0.022); g.lineJoin = 'round'; g.stroke(pathOf(P.pts)); g.restore(); }
   }
   if (o.noCentre) return { cx, cy, R };
   // seed pod centre
   const pr = R * (o.podR || 0.24);
   const pod = ellipsePts(cx, cy, pr, pr, 0, 40);
-  felt(g, pod, '#1d1a1c', { seed: seed + ':pod', rim: 0.6, light: 1, shadow: { blur: 2, dx: 0.8, dy: 1.2 } });
+  // stamens ring
+  g.save();
+  for (let i = 0; i < 30; i++) { const a = i / 30 * TAU, rr = pr * (1.1 + r() * 0.25); g.fillStyle = r() < 0.5 ? '#2a2220' : '#4a3a2e'; g.beginPath(); g.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, Math.max(0.7, pr * 0.1), 0, TAU); g.fill(); }
+  g.restore();
+  felt(g, pod, '#1d1a1c', { seed: seed + ':pod', rim: 0.6, light: 1, shadow: { blur: 2, dx: 0.8, dy: 1.2 }, fuzz: 0.2 });
   g.save(); g.strokeStyle = 'rgba(120,115,120,0.85)'; g.lineWidth = Math.max(0.8, pr * 0.12); g.lineCap = 'round';
   for (let i = 0; i < 7; i++) { const a = i / 7 * TAU + rot0; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * pr * 0.75, cy + Math.sin(a) * pr * 0.75); g.stroke(); }
   g.fillStyle = 'rgba(255,255,255,0.25)'; g.beginPath(); g.ellipse(cx - pr * 0.35, cy - pr * 0.4, pr * 0.28, pr * 0.16, -0.6, 0, TAU); g.fill();
-  // stamens ring
-  for (let i = 0; i < 26; i++) { const a = i / 26 * TAU, rr = pr * (1.12 + r() * 0.18); g.fillStyle = r() < 0.5 ? '#2a2220' : '#4a3a2e'; g.beginPath(); g.arc(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, Math.max(0.7, pr * 0.08), 0, TAU); g.fill(); }
   g.restore();
   return { cx, cy, R, pr };
 }

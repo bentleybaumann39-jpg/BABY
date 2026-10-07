@@ -1,0 +1,8 @@
+{
+ "text": "Pip didn't follow the rules.",
+ "voice": "poppy_flat",
+ "espeak_speed": 153,
+ "pause_limit": 0.26,
+ "max_seconds": 2.1,
+ "fits": true
+}

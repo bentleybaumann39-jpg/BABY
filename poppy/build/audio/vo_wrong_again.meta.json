@@ -1,0 +1,9 @@
+{
+ "text": "That's okay. Let's count again.",
+ "voice": "poppy_wrong",
+ "espeak_speed": 155,
+ "pause_limit": 0.18,
+ "max_seconds": 3.4,
+ "fits": true,
+ "word_gap": 4
+}

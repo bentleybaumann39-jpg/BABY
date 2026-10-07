@@ -1,0 +1,8 @@
+{
+ "text": "Where did it go?",
+ "voice": "crew",
+ "espeak_speed": 140,
+ "pause_limit": null,
+ "max_seconds": 1.2,
+ "fits": true
+}

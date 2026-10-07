@@ -1,0 +1,8 @@
+{
+ "text": "Hello, Dot!",
+ "voice": "poppy",
+ "espeak_speed": 172,
+ "pause_limit": null,
+ "max_seconds": 1.3,
+ "fits": true
+}

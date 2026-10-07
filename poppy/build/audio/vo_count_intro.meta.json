@@ -1,0 +1,8 @@
+{
+ "text": "Let's count my flower friends! Count with me, friend!",
+ "voice": "poppy",
+ "espeak_speed": 188,
+ "pause_limit": 0.26,
+ "max_seconds": 3.5,
+ "fits": true
+}

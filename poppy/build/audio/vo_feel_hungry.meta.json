@@ -1,0 +1,8 @@
+{
+ "text": "This is hungry.",
+ "voice": "poppy_flat",
+ "espeak_speed": 140,
+ "pause_limit": null,
+ "max_seconds": 1.4,
+ "fits": true
+}

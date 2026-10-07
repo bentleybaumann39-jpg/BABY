@@ -1,0 +1,8 @@
+{
+ "text": "Thank you for watching Sunny Meadow Home Video. Please stop the tape.",
+ "voice": "narrator",
+ "espeak_speed": 160,
+ "pause_limit": 0.26,
+ "max_seconds": 4.8,
+ "fits": true
+}

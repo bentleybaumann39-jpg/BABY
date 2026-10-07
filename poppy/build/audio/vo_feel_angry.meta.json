@@ -1,0 +1,8 @@
+{
+ "text": "This is angry!",
+ "voice": "poppy",
+ "espeak_speed": 172,
+ "pause_limit": null,
+ "max_seconds": 1.1,
+ "fits": true
+}

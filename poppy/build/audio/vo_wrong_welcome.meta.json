@@ -1,0 +1,8 @@
+{
+ "text": "Welcome back, friend. I missed you.",
+ "voice": "poppy_wrong",
+ "espeak_speed": 150,
+ "pause_limit": 0.26,
+ "max_seconds": 4.0,
+ "fits": true
+}

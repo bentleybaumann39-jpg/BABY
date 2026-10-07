@@ -1,0 +1,8 @@
+{
+ "text": "I'm so glad you came over. You look ready to play!",
+ "voice": "poppy",
+ "espeak_speed": 178,
+ "pause_limit": 0.26,
+ "max_seconds": 3.4,
+ "fits": true
+}
