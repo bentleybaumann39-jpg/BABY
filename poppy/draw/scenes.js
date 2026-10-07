@@ -48,6 +48,7 @@ A.poppy_cover_eyes = full(Object.assign({}, WRONG, { pose: 'cover', eyes: 'real'
 A.costume_slumped = (c) => drawPoppy(c.getContext('2d'), { pose: 'slumped', seed: 7, decay: 0.25, px: 0.85, light: { x: -0.3, y: -0.95 } });
 A.costume_standing = (c) => drawPoppy(c.getContext('2d'), {
   seed: 7, tilt: 20, eyes: 'hollow', mouth: 'smile', decay: 0.3, limp: true, px: 1,
+  head: { meshColor: 'rgba(128,124,116,0.82)', meshSheen: 0.3, meshStep: 0.05 },
   stretch: { arms: 1.36, fingers: 1.45 }, spread: 2,
   transform: [0.9, 0, 0, 0.9, 120 - 210 * 0.9, 630 - 628 * 0.9],
 });
@@ -130,7 +131,7 @@ function ramp(lg, w, h, stops, x0, x1) {
 /* ------------------------------------------------------- JUMP SCARE 1
  * The empty costume head lunging into the lens, lit flat and hard by the
  * camcorder's on-camera light: crumpled felt, petal ring crushed on one side,
- * the mouth a dark stretched hole, and deep inside each black mesh eye hole a
+ * Poppy's painted smile torn open into a dark hole, and deep inside each grey mesh eye hole a
  * glinting real eye with a pinpoint pupil staring dead centre. */
 A.poppy_scare_costume = (c) => {
   const W = c.width, H = c.height, g = c.getContext('2d');
@@ -141,13 +142,14 @@ A.poppy_scare_costume = (c) => {
   g.fillStyle = wg; g.fillRect(0, 0, W, H);
   const opts = {
     pose: 'head', cx, cy, R, px: 3.0, texScale: 2.5, seed: 13, castK: 0.9,
-    tilt: TILT, eyes: 'hollow', mouth: 'hang', decay: 0.3, light: { x: -0.15, y: -0.45 },
+    tilt: TILT, eyes: 'hollow', mouth: 'torn', decay: 0.3, light: { x: -0.15, y: -0.45 },
     head: {
       sy: SY, crumple: 1.15, eyeW: 0.25, eyeSep: 0.4, eyeY: -0.15, eyeAspect: 1.22, asym: true,
       deepEyes: true, deepSize: 0.58, deepOpen: 0.5, deepBright: true, deepPupil: 0.03, deepSkin: 0.3, deepLid: 0.85,
-      deepOff: [[0.04, 0.06], [-0.03, 0.05]], meshStep: 0.019, hangRX: 0.2, hangRY: 0.4, hangSkew: 0.22, meshColor: 'rgba(48,48,46,0.5)', meshSheen: 0.1,
+      deepOff: [[0.04, 0.06], [-0.03, 0.05]], meshStep: 0.034, meshColor: 'rgba(150,146,136,0.62)', meshSheen: 0.28,
       crush: [{ angle: -0.25, amount: 0.34, squeeze: 0.5 }], petalR: 1.45,
-      hangY: 0.6, noseY: 0.14, noCheeks: true, noSeam: true, fuzz: 140, faceAO: 0.32, jaw: 0.12,
+      smileW: 0.62, smileD: 0.2, mouthY: 0.36, tornOpen: 0.1, tornSag: 1.7,
+      noseY: 0.14, noCheeks: true, noSeam: true, fuzz: 140, faceAO: 0.32, jaw: 0.12,
     },
   };
   const lightFx = (lg, mask, w, h) => {
@@ -331,8 +333,8 @@ A.poppy_scare_final = (c) => {
     // red key light from below-left (radial falloff, never fully black)
     const kx = w * 0.02, ky = h * 1.06;
     const kg = lg.createRadialGradient(kx, ky, 10, kx, ky, w * 1.15);
-    kg.addColorStop(0, '#FFF0E4'); kg.addColorStop(0.24, '#FFC0A8'); kg.addColorStop(0.44, '#D0583F');
-    kg.addColorStop(0.62, '#701E1A'); kg.addColorStop(0.82, '#3A0C0C'); kg.addColorStop(1, '#2A0808');
+    kg.addColorStop(0, '#FFF0E4'); kg.addColorStop(0.3, '#FFC4AC'); kg.addColorStop(0.52, '#DA6448');
+    kg.addColorStop(0.7, '#701E1A'); kg.addColorStop(0.86, '#3A0C0C'); kg.addColorStop(1, '#2A0808');
     lg.fillStyle = kg; lg.fillRect(0, 0, w, h);
     lg.fillStyle = '#FF7A62'; lg.globalAlpha = 0.45; lg.fillRect(0, 0, w, h); lg.globalAlpha = 1;
     lg.globalCompositeOperation = 'screen';
@@ -341,7 +343,7 @@ A.poppy_scare_final = (c) => {
     lg.fillStyle = hs; lg.fillRect(0, 0, w, h);
     lg.restore();
     // hard white rim light on the upper-right edges (the flared petals)
-    P.rimLight(lg, mask, w, h, 0.55, -0.83, 4, '#FFFFFF', 0.95, 1.6, 16);
+    P.rimLight(lg, mask, w, h, 0.55, -0.83, 4, '#FFC4B0', 0.42, 3.0, 16);
   };
   const { U, F, info } = litTwice(W, H, opts, lightFx);
   if (info.mouth) pasteFeature(F, U, info.T, [info.mouth], 0.55, '#FFB8A0', 0.8);
@@ -362,9 +364,9 @@ A.poppy_scare_final = (c) => {
  * only in the corners, a slight wide-angle bulge, both pupils dead centre on
  * the lens, warm bedside-lamp light from the left, and the dark bedroom
  * (moonlit window, bed edge) faintly visible and blurred at the edges. */
-A.poppy_final_close = (c) => {
+const finalClose = (look) => (c) => {
   const W = c.width, H = c.height, g = c.getContext('2d');
-  const cx = 296, cy = 252, R = 286;
+  const cx = 310, cy = 240, R = 218;
   // the dark bedroom behind her (it will be blurred and mostly covered)
   g.fillStyle = '#06080E'; g.fillRect(0, 0, W, H);
   // moonlit window, upper right: four panes, cross bars, cold light
@@ -384,34 +386,46 @@ A.poppy_final_close = (c) => {
   g.restore();
   const bgc = mk(W, H); bgc.getContext('2d').filter = 'blur(9px)'; bgc.getContext('2d').drawImage(c, 0, 0);
   g.clearRect(0, 0, W, H); g.drawImage(bgc, 0, 0);
-  const fig = mk(W, H), fg = fig.getContext('2d');
-  drawPoppy(fg, {
+  // Stage 1 face: the normal frame looks just past the lens (catchlights, one
+  // pupil drifted); the 'look' variant (one field of the VCR pause in 11g)
+  // has both pupils dead centre on the lens, a little wider, no catchlight.
+  const head = look
+    ? { pupilsCentered: true, catchlight: false, pupil: 0.42 }
+    : { gaze: { x: -0.09, y: 0.02 } };
+  const opts = {
     pose: 'head', cx, cy, R, px: 3.4, texScale: 2.6, seed: 7,
     tilt: 5, eyes: 'button', mouth: 'smile', light: { x: -0.95, y: -0.25 }, castK: 1.2,
-    head: { pupilsCentered: true, smileD: 0.15, smileW: 0.36, petalR: 1.24, fuzz: 260 },
-    lightFx: (lg, mask, w, h) => {
+    head: Object.assign({ smileD: 0.15, smileW: 0.36, petalR: 1.4, fuzz: 260 }, head),
+  };
+  const lightFx = (lg, mask, w, h) => {
       lg.save(); lg.globalCompositeOperation = 'multiply';
       // warm lamp from the left, the right side of the face falling into the dark room
       const lt = lg.createLinearGradient(0, 0, w, 0);
       lt.addColorStop(0, '#FFE6BC'); lt.addColorStop(0.35, '#F0C694'); lt.addColorStop(0.7, '#7A6264'); lt.addColorStop(1, '#2A2834');
       lg.fillStyle = lt; lg.fillRect(0, 0, w, h);
       const vg = lg.createRadialGradient(w * 0.38, h * 0.45, h * 0.25, w * 0.45, h * 0.5, w * 0.62);
-      vg.addColorStop(0, '#FFFFFF'); vg.addColorStop(1, '#5A4E50');
+      vg.addColorStop(0, '#FFFFFF'); vg.addColorStop(1, '#9A8A86');
       lg.fillStyle = vg; lg.fillRect(0, 0, w, h);
       lg.globalCompositeOperation = 'screen';
       const gl = lg.createRadialGradient(0, h * 0.45, 10, 0, h * 0.45, w * 0.5); gl.addColorStop(0, 'rgba(255,200,130,0.28)'); gl.addColorStop(1, 'rgba(255,200,130,0)');
       lg.fillStyle = gl; lg.fillRect(0, 0, w, h);
       lg.restore();
       // faint cold moonlight rim on the right edge of the petals
-      P.rimLight(lg, mask, w, h, 0.8, -0.6, 3, '#8FA6D8', 0.35, 3);
-    },
-  });
+      P.rimLight(lg, mask, w, h, 0.8, -0.6, 3, '#8FA6D8', 0.6, 3);
+  };
+  const { U, F: fig, info } = litTwice(W, H, opts, lightFx);
+  // opaque felt eye whites (#ECE5D3) with their pupils, so the eyes read as
+  // finished white felt instead of taking the skin colour of the lamp light
+  const whites = info.eyes.E.map(e => P.ellipse(e.cx, e.cy, e.w / 2, e.h / 2));
+  pasteFeature(fig, U, info.T, whites, 0.88, '#F2EBDA', 0.8);
   g.drawImage(fig, 0, 0);
-  bulge(c, 0.12);
+  bulge(c, 0.1);
   edgeBlur(c, 6, 0.4);
   vignette(g, W, H, 0.5, 0.42, 'rgba(8,6,6,0.5)');
   grain(g, W, H, 6, 8);
 };
+A.poppy_final_close = finalClose(false);
+A.poppy_final_close_look = finalClose(true);
 
 root.Poppy.ASSETS = A;
 root.Poppy.PRESETS = { STAGE1, WRONG };

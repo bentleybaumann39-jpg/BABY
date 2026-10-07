@@ -1,1 +1,8 @@
 __pycache__/
+# make_video.py intermediates (rebuilt on demand)
+build/chunks/
+build/preview/
+build/sheets/
+build/video_concat.mp4
+build/mix.wav
+build/mix_delivery.wav

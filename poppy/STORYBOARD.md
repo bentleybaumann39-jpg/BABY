@@ -6,7 +6,7 @@ This file and `assets.json` are generated from one source, so every asset path n
 
 ## 1. The tape in one paragraph
 
-A home-video cassette of *THE WORLD OF POPPY, Volume 4: Poppy's Playroom* (© 1995 Sunny Meadow Home Video). It plays like a cheerful 1990s educational show: a theme song, counting, feelings, friends. Small things are wrong (an eye in a flower, a face nobody introduced, a friend scribbled out), and Poppy goes still for too long. Then the tape cuts to camcorder footage someone recorded over it in June 1996: the empty studio, the Poppy costume slumped in a dressing room with nobody inside, a memo that is mundane until line 4. The chair empties. When the show comes back it is a different, wrong episode: Poppy wants to play hide and seek and counts over shots of *your* home until she reaches ten in your closet. Sunny Meadow's advisory asks you to stop the tape. You don't. She counts again. The theme plays one last time, slowed. The last frame is Poppy closer to the lens than ever. STOP.
+A home-video cassette of *THE WORLD OF POPPY, Volume 4: Counting with Poppy* (© 1995 Sunny Meadow Home Video). It plays like a cheerful 1990s educational show: a theme song, counting, feelings, friends. Small things are wrong (an eye in a flower, a face nobody introduced, a friend scribbled out), and Poppy goes still for too long. Then the tape cuts to camcorder footage someone recorded over it in June 1996: the empty studio, the Poppy costume slumped in a dressing room with nobody inside, a memo that is mundane until line 4. The chair empties. When the show comes back it is a different, wrong episode: Poppy wants to play hide and seek and counts over shots of *your* home until she reaches ten in your closet. Sunny Meadow's advisory asks you to stop the tape. You don't. She counts again. The theme plays one last time, slowed. The last frame is Poppy closer to the lens than ever. STOP.
 
 ## 2. Timeline at a glance
 
@@ -97,9 +97,9 @@ All characters are ORIGINAL. Poppy is a felt mascot, not a doll: no porcelain, n
 - **Dropouts:** horizontal dashes 1-2 rows high, 10-120 px long, filled from row y-1 with a bright comet tail to the right; fired in clustered bursts.
 - **Camcorder OSD (segment 7):** drawn at 1/3 resolution and upscaled with nearest-neighbour, with a 2 px black shadow. '● REC' top-left blinking at 1 Hz; 'SP' and a battery icon top-right; 'JUN 14 1996' bottom-left; a clock bottom-right reading '11:52 PM' from 7a, '11:53 PM' from 7f and '11:54 PM' from 7l. No brand names.
 - **VCR OSD:** DejaVu Sans Mono Bold 30, white with a 2 px black shadow: 'PLAY ▶' and the counter in 1b; 'STOP ■' in 11i.
-- **Advisory cards (segment 9):** made in code (`card()`). Deep navy #101A4A background, `sm_logo` top-centre, white DejaVu Sans Mono Bold 26 centred, text types on at ~25 characters per second. Card D is on black with mono 40 and no logo.
+- **Advisory cards (segment 9):** made in code (`card()`). Deep navy #101A4A background, `sm_logo` top-centre, white DejaVu Sans Mono Bold 26, lines left-aligned inside a centred block (so the cursor starts each new line at the text's left edge), text types on at ~25 characters per second with a soft teleprinter tick per character (-34 dBFS). Card D is on black with mono 40 and no logo.
 - **Captions (theme and reprise):** yellow #FFE14D DejaVu Sans Bold 24 with a black outline, centred at y~440. The reprise uses a sickly pale yellow, offset 2-3 px from centre.
-- **Audio mix:** dialogue peaks around -6 dBFS; theme -6; music bed -24 under dialogue; ambiences -34 to -40; room tone -42; hiss -40 (2-8 kHz band) plus 60 Hz hum -50 under everything except the digital silences; false scares -12; stingers -1 dBFS peak with attack under 5 ms, 15-20 dB above the previous 3 s. Bandwidth 80 Hz-8 kHz (100 Hz-6 kHz in segment 7). Add wow/flutter at 0.2% in Act 1, rising to 1-3% in segments 8-11, a garble on every tracking burst, and audio dropouts (-20 dB, 20-200 ms) synced to the picture's dropout clusters. Normalise the final mix to a -1 dBFS peak WITHOUT squashing the stingers (no limiter on the scare frames).
+- **Audio mix:** (as mixed; these levels supersede the per-shot dBFS numbers below, which were written 5 dB hotter) dialogue, narrator and theme peak around -11 dBFS (crew whispers -13, reprise -13); bumpers -14; the show's music bed -14 peak in the gaps (about -27 dB RMS, so Act 1 sounds like a bouncy kids' show and its hard cuts at 4c and 6e are a 14-15 dB drop), ducked 8 dB under every line; the wrong bed -17; the music box -15 (its death at 9d is a 13 dB drop); ambiences -34 to -40 and room tone -42 as RMS targets; hiss -43 RMS (2-8 kHz band) plus 60 Hz hum -52 under everything except the digital silences; false scares -12; the misdirection cues (7n hanger, 8l and 10f creaks) -13 dBFS, hard-panned (12-13 dB louder on their side); teleprinter ticks -34; stingers saturated to be dense, attack under 5 ms: scare 1 about -6 dB, scare 2 about -5 dB and scare 3 about -3 dB RMS over 400 ms, 12-15 dB above the loudest dialogue and 24-32 dB above the previous 3 s. Bandwidth 80 Hz-8 kHz (100 Hz-6 kHz in segment 7). Add wow/flutter at 0.2% in Act 1, rising to 1-3% in segments 8-11, a garble on every tracking burst, and audio dropouts (-20 dB, 20-200 ms) synced to the picture's dropout clusters. Normalise the final mix to a -1 dBFS peak WITHOUT squashing the stingers (no limiter on the scare frames).
 - **Every audio file is normalised by the audio builder** (voice to -3 dBFS, the rest to -1 dBFS). The dBFS numbers in the shot list are the peak levels to mix them at.
 
 ## 5. Voice presets and script (for the audio builder)
@@ -121,7 +121,7 @@ Every line, in tape order. 'Max' is the longest the trimmed line may run and sti
 | File | Voice | Exact text | Max | Cue time(s) (shot) |
 |---|---|---|---|---|
 | `build/audio/vo_narr_ident.wav` | narrator | “Sunny Meadow Home Video presents...” | 2.6 s | 0:09.2 (1e) |
-| `build/audio/vo_greet_1.wav` | poppy | “Hi, friend! It's me, Poppy! Welcome to my playroom!” | 4.2 s | 0:41.5 (3a) |
+| `build/audio/vo_greet_1.wav` | poppy | “Hi, friend! It's me, Poppy! Welcome to my world!” | 4.2 s | 0:41.5 (3a) |
 | `build/audio/vo_greet_2.wav` | poppy | “I'm so glad you came over. You look ready to play!” | 3.4 s | 0:46.0 (3a) |
 | `build/audio/vo_greet_3.wav` | poppy | “Today we're going to have so much fun!” | 2.6 s | 0:49.6 (3a) |
 | `build/audio/vo_count_intro.wav` | poppy | “Let's count my flower friends! Count with me, friend!” | 3.5 s | 0:55.3 (4b) |
@@ -220,7 +220,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 - **Picture:** Compositor-made card: deep navy (#101A4A) background, `build/art/misc/sm_logo.png` centred near the top (y~40), white centred text below (DejaVu Sans Bold). The tail of the ident chime rings out.
 - **VHS:** V1.
 - **Audio:** Hiss and hum only.
-- **On-screen text:** THE WORLD OF POPPY / VOLUME 4: POPPY'S PLAYROOM / © 1995 SUNNY MEADOW HOME VIDEO / FOR HOME VIEWING ONLY / BE KIND, PLEASE REWIND!
+- **On-screen text:** THE WORLD OF POPPY / VOLUME 4: COUNTING WITH POPPY / © 1995 SUNNY MEADOW HOME VIDEO / FOR HOME VIEWING ONLY / BE KIND, PLEASE REWIND!
 
 #### 1g · 0:17.5-0:18.0 (0.5 s) · Edit point
 
@@ -298,7 +298,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 - **VHS:** V1.
 - **Audio:**
   - +0.0 s `build/audio/mus_playroom_bed.wav` - show music bed at -24 dBFS, looping under every show shot until 4c.
-  - +0.5 s `build/audio/vo_greet_1.wav` **POPPY** (normal: bright, sing-song kids'-show host): “Hi, friend! It's me, Poppy! Welcome to my playroom!”
+  - +0.5 s `build/audio/vo_greet_1.wav` **POPPY** (normal: bright, sing-song kids'-show host): “Hi, friend! It's me, Poppy! Welcome to my world!”
   - +5.0 s `build/audio/vo_greet_2.wav` **POPPY** (normal: bright, sing-song kids'-show host): “I'm so glad you came over. You look ready to play!”
   - +8.6 s `build/audio/vo_greet_3.wav` **POPPY** (normal: bright, sing-song kids'-show host): “Today we're going to have so much fun!”
 - **Notes:** LIP FLAP RULE: show the talk frame while the voice's 20 ms RMS is above -30 dBFS, delayed by 3 frames, minimum 3 frames per mouth state.
@@ -343,7 +343,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 #### 4d · 1:13.5-1:19.5 (6.0 s) · As if nothing happened
 
 - **Picture:** `build/rooms/playroom_board.png` as at the end of 4b, but `build/art/misc/flower_5_eye.png` is replaced by `build/art/misc/flower_5_eye_look.png`: the eye now looks into the lens. Poppy lip flap between `build/art/poppy/poppy_point_talk.png` and `build/art/poppy/poppy_point.png`.
-- **Camera:** Static until +4.0 s, then a small operator-style push 1.00 -> 1.12 centred on slot 5 over 1.5 s, held (as if the camera operator noticed).
+- **Camera:** Static until +4.0 s, then an operator-style push 1.00 -> 2.4x centred on slot 5 over 1.5 s, held (as if the camera operator noticed). Flower 5 is re-composited at full art resolution so the eye (~60 px) visibly looks into the lens.
 - **VHS:** V1.
 - **Audio:**
   - mus_playroom_bed resumes on the first frame at its normal level, mid-phrase, no fade-in.
@@ -452,7 +452,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 - **VHS:** V1.
 - **Audio:**
   - mus_playroom_bed HARD CUT on the first frame.
-  - +0.0 s `build/audio/sfx_scribble.wav` - -14 dBFS.
+  - +0.5 s `build/audio/sfx_scribble.wav` - -20 dBFS, 1.1 s (a half-second of bare hiss after the hard cut first).
   - +0.9 s `build/audio/vo_friends_pip.wav` **POPPY** (flat: same voice, slower, no melody, a little too close): “Pip didn't follow the rules.” - from off-screen.
 
 #### 6f · 1:56.5-2:00.0 (3.5 s) · Don't you, friend?
@@ -532,7 +532,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 
 #### 7g · 2:26.5-2:36.5 (10.0 s) · The memo
 
-- **Picture:** `build/art/misc/memo_card.png` as camcorder footage of the paper taped to the mirror: starts framed on the letterhead (zoom 1.25, cy 0.3), pans down to item 3 by +5.5 s, then pushes to 1.6x on item 4 and the handwritten line (+6.5 -> +10.0 s).
+- **Picture:** `build/art/misc/memo_card.png` as camcorder footage of the paper taped to the mirror. The memo keeps ~90 px side margins and its handwritten note ends above y~380, clear of the camcorder's date/clock band. The whole memo is in frame first (zoom 1.03, reading time to +4.0 s), drifts down to the items (1.09 by +6.0 s), then pushes to 1.21x on items 3-4 and the handwritten note by +7.5 s and holds to the end.
 - **Camera:** Handheld drift and autofocus breathing throughout.
 - **VHS:** EP + V2.
 - **Audio:** +0.0 s `build/audio/amb_fluorescent.wav` - -36 dBFS. No voice: reading time.
@@ -588,11 +588,11 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 - **Picture:** `build/rooms/dressing_room.png`, empty chair.
 - **Camera:** At +0.5 s the camera drifts 12 px LEFT toward the sound.
 - **VHS:** EP + V2.
-- **Audio:** +0.5 s `build/audio/sfx_hanger.wav` - -22 dBFS, panned screen-left: pulls attention left.
+- **Audio:** +0.5 s `build/audio/sfx_hanger.wav` - -13 dBFS, hard-panned screen-left: pulls attention left.
 
 #### 7o · 2:52.8-2:53.6 (0.8 s) · SCARE 1
 
-- **Picture:** `build/art/poppy/poppy_scare_costume.png` filling the frame (centre-cropped from 800x600). Keep the REC OSD on top (it is still the camcorder), but the image itself is CLEAN.
+- **Picture:** `build/art/poppy/poppy_scare_costume.png` filling the frame (centre-cropped from 800x600). Keep the REC OSD on top (it is still the camcorder) and degrade the OSD layer with the same EP softness and chroma bleed as 7a-7n, but the image itself is CLEAN.
 - **Camera:** Zoom 1.00 -> 1.06, shake +-6 px.
 - **VHS:** V0 CLEAN under the OSD.
 - **Audio:** +0.0 s `build/audio/sfx_stinger_1.wav` - peak -1 dBFS, attack < 5 ms; the compositor adds camcorder-mic overload (tanh drive x6) for the first 0.3 s.
@@ -644,7 +644,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 
 #### 8d · 3:08.5-3:11.0 (2.5 s) · Two: your bedroom
 
-- **Picture:** `build/rooms/bedroom_night.png` wide (960x720 scaled). The TV screen quad (rooms_meta.json) shows the 8c picture (`build/rooms/playroom_dark.png` + `build/art/poppy/poppy_cover_eyes.png`) perspective-warped in at x0.8 brightness with its own scanlines, plus a faint blue bloom onto the dresser.
+- **Picture:** `build/rooms/bedroom_night.png` wide (960x720 scaled), then a push to 2.9x on the TV (+0.3 -> +2.1 s). The TV screen quad (rooms_meta.json) shows the 8c picture (`build/rooms/playroom_dark.png` + `build/art/poppy/poppy_cover_eyes.png`) perspective-warped in at x1.15 brightness with its own scanlines, plus a faint blue bloom onto the dresser: she is on your TV.
 - **Camera:** Static.
 - **VHS:** V3.
 - **Audio:**
@@ -692,7 +692,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 
 #### 8j · 3:26.5-3:30.5 (4.0 s) · Eight: she left the TV
 
-- **Picture:** `build/rooms/bedroom_night.png` wide. The TV now shows `build/rooms/playroom_dark.png` EMPTY (no Poppy): she has left the show.
+- **Picture:** `build/rooms/bedroom_night.png` at the identical 2.9x TV framing as the end of 8d. The TV now shows `build/rooms/playroom_dark.png` EMPTY (no Poppy): she has left the show. After 'Eight' (+1.9 s) the camera pulls back to the whole dark bedroom.
 - **Camera:** Static.
 - **VHS:** V3.
 - **Audio:** +1.0 s `build/audio/vo_hs_8.wav` **POPPY (WRONG)** (slowed and deep, dry, too close): “Eight.” - NOT from the TV: full band, dry, close, slightly left of centre, in the room with you.
@@ -713,12 +713,12 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 - **VHS:** V3.
 - **Audio:**
   - Otherwise hiss only. The count's rhythm says 'ten' should come about 1 s into the shot; it doesn't.
-  - +2.2 s `build/audio/sfx_door_creak.wav` - -24 dBFS, trimmed to 0.8 s, panned screen-left (pulls attention left).
+  - +2.2 s `build/audio/sfx_door_creak.wav` - -13 dBFS, trimmed to 0.8 s, hard-panned screen-left (pulls attention left).
 
 #### 8m · 3:42.0-3:42.7 (0.7 s) · SCARE 2
 
-- **Picture:** `build/art/poppy/poppy_scare_closet.png`, centre-cropped.
-- **Camera:** Zoom 1.00 -> 1.08, shake +-4 px.
+- **Picture:** `build/art/poppy/poppy_scare_closet.png`, cropped in on the face so it fills ~80% of the frame width.
+- **Camera:** Zoom 1.5 -> 1.6, shake +-4 px.
 - **VHS:** V0 CLEAN.
 - **Audio:**
   - +0.0 s `build/audio/vo_hs_10.wav` **POPPY (WHISPER)** (dry whisper right at the microphone, hard attack): “Ten.” - on the first frame, -3 dBFS.
@@ -739,7 +739,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 - **Picture:** Compositor card (style in section 4) with the yellow header bar.
 - **VHS:** V2.
 - **Audio:**
-  - +0.0 s `build/audio/mus_music_box.wav` - -28 dBFS; it runs 19.5 s and dies mid-phrase exactly on 9d's first frame.
+  - +0.0 s `build/audio/mus_music_box.wav` - -15 dBFS (ducked 4 dB under the narrator); it runs 19.5 s and dies mid-phrase exactly on 9d's first frame.
   - +0.6 s `build/audio/vo_narr_adv_a.wav` **NARRATOR** (Sunny Meadow announcer: warm, calm, corporate): “This videocassette was recalled in nineteen ninety-six. If you are watching it, please stop the tape.”
 - **On-screen text:** Header: 'A MESSAGE FROM SUNNY MEADOW HOME VIDEO'. Body: 'THIS VIDEOCASSETTE WAS RECALLED IN 1996. IF YOU ARE WATCHING IT, PLEASE STOP THE TAPE.'
 - **Notes:** `build/art/misc/sm_logo.png` sits top-centre on cards A, B, C and E.
@@ -794,7 +794,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 
 #### 10c · 4:23.2-4:25.2 (2.0 s) · One (the chair)
 
-- **Picture:** `build/rooms/playroom_dark.png` cropped 2.0x on the yellow chair (turned to face the wall).
+- **Picture:** `build/rooms/playroom_dark.png` cropped 3.0x on the yellow chair (turned to face the wall), so the chair sits near the centre; the light spill on the cabinet and the shiny floor around it pulled down.
 - **Camera:** Static.
 - **VHS:** V3.
 - **Audio:** +0.3 s `build/audio/vo_hs_1.wav` **POPPY (WRONG)** (slowed and deep, dry, too close): “One.” - reused.
@@ -822,13 +822,13 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 - **VHS:** V3.
 - **Audio:**
   - The viewer expects 'Four' at +0.3 s; it never comes. Near-silence.
-  - +0.6 s `build/audio/sfx_door_creak.wav` - -26 dBFS, trimmed to 0.4 s, panned screen-RIGHT (pulls attention right).
+  - +0.6 s `build/audio/sfx_door_creak.wav` - -13 dBFS, trimmed to 0.4 s, hard-panned screen-RIGHT (pulls attention right).
 - **Notes:** Cut 0.7 s early against the 2.0 s rhythm of 10c-10e.
 
 #### 10g · 4:30.5-4:31.4 (0.9 s) · SCARE 3
 
-- **Picture:** `build/art/poppy/poppy_scare_final.png`, centre-cropped.
-- **Camera:** Zoom 1.00 -> 1.10, shake +-8 px.
+- **Picture:** `build/art/poppy/poppy_scare_final.png`, the whole 800x600 frame scaled to 640x480 (petals whole), extra contrast (bright face, pure black voids).
+- **Camera:** Zoom 1.00 -> 1.08, shake +-8 px.
 - **VHS:** V0 CLEAN.
 - **Audio:**
   - +0.0 s `build/audio/sfx_stinger_3.wav` - peak -1 dBFS, attack < 5 ms.
@@ -860,7 +860,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 
 #### 11c · 4:41.5-4:50.5 (9.0 s) · Reprise: goodbye
 
-- **Picture:** `build/art/misc/end_card.png` with Poppy waving lower-right (`build/art/poppy/poppy_wave_a.png` / `build/art/poppy/poppy_wave_b.png` alternating every 10 frames = 3 fps, stepped), at 1.2x her 2g size with her feet below the frame edge (closer than before). Normal Stage 1 Poppy: the friendliness is the wrong part.
+- **Picture:** `build/art/misc/end_card.png` with Poppy waving lower-right (`build/art/poppy/poppy_wave_a.png` / `build/art/poppy/poppy_wave_b.png` alternating every 10 frames = 3 fps, stepped), at 1.7x her 2g size, head near y=200, her body cut off well below the frame edge (much closer than before). Normal Stage 1 Poppy: the friendliness is the wrong part.
 - **Camera:** Static.
 - **VHS:** V3.
 - **Audio:** +7.0 s `build/audio/vo_end_see_you.wav` **POPPY** (normal: bright, sing-song kids'-show host): “See you tomorrow, friend!” - over the dying last note; the reprise is silent by ~+8.5 s.
@@ -887,7 +887,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 
 #### 11g · 4:54.1-4:57.3 (3.2 s) · Closer than ever
 
-- **Picture:** `build/art/poppy/poppy_final_close.png`: completely still. At +2.7 s the picture drops into VCR PAUSE (the two fields offset 1 px and jittering at 15 Hz, two horizontal noise bars) - she is still there.
+- **Picture:** `build/art/poppy/poppy_final_close.png`: completely still, looking just past the lens. At +2.7 s the picture drops into VCR PAUSE (the two fields offset 1 px and jittering at 15 Hz, two horizontal noise bars) - she is still there, and the two fields are not the same picture: every other field is `build/art/poppy/poppy_final_close_look.png`, her pupils dead centre on the lens with no catchlight.
 - **Camera:** None.
 - **VHS:** V2 (calm, clean-ish), warm vignette.
 - **Audio:**
@@ -934,7 +934,7 @@ Every file the builders produce, and every shot that uses it. The full specs are
 | `build/rooms/closet_door.png` | 640x480 | 8i, 8k |
 | `build/rooms/closet_door_open.png` | 640x480 | 8l |
 
-### Poppy art (19)
+### Poppy art (20)
 
 | File | Size | Used in |
 |---|---|---|
@@ -957,6 +957,7 @@ Every file the builders produce, and every shot that uses it. The full specs are
 | `build/art/poppy/poppy_scare_closet.png` | 800x600 opaque | 8i, 8m |
 | `build/art/poppy/poppy_scare_final.png` | 800x600 opaque | 10g |
 | `build/art/poppy/poppy_final_close.png` | 640x480 opaque | 11g |
+| `build/art/poppy/poppy_final_close_look.png` | 640x480 opaque | 11g |
 
 ### Misc art (24)
 
@@ -1167,7 +1168,7 @@ One shot per line: id, segment, start (s), duration (s), title, asset files, and
   {"id": "11d", "seg": "11", "start": 290.5, "dur": 2.5, "title": "Cracked", "assets": ["build/art/misc/end_card_cracked.png"], "cues": []},
   {"id": "11e", "seg": "11", "start": 293.0, "dur": 0.5, "title": "Last subliminal", "assets": ["build/art/misc/sub_crayon_house.png", "build/audio/sfx_tracking_garble.wav"], "cues": [[293.0, "build/audio/sfx_tracking_garble.wav"]]},
   {"id": "11f", "seg": "11", "start": 293.5, "dur": 0.6, "title": "Static", "assets": ["build/audio/sfx_static_burst.wav"], "cues": [[293.5, "build/audio/sfx_static_burst.wav"]]},
-  {"id": "11g", "seg": "11", "start": 294.1, "dur": 3.2, "title": "Closer than ever", "assets": ["build/art/poppy/poppy_final_close.png", "build/audio/amb_house_night.wav"], "cues": [[294.1, "build/audio/amb_house_night.wav"]]},
+  {"id": "11g", "seg": "11", "start": 294.1, "dur": 3.2, "title": "Closer than ever", "assets": ["build/art/poppy/poppy_final_close.png", "build/art/poppy/poppy_final_close_look.png", "build/audio/amb_house_night.wav"], "cues": [[294.1, "build/audio/amb_house_night.wav"]]},
   {"id": "11h", "seg": "11", "start": 297.3, "dur": 0.6, "title": "Tape stop", "assets": ["build/audio/sfx_vcr_stop.wav"], "cues": [[297.8, "build/audio/sfx_vcr_stop.wav"]]},
   {"id": "11i", "seg": "11", "start": 297.9, "dur": 1.4, "title": "STOP", "assets": [], "cues": []},
   {"id": "11j", "seg": "11", "start": 299.3, "dur": 0.7, "title": "Black", "assets": [], "cues": []}

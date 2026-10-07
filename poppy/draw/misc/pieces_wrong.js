@@ -22,22 +22,18 @@ function bigFelt(g, path, k, alpha, seed, op) {
 
 /* ---------------------------------------------------------------- MEMO */
 const MEMO = [
-  { t: 'SUNNY MEADOW HOME VIDEO', center: true },
-  { t: 'INTERNAL MEMO', center: true, gap: 0 },
-  { t: 'TO: "The World of Poppy" crew, Studio B', gap: 10 },
+  { t: 'SUNNY MEADOW HOME VIDEO - INTERNAL MEMO', center: true },
+  { t: 'TO: "The World of Poppy" crew, Studio B', gap: 9 },
   { t: 'FROM: R. Hollis, Production Office' },
   { t: 'DATE: June 12, 1996', over: { 18: '5' } },
   { t: 'RE: After-hours rules' },
-  { t: '1. Return all props to the prop room after', gap: 14 },
-  { t: '   taping.', over: { 5: 'o' } },
-  { t: '2. Craft services closes at 6:00 PM on', gap: 4 },
-  { t: '   Fridays.' },
-  { t: '3. Do not leave the Poppy costume unattended', gap: 4 },
+  { t: '1. Return all props to the prop room.', gap: 12, over: { 30: 'o' } },
+  { t: '2. Craft services closes at 6 PM Fridays.', gap: 4 },
+  { t: '3. Do not leave the Poppy costume alone', gap: 4 },
   { t: '   in Studio B or the dressing rooms.' },
   { t: '4. If the costume speaks when no one is', gap: 4 },
   { t: '   inside it, do not answer it.' },
-];
-MISC.memo_card = function (g, W, H) {
+];MISC.memo_card = function (g, W, H) {
   const r = rng('memo');
   // the mirror the memo is taped to (a sliver at the top)
   const mg = g.createLinearGradient(0, 0, W, 20);
@@ -62,13 +58,13 @@ MISC.memo_card = function (g, W, H) {
   g.beginPath(); g.moveTo(-20, 252); g.lineTo(W + 20, 247); g.stroke(); g.filter = 'none';
   g.strokeStyle = 'rgba(255,255,245,0.35)'; g.lineWidth = 1; g.beginPath(); g.moveTo(-20, 250); g.lineTo(W + 20, 245); g.stroke();
   // typed text: per-character strikes with uneven ink
-  const size = 22.2, adv = size * 0.6, x0 = 30;
+  const size = 19.2, adv = size * 0.6, x0 = 88;   // 90 px margins: every line stays in frame at the 7g push
   const INK = M.layerLike(g);
   const q = INK.g;
   q.font = `400 ${size}px "Liberation Mono"`; q.textBaseline = 'alphabetic';
-  let y = 46;
+  let y = 79;
   const rowY = [];
-  const lineH = 24.6;
+  const lineH = 20.5;
   MEMO.forEach((ln, li) => {
     if (li > 0) y += lineH + (ln.gap || 0);
     rowY.push(y);
@@ -95,22 +91,25 @@ MISC.memo_card = function (g, W, H) {
   M.drawLayer(g, INK, 0.25, 'multiply', M.blur(g, 1.2));    // ink bleed halo
   M.drawLayer(g, INK, 0.95, 'source-over', M.blur(g, 0.35));
   // handwritten note in blue ballpoint
-  const hy = rowY[rowY.length - 1] + 42;
+  const hy = rowY[rowY.length - 1] + 38;
   const PEN = M.layerLike(g);
-  PEN.g.save(); PEN.g.translate(52, hy); PEN.g.rotate(-2.2 * DEG);
-  const pen = (txt, dx, dy, sz, sd) => M.strokeText(PEN.g, 'tech', txt, dx, dy, sz, { color: '#1E3487', weight: 0.075, jitter: 0.006, rot: 3, bounce: 0.03, scaleJit: 0.05, seed: sd, track: 0.03 });
-  pen('"Dana says it finished the song', 0, 0, 30, 'hw1');
-  pen('without her. - R."', 18, 33, 30, 'hw2');
+  // two short lines inside the 90 px margins, ending above y~380 (clear of the camcorder date/clock band)
+  PEN.g.save(); PEN.g.translate(96, hy - 2); PEN.g.rotate(-2.0 * DEG);
+  const pen = (txt, dx, dy, sz, sd) => M.strokeText(PEN.g, 'tech', txt, dx, dy, sz, { color: '#1E3487', weight: 0.08, jitter: 0.006, rot: 3, bounce: 0.03, scaleJit: 0.05, seed: sd, track: 0.03 });
+  pen('"Dana says it finished', 0, 0, 25, 'hw1');
+  const w2a = pen('the song ', 14, 30, 25, 'hw2').width;
+  const w2b = pen('without her.', 14 + w2a, 30, 25, 'hw3').width;
+  pen('- R."', 14 + w2a + w2b + 14, 30, 25, 'hw4');
   // underline under "without her"
-  PEN.g.strokeStyle = 'rgba(30,52,135,0.85)'; PEN.g.lineWidth = 1.6; PEN.g.lineCap = 'round';
-  PEN.g.beginPath(); PEN.g.moveTo(20, 41); PEN.g.quadraticCurveTo(110, 44, 196, 39); PEN.g.stroke();
+  PEN.g.strokeStyle = 'rgba(30,52,135,0.85)'; PEN.g.lineWidth = 1.7; PEN.g.lineCap = 'round';
+  PEN.g.beginPath(); PEN.g.moveTo(14 + w2a, 37); PEN.g.quadraticCurveTo(14 + w2a + w2b / 2, 41, 14 + w2a + w2b, 35); PEN.g.stroke();
   PEN.g.restore();
   // ballpoint skips: thin the line here and there
   PEN.g.save(); PEN.g.setTransform(1, 0, 0, 1, 0, 0); PEN.g.globalCompositeOperation = 'destination-out'; PEN.g.globalAlpha = 0.4;
   PEN.g.fillStyle = PEN.g.createPattern(M.toothTex(512, 8, 0.62), 'repeat'); PEN.g.fillRect(0, 0, PEN.c.width, PEN.c.height); PEN.g.restore();
   M.drawLayer(g, PEN, 0.95, 'multiply', M.blur(g, 0.3));
-  // coffee ring (right side, clear of items 3-4)
-  const cx = 556, cy = 196, cr = 54;
+  // coffee ring (in the right margin, clear of the text)
+  const cx = 602, cy = 142, cr = 50;
   g.save();
   g.globalCompositeOperation = 'multiply';
   const fill = g.createRadialGradient(cx, cy, cr * 0.2, cx, cy, cr);

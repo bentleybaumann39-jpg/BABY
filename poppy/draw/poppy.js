@@ -19,6 +19,7 @@
  *   mouth:  'smile' | 'open' (D shape, tongue) | 'grin' (crescent of parted lips
  *           on identical square teeth) | 'grinClosed' (thin row of teeth)
  *           | 'scream' (egg-shaped void lined with rows of teeth) | 'hang' (costume hole)
+ *           | 'torn' (the painted smile torn open along its line: costume scare)
  *   eyes:   'button' (glossy, catchlight at the same screen pixel in both eyes)
  *           | 'drift' (pupils drifting apart) | 'black' (flat glossy, no catchlight)
  *           | 'hollow' (black mesh vision hole; head.deepEyes puts a real eye inside)
@@ -1070,6 +1071,58 @@ function drawMouth(ctx, H) {
     });
     return;
   }
+  if (m === 'torn') {
+    /* costume mouth: Poppy's own painted smile, torn open along its line.
+     * The opening follows the smile curve (wide, corners up), ragged and
+     * sagging on the lower edge; the cherry paint survives as a border, the
+     * stitched line runs on past the tear at both corners, and a few loose
+     * felt threads still bridge the hole. */
+    const D = H.smileD || 0.19, half = H.tornOpen || 0.12, sag = H.tornSag || 1.5;
+    const mid = smileCurve(W, y0, D), r = rng('torn'), NS = 56;
+    const up = [], lo = [];
+    const tears = [-0.55, -0.12, 0.3, 0.7].map(t => ({ t: t + (r() - 0.5) * 0.1, d: 0.02 + r() * 0.035 }));
+    for (let i = 0; i <= NS; i++) {
+      const t = -0.94 + 1.88 * i / NS, a = mid(t), b = mid(Math.min(1, t + 0.01)), c = mid(Math.max(-1, t - 0.01));
+      const ang = Math.atan2(b.y - c.y, b.x - c.x);
+      const k = Math.pow(Math.max(0, 1 - Math.pow(Math.abs(t / 0.94), 2.2)), 0.6);
+      let hu = half * k * (1 + (r() - 0.5) * 0.25), hl = half * k * sag * (1 + (r() - 0.5) * 0.35);
+      for (const q of tears) { const w = Math.max(0, 1 - Math.abs(t - q.t) / 0.05); hl += q.d * w; hu += q.d * 0.4 * w * (r() < 0.5 ? 1 : 0); }
+      up.push([a.x + Math.sin(ang) * hu, a.y - Math.cos(ang) * hu]);
+      lo.push([a.x - Math.sin(ang) * hl, a.y + Math.cos(ang) * hl]);
+    }
+    const p = new Path2D(); p.moveTo(up[0][0], up[0][1]);
+    for (const q of up) p.lineTo(q[0], q[1]);
+    for (let i = lo.length - 1; i >= 0; i--) p.lineTo(lo[i][0], lo[i][1]);
+    p.closePath();
+    H._mouthPath = p;
+    // the stitched smile line continuing past the tear at both corners
+    for (const sd of [-1, 1]) {
+      const t0 = sd * 0.9, t1 = sd * 1.0, q = new Path2D(), a0 = mid(t0), a1 = mid(t1);
+      q.moveTo(a0.x, a0.y); q.lineTo(a1.x, a1.y);
+      strokeP(ctx, q, P.cherry, 0.03);
+      const e = mid(sd), tk = new Path2D();
+      tk.moveTo(e.x - sd * 0.035, e.y - 0.045); tk.quadraticCurveTo(e.x + sd * 0.03, e.y - 0.005, e.x - sd * 0.01, e.y + 0.045);
+      strokeP(ctx, tk, P.cherry, 0.022);
+    }
+    part(ctx, p, {
+      fill: g => { const gr = g.createLinearGradient(0, y0, 0, y0 + D + half * sag * 1.2); gr.addColorStop(0, '#000000'); gr.addColorStop(0.7, '#050203'); gr.addColorStop(1, '#1E0608'); return gr; },
+      paint: g => {
+        // felt thickness lit along the upper inside edge of the tear
+        g.save(); g.filter = `blur(${1.2 * ENV.px}px)`;
+        const ul = new Path2D(); ul.moveTo(up[0][0], up[0][1] + 0.012); for (const q of up) ul.lineTo(q[0], q[1] + 0.012);
+        strokeP(g, ul, 'rgba(170,125,100,0.55)', half * 0.28); g.restore();
+        // loose threads still bridging the hole
+        for (const tt of [-0.4, 0.08, 0.5]) {
+          const i = Math.round((tt + 0.94) / 1.88 * NS), a = up[i], b = lo[Math.min(NS, i + 1 + Math.floor(r() * 2))];
+          const th = new Path2D(); th.moveTo(a[0], a[1]);
+          th.quadraticCurveTo((a[0] + b[0]) / 2 + (r() - 0.5) * 0.05, (a[1] + b[1]) / 2 + 0.04, b[0], b[1]);
+          strokeP(g, th, 'rgba(215,190,160,0.8)', 0.008);
+        }
+      },
+      tex: 0, shade: 0.5, ao: 0.6, hi: 0, shadeColor: '#000000', outline: P.cherry, outlineW: 3.2,
+    });
+    return;
+  }
   if (m === 'hang') {
     // costume mouth: a dark stretched hole hanging open, lips crumpled
     // a long crooked hole sagging down and to one side, ragged felt lips
@@ -1674,7 +1727,7 @@ function drawSlumped(f, opts) {
   }
   // ---- the hollow head, fallen onto its right shoulder (screen-left)
   const H = headDefaults(Object.assign({ cx: 120, cy: 182, R: 60, tilt: -70, eyes: 'hollow', mouth: 'smile', decay: opts.decay || 0.25,
-    asym: true, meshAlpha: 0.7, meshSheen: 0.12,
+    asym: true, meshColor: 'rgba(128,124,116,0.82)', meshSheen: 0.3, meshStep: 0.05,
     front: (c) => neckHole(c, H, { x: 0.02, y: 0.97, rx: 0.56, ry: 0.27 }) }, opts.head || {}));
   return drawHead(f, H);
 }

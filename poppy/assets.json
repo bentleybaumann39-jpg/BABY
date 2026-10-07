@@ -395,7 +395,7 @@
     },
     {
       "file": "build/art/poppy/poppy_scare_costume.png",
-      "description": "JUMP SCARE 1 (camcorder). The costume head lunging into the lens and filling ~85% of the frame, lit flat and hard from the front by a camcorder's on-camera light (bright face, hard shadow, black background). Crumpled felt, petal ring crushed on one side, mouth hanging open as a dark stretched hole; deep inside each black mesh eye hole a glinting realistic eye with a pinpoint pupil stares dead centre. Centre razor sharp, slight motion blur only at the edges. The sharpest, best-lit image in the tape so far. No blood or gore.",
+      "description": "JUMP SCARE 1 (camcorder). The costume head lunging into the lens and filling ~85% of the frame, lit flat and hard from the front by a camcorder's on-camera light (bright face, hard shadow, black background). Crumpled felt, petal ring crushed on one side, Poppy's own painted smile torn open along its line into a ragged dark hole (not a vertical oval); deep inside each grey mesh eye hole a glinting realistic eye with a pinpoint pupil stares dead centre. Centre razor sharp, slight motion blur only at the edges. The sharpest, best-lit image in the tape so far. No blood or gore.",
       "transparent": false,
       "size": [
         800,
@@ -432,7 +432,19 @@
     },
     {
       "file": "build/art/poppy/poppy_final_close.png",
-      "description": "The last image of the tape. Ordinary friendly Poppy (Stage 1 face, button eyes WITH catchlights again, gentle closed smile) impossibly close to the lens: the face overfills the frame (forehead and chin cut off, petals only in the corners), slight wide-angle bulge, both pupils now dead centre on the lens, soft warm bedside-lamp light from the left, the dark bedroom (moonlit window, bed edge) faintly visible and blurred at the edges. Calm and still: dread, not a scare.",
+      "description": "The last image of the tape. Ordinary friendly Poppy (Stage 1 face, button eyes WITH catchlights again, opaque white felt eye whites, gentle closed smile) impossibly close to the lens: the face overfills the frame (forehead and chin cut off, the red petal bonnet visible in all four corners), slight wide-angle bulge, looking just past the lens like Stage 1, soft warm bedside-lamp light from the left, the dark bedroom (moonlit window, bed edge) faintly visible and blurred at the edges. Calm and still: dread, not a scare.",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "11g"
+      ]
+    },
+    {
+      "file": "build/art/poppy/poppy_final_close_look.png",
+      "description": "Identical to poppy_final_close except the eyes: both pupils a little larger and dead centre on the lens, no catchlights. Alternates with poppy_final_close field by field during the 11g VCR pause, so one field is looking straight at you.",
       "transparent": false,
       "size": [
         640,
@@ -1126,7 +1138,7 @@
       "file": "build/audio/vo_greet_1.wav",
       "kind": "voice",
       "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5).",
-      "text": "Hi, friend! It's me, Poppy! Welcome to my playroom!",
+      "text": "Hi, friend! It's me, Poppy! Welcome to my world!",
       "voice": "poppy",
       "target_seconds": 4.2,
       "used_in": [

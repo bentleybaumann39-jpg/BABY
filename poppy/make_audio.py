@@ -841,7 +841,7 @@ def envelope_json(x, duration):
 
 VOICE_LINES = [
     ("vo_narr_ident", "narrator", "Sunny Meadow Home Video presents...", {}),
-    ("vo_greet_1", "poppy", "Hi, friend! It's me, Poppy! Welcome to my playroom!", {}),
+    ("vo_greet_1", "poppy", "Hi, friend! It's me, Poppy! Welcome to my world!", {}),
     ("vo_greet_2", "poppy", "I'm so glad you came over. You look ready to play!", {"pitches": (84, 92)}),
     ("vo_greet_3", "poppy", "Today we're going to have so much fun!", {"pitches": (88,)}),
     ("vo_count_intro", "poppy", "Let's count my flower friends! Count with me, friend!", {"pitches": (82, 92)}),
