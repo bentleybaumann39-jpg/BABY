@@ -1531,7 +1531,7 @@ def s7e(ctx):
 
 DRESS = META["dressing_room"]
 COSTUME_S = 0.66
-COSTUME_TINT = (0.92, 0.97, 0.88)
+COSTUME_TINT = (1.0, 0.91, 0.79)       # warm felt; the camcorder adds its own green
 
 
 def dressing(costume=False):
@@ -1542,8 +1542,9 @@ def dressing(costume=False):
         # its weight on the seat: a soft dark pool on the seat and the backrest
         sh, pad = blob(118, 30, 0.6, 6.0)
         paste(base, sh, seat[0] - 59 - pad, seat[1] - 8 - pad)
-        spr = sprite(art("costume_slumped"), round(COSTUME_S, 4), tint=COSTUME_TINT, bright=0.76, blur=1.2,
-                     vgrad=(1.0, 0.78), sat=0.8)
+        # graded down into the dim room: the felt face stays peach, not white
+        spr = sprite(art("costume_slumped"), round(COSTUME_S, 4), tint=COSTUME_TINT, bright=0.6, blur=1.2,
+                     vgrad=(0.92, 0.82), sat=1.05)
         x, y = seat[0] - 210 * COSTUME_S, seat[1] + 4 - 330 * COSTUME_S
         # soft occlusion shadow of the costume on the chair and wall behind it
         a = spr.getchannel("A").filter(ImageFilter.GaussianBlur(5)).point(lambda v: int(v * 0.45))
@@ -1947,14 +1948,16 @@ def s10bf(ctx):
 def chair_shot():
     """playroom_dark at 3.0x on the yellow chair (turned to face the wall), so
     the chair sits near the centre; the pale light spill on the cabinet behind
-    it is pulled down x0.6 so the chair is what reads."""
+    it is pulled down x0.6 and the shiny floor spill left of it x0.3, so the
+    chair, in a soft pool of light, is what reads."""
     cx, cy = PD["chair_center"][0] / 1280, PD["chair_center"][1] / 960
     a = to_arr(view(dark_room_full(), 3.0, cx, cy))
     m = np.clip((_xx - 320) / 25, 0, 1) * np.clip((500 - _xx) / 25, 0, 1) * np.clip((250 - _yy) / 30, 0, 1)
     a = a * (1 - 0.4 * m[..., None])
-    # the shiny floor spill at the left falls away too: a soft pool of light on the chair
-    spot = np.exp(-(((_xx - 420) / 260.0) ** 2 + ((_yy - 260) / 230.0) ** 2))
-    return a * (0.38 + 0.62 * spot)[..., None]
+    fl = np.clip((285 - _xx) / 40, 0, 1) * np.clip((_yy - 170) / 40, 0, 1)
+    a = a * (1 - 0.7 * fl[..., None])
+    spot = np.exp(-(((_xx - 420) / 230.0) ** 2 + ((_yy - 250) / 230.0) ** 2))
+    return np.clip(a * (0.3 + 0.7 * spot)[..., None] * 1.45, 0, 1)
 
 
 @shot("10c")
