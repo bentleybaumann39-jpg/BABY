@@ -1,0 +1,43 @@
+{
+ "phrases": [
+  [
+   0.0,
+   "Where do you live?"
+  ],
+  [
+   1.9,
+   "Where do you live?"
+  ],
+  [
+   3.8,
+   "Where do you live, friend?"
+  ]
+ ],
+ "phrase_spans": [
+  [
+   0.0,
+   1.587
+  ],
+  [
+   1.9,
+   3.487
+  ],
+  [
+   3.8,
+   5.473
+  ]
+ ],
+ "pan": [
+  -1.0,
+  1.0,
+  -1.0
+ ],
+ "haas_ms": 22,
+ "haas_db": -8,
+ "clear_word": "friend",
+ "text": "Where do you live? ... Where do you live? ... Where do you live, friend?",
+ "voice": "poppy_whisper",
+ "max_seconds": 5.6,
+ "fits": true,
+ "scare_pass": true
+}

@@ -1,0 +1,6 @@
+{
+ "glide_oct_per_s": 0.1,
+ "rise_db": 12,
+ "ends_at_full_level": true,
+ "scare_pass": true
+}

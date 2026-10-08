@@ -1,0 +1,7 @@
+{
+ "source": "build/audio/vo_wrong_stop.wav",
+ "source_crc": 268756793,
+ "ends_at_line_onset": true,
+ "lead_s": 1.0,
+ "scare_pass": true
+}

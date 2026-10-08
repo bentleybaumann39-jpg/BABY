@@ -71,11 +71,12 @@
         "8d",
         "8h",
         "8j",
-        "10b",
-        "10c",
-        "10d",
-        "10e",
-        "10f"
+        "11d",
+        "11e",
+        "11f",
+        "11g",
+        "11h",
+        "11i"
       ]
     },
     {
@@ -143,7 +144,8 @@
       "used_in": [
         "8d",
         "8e",
-        "8j"
+        "8j",
+        "8o"
       ]
     },
     {
@@ -246,7 +248,7 @@
       "used_in": [
         "2b",
         "2g",
-        "11c"
+        "10c"
       ]
     },
     {
@@ -260,7 +262,7 @@
       "used_in": [
         "2b",
         "2g",
-        "11c"
+        "10c"
       ]
     },
     {
@@ -345,7 +347,7 @@
     },
     {
       "file": "build/art/poppy/poppy_wrong_idle.png",
-      "description": "Stage 2 'wrong' Poppy, full body, same canvas and foot anchor as poppy_idle, for the dark red-lit playroom: neck stretched ~25% (head higher), head tilted 25 degrees, eyes are big flat glossy BLACK buttons with no catchlight (22% of head width), smile stretched past the outer eye edges over a thin row of small square teeth, arms hanging to the knees, glove fingers long and slightly spread, felt dirtier and faded. Drawn under neutral light (the compositor grades it red). Mouth closed: in the story she never opens it again.",
+      "description": "Stage 2 'wrong' Poppy, full body, same canvas and foot anchor as poppy_idle (420x640, feet at (210, 628)), drawn under neutral light (the compositor grades it red). SCARE PASS redraw - two proportion breaks plus texture: (1) neck 1.5x the Stage 1 length (head higher; keep the whole head and petal ring inside the canvas); (2) the head, petal ring and face outline tilted 35 degrees clockwise while the eyes, the nose and the mouth line stay LEVEL (horizontal) - an impossible head that reads as wrong at a 64 px thumbnail. Eyes: big flat glossy BLACK buttons (24% of head width, blown, not human), no catchlight, her left eye (screen right) 4% of head height higher, a hairline crack across the screen-left button with a 1 px highlight on one side. Mouth closed: the painted smile has been re-sewn wider with a dark running stitch (4-6 px stitches with a thread shadow) that continues past the old corners to 10% of head width beyond the face outline on both sides; between the lips a thin glimpse of small ivory teeth of uneven widths (not identical squares); lower lids flat. Worn felt: pilling (2-4 px balls), grime darkening the creases, grey-brown multiply stains (never red), and at the neck a seam split 30x6 px where real skin shows through the felt (pores as 1 px dots at two noise scales, one faint blue vein at 12% opacity) - fabric worn thin, never an opening, never red. Arms hanging to the knees, glove fingers 1.6x long and slightly spread. Silhouette test: long neck, head on its side, arms too long. Mouth never opens in the story.",
       "transparent": true,
       "size": [
         420,
@@ -353,11 +355,13 @@
       ],
       "used_in": [
         "8b"
-      ]
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/art/poppy/poppy_cover_eyes.png",
-      "description": "Wrong Poppy (same Stage 2 body as poppy_wrong_idle) counting for hide-and-seek: both gloved hands pressed over her eyes, the too-long fingers spread across her face; through one gap between two fingers ONE realistic human eye (sclera all round, pinpoint pupil) peeks straight at the viewer. Closed smile visible below the hands. Same canvas and foot anchor; the compositor crops it to waist-up and head-only, so the head and hands need the most detail.",
+      "description": "Wrong Poppy counting for hide-and-seek, SAME body, 1.5x neck, tilted head and re-sewn smile as the redrawn poppy_wrong_idle, same canvas and foot anchor: both gloved hands pressed over her eyes, the 1.6x fingers (one extra knuckle each) spread across her face. SCARE PASS: through the gap between the two middle fingers of her right hand ONE realistic wet human eye looks dead into the lens: sclera visible all round with 4-6 branching 1 px grey-pink capillaries (#C9A3A0 at 30-50% opacity) from the corners, iris of 40-60 radial fibres (grey-green) with a dark limbal ring (10% of the iris radius), a pinpoint pupil (10% of the iris), a sharp window specular, a shining 1-2 px lower-lid waterline, a pink inner corner and 10-15 single lashes pressed against the glove. That eye is the only realistic patch (~4% of the face). The re-sewn closed smile shows below the hands. Head and hands carry the most detail: the compositor crops this to waist-up and head-only (up to 2.3x). The head now sits higher (1.5x neck): the compositor re-measures the head centre.",
       "transparent": true,
       "size": [
         420,
@@ -367,7 +371,9 @@
         "8c",
         "8d",
         "8h"
-      ]
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/art/poppy/costume_slumped.png",
@@ -395,7 +401,7 @@
     },
     {
       "file": "build/art/poppy/poppy_scare_costume.png",
-      "description": "JUMP SCARE 1 (camcorder). The costume head lunging into the lens and filling ~85% of the frame, lit flat and hard from the front by a camcorder's on-camera light (bright face, hard shadow, black background). Crumpled felt, petal ring crushed on one side, Poppy's own painted smile torn open along its line into a ragged dark hole (not a vertical oval); deep inside each grey mesh eye hole a glinting realistic eye with a pinpoint pupil stares dead centre. Centre razor sharp, slight motion blur only at the edges. The sharpest, best-lit image in the tape so far. No blood or gore.",
+      "description": "JUMP SCARE 1 (camcorder, 7o, 0.7 s, the head fills ~60% of the frame height). REDRAW with horror-illustration technique: it must stop reading as a cartoon. The empty-costume head lunges at the lens out of black, lit ONLY by the camcorder's on-camera light held low: key light 40 degrees BELOW the face and slightly right, hard terminator (under 3 px, a panic frame). Composition in the 800x600 canvas: felt face ~330 px tall plus petals, centred at (380, 310), tilted 32 degrees clockwise; its right side dissolves into black (lost edge: the silhouette never closes). VALUE BUDGET: 60-70% of pixels at or below 8% luma (RGB <= ~20), only 5-10% above 60% luma. Lit: the chin, the torn mouth, the lower rim of the left eye hole and the left cheek; the forehead is 60% darker than the chin and the seed-pod nose throws its shadow UPWARD between the eye holes. EYES: the costume's two mesh vision holes (a dark grid; the lower edge of each mesh wire catches the light). Pressed right up against the LEFT mesh from inside is a REAL human eye: wet, iris of ~50 radial fibres (hazel-grey) with a dark limbal ring, pinpoint pupil (9% of the iris), a sharp window specular, a shining lower-lid waterline, 5 thin grey-pink capillaries (#C9A3A0) in the white, lashes squashed against the mesh, the mesh grid crossing in front of it. The RIGHT hole is black and empty and sits 5% of head height lower. MOUTH: Poppy's painted smile line torn open along its whole length into a ragged slit of frayed felt (loose 1 px threads, fibres, grey-cream torn edges: fabric, never a wound, never red); through the tear, REAL human teeth: 12-16 ivory (#E8DFC8) teeth of uneven widths (central incisors 1.6x the laterals), grey gaps, bluish translucent edges, an uneven scalloped pink gum line (#C98C8C) with a wet highlight above the upper row, black behind. The tear runs 8% of head width past the face outline on the right, into the dark. The eye and the teeth are the only realistic patches (~8% of the face together); everything else stays felt: pilling, grime in the creases, grey-brown stains (never red), running stitches, a scuffed seed-pod nose. Petals crushed flat on the left and sunk in shadow (#4A0E12) with a 1-2 px rim: red covers under 8% of the frame. Shadows are HATCHED, not flat: 300-500 one-pixel strokes at 2-3 angles over the dark felt (Junji Ito); the outer contour is a tremor line (0.6-1.5 px jitter, 2-3 overdrawn passes). Slight motion smear only on the top and right edges; the eye and teeth razor sharp. Background pure black. Human teeth, never pointed fangs; nothing resembling any franchise mascot. No blood, no gore, no wound.",
       "transparent": false,
       "size": [
         800,
@@ -403,11 +409,13 @@
       ],
       "used_in": [
         "7o"
-      ]
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/art/poppy/poppy_scare_closet.png",
-      "description": "JUMP SCARE 2 (closet). Stage 3 Poppy face pushed through the closet gap: fills ~75% of the frame height, stretched vertically ~12%, underlit cold blue-white from below (nightlight), realistic wide eyes (27% of head width, sclera all round, 8% pinpoint pupils), dead-centre gaze into the lens, smile 30% wider than normal with 22 identical small square white teeth filling the mouth, petals crushed by dark painted door edges at the left and right frame edges, black closet interior around. No blood or gore.",
+      "description": "JUMP SCARE 2 (closet, 8m, 0.8 s, the face fills ~75% of the frame height) and, colour-inverted, subliminal S3. REDRAW: Poppy's face pushed through the gap of the closet door, lit ONLY from below-left by the cold blue-white nightlight (key 45 degrees below; soft falloff on the felt, a hard edge on the teeth). Composition: face ~430 px tall in the 800x600 canvas, centred at (400, 300), stretched 15% vertically; the head outline, petals and mouth tilted 28 degrees counter-clockwise while the EYES STAY LEVEL; two dark painted closet-door edges press in from left and right (inner edges near x=150 and x=650, each with a 1-2 px cold rim) and squeeze the petals back behind them into black. VALUE BUDGET: 55-70% of pixels <= 8% luma; lit: the lower halves of the eyes, the teeth, the left cheek, the chin; the forehead and the right third of the face are black. EYES (realistic, set into felt sockets, no felt whites): 27% of head width each, wide-set (+25% spacing), open 135% so white shows ABOVE the iris, pale grey-blue irises with ~50 fibres and dark limbal rings, pinpoint pupils (9% of the iris) - pinpoint in darkness, which is physiologically wrong - symmetric window catchlights so she stares dead into the lens, shining lower-lid waterlines, 6 branching grey-pink capillaries per eye, her left eye (screen left) 4% of head height higher; thin felt brows raised high (terror/joy mismatch); lower lids FLAT. MOUTH: a smile running 12% of head width past the face outline on both sides, jaw dropped 1.4x: 34 REAL ivory teeth in two rows (front row lit, uneven widths, grey gaps, translucent edges; a half-lit second row behind at ~30% brightness), an uneven scalloped pink gum line with a wet highlight; black inside. Human details on the toy: two real nostrils under the seed-pod button nose; fine creases at the eye and mouth corners; on the left cheek a 40x30 px oval where the felt is worn through to human skin (pores as 1 px dots at two noise scales, faint blue veins at 12% opacity, a pilled and frayed felt edge) - not an opening, not red. Shadows hatched (300-500 one-pixel strokes), contour a tremor line (0.6-1.5 px jitter, 2-3 passes). Black closet interior around. Human teeth, never fangs. No blood, no gore.",
       "transparent": false,
       "size": [
         800,
@@ -416,19 +424,24 @@
       "used_in": [
         "8i",
         "8m"
-      ]
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/art/poppy/poppy_scare_final.png",
-      "description": "JUMP SCARE 3 (dark playroom). Stage 3 Poppy at her worst: head tilted 25 degrees and filling ~90% of the frame; huge, fully BLACK glossy eyes (27% of head width, no catchlight); mouth gaping open in a silent scream, a tall dark oval lined with rows of identical small square teeth; face stretched vertically ~15%; red key light from below-left plus a hard white rim light on the petals, which flare outward like a threat display; dark red-black background. No blood or gore.",
+      "description": "JUMP SCARE 3 - the last image of the tape (11j, 1.0 s, after the false ending; the face fills ~90% of the frame) and, colour-inverted, subliminal S7. The closest, most realistic, most broken Poppy. Composition: face ~560 px tall in the 800x600 canvas, so the forehead top and the chin are cut by the frame edges; head tilted 35 degrees clockwise with the eyes kept LEVEL; face stretched 18% vertically; the left face half 6% larger than the right. LIGHT: a dim warm underlight bouncing off the playroom floor (key 50 degrees below), hard on the teeth and the eyes, soft elsewhere. NOT a red frame: red only as a 1-2 px rim on the few visible petals and a faint warm cast; under 6% of the frame saturated red. VALUE BUDGET: 60-70% of pixels <= 8% luma, 5-10% above 60%. EYES: wet, open 140% with white visible all round, BLOWN pupils filling 90% of the iris (only a thin grey-green iris ring and its limbal edge remain - not human), symmetric sharp window catchlights dead centre into the lens, shining lower-lid waterlines, 8 branching grey-pink capillaries each, her right eye (screen left) 5% of head height higher; brows raised high; lower lids flat. MOUTH: jaw dropped 1.6x in a silent scream that runs 15% of head width past the face outline on both sides and below the chin line; 38 REAL ivory teeth in two rows (front lit, uneven, translucent edges; back row half-lit), scalloped wet pink gums top and bottom, a black throat. Human details: two real nostrils; the seed-pod button nose cracked (hairline crack with a 1 px highlight); real skin showing through worn felt at the right temple seam (pores, faint blue veins at 15%); fine creases at the eye corners. Felt everywhere else: pilling, grime, running stitches. Shadows hatched (400-600 strokes at 2-3 angles), the contour a tremor line overdrawn 3 times. Background: the black of the dark playroom. Human teeth, never fangs. No blood, no gore, no wounds.",
       "transparent": false,
       "size": [
         800,
         600
       ],
       "used_in": [
-        "10g"
-      ]
+        "11a",
+        "11j"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/art/poppy/poppy_final_close.png",
@@ -439,7 +452,7 @@
         480
       ],
       "used_in": [
-        "11g"
+        "10g"
       ]
     },
     {
@@ -451,8 +464,111 @@
         480
       ],
       "used_in": [
-        "11g"
+        "10g"
       ]
+    },
+    {
+      "file": "build/art/poppy/poppy_scare_costume_b.png",
+      "description": "BOIL frame for scare 1: identical to poppy_scare_costume (same registration, same eye, teeth, light and composition) except that every hatch stroke is re-seeded and the contour tremor re-jittered (0.6-1.5 px). The compositor alternates the pair every 4 frames (7.5 fps) so the shadows crawl like hand-drawn animation. Mean luminance of the pair must match within 2%: this is texture, not a flash.",
+      "transparent": false,
+      "size": [
+        800,
+        600
+      ],
+      "used_in": [
+        "7o"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/art/poppy/poppy_scare_closet_b.png",
+      "description": "BOIL frame for scare 2: identical to poppy_scare_closet except the re-seeded hatching and re-jittered contour, as poppy_scare_costume_b. Mean luminance within 2% of the original.",
+      "transparent": false,
+      "size": [
+        800,
+        600
+      ],
+      "used_in": [
+        "8m"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/art/poppy/poppy_scare_final_b.png",
+      "description": "BOIL frame for scare 3: identical to poppy_scare_final except the re-seeded hatching and re-jittered contour, as poppy_scare_costume_b. Mean luminance within 2% of the original.",
+      "transparent": false,
+      "size": [
+        800,
+        600
+      ],
+      "used_in": [
+        "11j"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/art/poppy/poppy_address.png",
+      "description": "DIRECT ADDRESS close-up (11e, 12 s): Poppy talks straight to the viewer. Close-up registration (640x480, head centre (320, 210)), head and shoulders, felt face ~320 px wide. Unlike every other shot she is perfectly LEVEL (0 degrees tilt) and dead centre - that alone is wrong. Stage 2 face: realistic wet eyes set into the felt (no felt whites), 22% of head width, open 125% so a sliver of white shows above each iris, pale grey irises with 40-60 fibres and dark limbal rings, pinpoint pupils (10% of the iris), symmetric catchlights dead centre: she looks straight INTO the lens; 3-4 faint capillaries; shining lower-lid waterlines; lower lids flat. Mouth closed in the Stage 1 painted smile, corners at the outer eye edges (the smile never reaches the eyes); faded pink felt cheeks. Light: soft cool TV-glow from 35 degrees below (soft gradients: dread, not panic), the forehead 50% darker than the chin, the petals mostly dark with a 1 px rim; transparent background (the compositor puts the blurred dark playroom behind her). Felt moderately worn (pilling, grime in the creases, grey-brown stains). Keep the eye line at y~190 and 20 px of margin below the chin: the compositor stretches everything below the eye line vertically up to 1.22x.",
+      "transparent": true,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "11e"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/art/poppy/poppy_address_talk.png",
+      "description": "Identical to poppy_address except the mouth: open in the rounded D of poppy_talk, but inside the felt there are REAL human teeth (an upper row of 10-12 ivory teeth of uneven widths with grey gaps and translucent edges, an uneven scalloped pink gum line with a wet highlight, the tips of a lower row) and dark behind - no felt tongue. The teeth are the only realistic patch (~4% of the face) and must read clearly at 640x480: every time she opens her mouth to chirp her cheerful lines, you glimpse human teeth. Lip-flap partner of poppy_address (identical registration).",
+      "transparent": true,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "11e"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/art/poppy/hidden_poppy_stand.png",
+      "description": "HIDDEN-FIGURE cutout, used for H2, H3, H4, H5 and H6 (never commented on). A full-body wrong-Poppy SILHOUETTE: feet bottom centre at (120, 630), total height ~600 px, neck 1.5x, head tilted 30 degrees, the petal ring readable as a jagged ring around the round head, arms hanging to the knees, long spread fingers. Rendered almost black: body #0B0A0C, petal ring #1A0D10, a 1 px cool grey rim (#3A4048) only along the right edge of the head, petals and one shoulder, two tiny wet eye glints (2-3 px, at the same height, 70% white) and nothing else - no face detail, no colour. Soft alpha edge (0.8 px). Must read as 'a person with a ring around its head, head on one side, arms too long' at 60-150 px tall. The compositor blurs it 2-4 px and keeps its luma only 4-10% different from its surroundings.",
+      "transparent": true,
+      "size": [
+        240,
+        640
+      ],
+      "used_in": [
+        "7b",
+        "8e",
+        "8f",
+        "8g",
+        "8o",
+        "11d"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/art/poppy/hidden_peek.png",
+      "description": "Door-gap PEEK for hidden figure H1 (6b): the right-hand 30% of a Poppy face seen past a door edge. Three dark petal tips (#3A0C10) at the top and right, a slice of cream felt cheek, and ONE realistic wet eye centred at (70, 100) (iris ~18 px with fibres and a limbal ring, pinpoint pupil, a 2 px window catchlight, a shining waterline), lit only by a thin warm spill from the right; everything else near-black; the left 30 px fade to transparent so it tucks behind the door edge. Reads at 45-60 px tall.",
+      "transparent": true,
+      "size": [
+        120,
+        240
+      ],
+      "used_in": [
+        "6b"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
     }
   ],
   "misc_art": [
@@ -492,7 +608,7 @@
       "used_in": [
         "2a",
         "2g",
-        "11b"
+        "10b"
       ]
     },
     {
@@ -641,7 +757,7 @@
     },
     {
       "file": "build/art/misc/feel_hungry.png",
-      "description": "The fifth feelings face that should not exist. Same card format, but the felt is a sickly pale cream-grey; realistic human eyes (sclera all round, pinpoint pupils, no catchlight); a smile far too wide packed with ~24 identical small square white teeth; the label 'HUNGRY' hand-lettered in marker, crooked and slightly too big. Must read at ~80 px tall on the board and also hold up as a full-screen insert.",
+      "description": "The fifth feelings face that should not exist. Same card format as the other four (pale card, felt face, word strip). SCARE PASS redraw - realism in the wrong place: sickly pale cream-grey felt with grime in the creases; REALISTIC wet human eyes set into the felt (sclera all round with 3 grey-pink capillaries each, pale irises with fibres and limbal rings, pinpoint pupils, a shining lower-lid waterline, NO catchlight), open so white shows above the irises; a cut-felt mouth (frayed fibre edges) stretched 8% past the face outline on both sides and packed with REAL ivory human teeth: 30-34 teeth in two rows of uneven widths with grey gaps and translucent edges, scalloped pink gums with a wet highlight above and below. The label 'HUNGRY' hand-lettered in black marker, crooked and slightly too big. Must read as 'eyes' and 'teeth' at ~80 px tall on the board and hold up as the full-screen insert (5e) and as five copies on the board (11h). Human teeth, never fangs. No blood.",
       "transparent": true,
       "size": [
         240,
@@ -650,8 +766,10 @@
       "used_in": [
         "5d",
         "5e",
-        "10e"
-      ]
+        "11h"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/art/misc/friend_mr_buttons.png",
@@ -712,7 +830,7 @@
         480
       ],
       "used_in": [
-        "11c"
+        "10c"
       ]
     },
     {
@@ -724,7 +842,7 @@
         480
       ],
       "used_in": [
-        "11d"
+        "10d"
       ]
     },
     {
@@ -736,12 +854,12 @@
         480
       ],
       "used_in": [
-        "11e"
+        "10e"
       ]
     },
     {
       "file": "build/art/misc/sub_eyes_dark.png",
-      "description": "Near-black subliminal frame: two realistic wide human eyes (sclera all round, pinpoint pupils) glinting out of darkness in the left third, set in the barely visible edge of a felt face with a hint of red petals. Everything else black.",
+      "description": "Near-black subliminal frame (S1, 2 frames inside the recorded-over roll). SCARE PASS redraw: two realistic wet human eyes in the left third, underlit from 45 degrees below, open 140% (white above the irises), pinpoint pupils, symmetric catchlights dead centre, shining waterlines, 4-6 capillaries each, the left eye 5% of the frame height higher than the right; around them only a sliver of lit felt cheek and the faintest edge of dark red petals, the dark felt hatched with 1 px strokes (Junji Ito); 65-75% of pixels at or below 8% luma. Everything else black.",
       "transparent": false,
       "size": [
         640,
@@ -749,11 +867,13 @@
       ],
       "used_in": [
         "6g"
-      ]
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/art/misc/sub_teeth.png",
-      "description": "Subliminal extreme close-up: cream felt with visible fibres around a too-wide mouth packed with ~24 identical small square white teeth (too white, too clean) and dark maroon felt inside; red petals at the frame corners. No blood.",
+      "description": "Subliminal extreme close-up (S2, 1 frame inside the 7c whip-pan smear). SCARE PASS redraw: cream felt lips with visible fibres and frayed cut edges parted on REAL human teeth - two rows, ~36 ivory teeth of uneven widths, grey gaps, bluish translucent edges, scalloped wet pink gums above the upper row - underlit from below so the teeth and the lower lip glow and everything else falls into black (60% of pixels <= 8% luma); the mouth runs off both frame edges; dark red petal tips barely visible in the top corners. Human teeth, never fangs. No blood.",
       "transparent": false,
       "size": [
         640,
@@ -761,7 +881,37 @@
       ],
       "used_in": [
         "7c"
-      ]
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
+    },
+    {
+      "file": "build/art/misc/sub_scrawl_face.png",
+      "description": "Subliminal S6 (1 frame inside the self-rewind, 11a): an obsessive ballpoint scrawl of Poppy's face on yellowed, creased lined paper photographed under a weak lamp (the paper vignetted to dark at the edges). Tremor-line drawing: every contour overdrawn 3-4 passes with 0.6-1.5 px jitter, line widths 0.6-2.5 px, blue-black ink; the petal ring as frantic overlapping loops; the eyes as dense cross-hatched black voids with one tiny white glint each, the left one higher; a mouth of dozens of small rectangular teeth drawn one by one in two rows, running off the face; shadows hatched with 400+ strokes. Along the bottom margin in shaky capitals: 'SHE FINDS YOU ON TEN'. No blood.",
+      "transparent": false,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "11a"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/art/misc/crt_glass.png",
+      "description": "Overlay for the dark-CRT reflection (8o): the glass of a switched-off 1990s CRT television seen head-on. A soft curved specular highlight band running from the upper left toward the centre (white at 6-10% alpha, feathered), faint dust specks and one fingerprint smudge (3-5% alpha), a very faint convex-glass vignette, and the rounded-rectangle tube edge darkening to opaque black in the four corners (corner radius ~60 px). Transparent everywhere else.",
+      "transparent": true,
+      "size": [
+        640,
+        480
+      ],
+      "used_in": [
+        "8o"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
     }
   ],
   "audio": [
@@ -836,13 +986,15 @@
     {
       "file": "build/audio/mus_reprise.wav",
       "kind": "music",
-      "description": "Theme reprise for the ending, ~17.0 s: the theme slowed to 0.8x tempo and ~1.5 semitones flat, each note detuned +-25 cents, noise-driven wow/flutter growing from 0.3% to 2%, vocals deeper and slower (poppy_sung resampled x0.85). Intro 1.0 s; four sung lines starting at 1.0, 4.6, 8.2 and 11.8 s; the last note (~14.8 s) a tritone off; then the instrument winds down like a dying tape and is silent by 16.5 s, followed by 0.5 s of hiss. Write the line starts into manifest.json 'lyrics'. Peak -3 dBFS.",
+      "description": "Theme reprise for the ending, ~17.0 s: the theme slowed to 0.8x tempo and ~1.5 semitones flat, each note detuned +-25 cents, noise-driven wow/flutter growing from 0.3% to 2%, vocals deeper and slower (poppy_sung resampled x0.85). Intro 1.0 s; four sung lines starting at 1.0, 4.6, 8.2 and 11.8 s; the last note (~14.8 s) a tritone off; then the instrument winds down like a dying tape and is silent by 16.5 s, followed by 0.5 s of hiss. Write the line starts into manifest.json 'lyrics'. Peak -3 dBFS. SCARE PASS: keep the length (17.0 s) and the line starts (1.0, 4.6, 8.2, 11.8 s) but make it sicker: double the melody 50 cents flat so the two copies beat against each other; detune each note +-25 cents and let the whole tune drift a further 30 cents flatter by the end; vocals resampled x0.80 instead of x0.85 (deeper, slower vowels) with an octave-down double at -14 dB; the last note a tritone off.",
       "text": "Poppy, Poppy, red and bright, / in your house, and out of sight. / Close your eyes and hide away, / Poppy found you. Now you stay.",
       "voice": "poppy_sung",
       "target_seconds": 17.0,
       "used_in": [
-        "11b"
-      ]
+        "10b"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/audio/amb_room_tone.wav",
@@ -890,7 +1042,8 @@
       "target_seconds": 20.0,
       "used_in": [
         "8d",
-        "11g"
+        "8o",
+        "10g"
       ]
     },
     {
@@ -902,10 +1055,39 @@
       "target_seconds": 20.0,
       "used_in": [
         "4c",
-        "7h",
-        "8c",
-        "10b"
+        "8c"
       ]
+    },
+    {
+      "file": "build/audio/amb_cluster.wav",
+      "kind": "ambience",
+      "description": "Ligeti-style tone cluster, 20 s seamless loop: five tones a semitone apart around 330-415 Hz (E4, F4, F#4, G4, G#4) plus a copy of F#4 detuned 50 cents, each a soft string-like tone (sawtooth low-passed at 2 kHz with 6% breath noise) with its OWN slow vibrato (0.1-0.3 Hz, +-8-15 cents, random phases) and its own slow amplitude drift (0.05-0.15 Hz), so the cluster shimmers and beats; no melody, it never resolves. Steady overall level so the compositor can swell it and cut it dead. Peak -6 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 20.0,
+      "used_in": [
+        "4c",
+        "8k",
+        "11e"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/audio/amb_sub_breath.wav",
+      "kind": "ambience",
+      "description": "Sub-bass pressure that breathes, 20 s seamless loop: a 36 Hz sine plus a 38 Hz sine (2 Hz beating) and noise low-passed at 60 Hz, amplitude-modulated at 0.25 Hz (one 'breath' every 4 s: 1.6 s swell, 2.4 s ebb, 70% depth); high-passed at 30 Hz (4th order), nothing below. Felt more than heard: mixed at -32 to -24 dBFS under long holds. Peak -6 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 20.0,
+      "used_in": [
+        "8k",
+        "8o",
+        "11d",
+        "11e"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
     },
     {
       "file": "build/audio/sfx_vcr_insert.wav",
@@ -915,7 +1097,8 @@
       "voice": "",
       "target_seconds": 1.2,
       "used_in": [
-        "1a"
+        "1a",
+        "11b"
       ]
     },
     {
@@ -926,7 +1109,7 @@
       "voice": "",
       "target_seconds": 0.6,
       "used_in": [
-        "11h"
+        "10h"
       ]
     },
     {
@@ -937,7 +1120,8 @@
       "voice": "",
       "target_seconds": 4.0,
       "used_in": [
-        "1d"
+        "1d",
+        "11c"
       ]
     },
     {
@@ -951,8 +1135,8 @@
         "1c",
         "6g",
         "7p",
-        "11a",
-        "11f"
+        "10a",
+        "10f"
       ]
     },
     {
@@ -970,8 +1154,8 @@
         "8a",
         "8i",
         "9c",
-        "10a",
-        "11e"
+        "10e",
+        "11d"
       ]
     },
     {
@@ -1075,53 +1259,126 @@
       "voice": "",
       "target_seconds": 2.0,
       "used_in": [
-        "8l",
-        "10f"
+        "8l"
       ]
     },
     {
       "file": "build/audio/sfx_stinger_1.wav",
       "kind": "sfx",
-      "description": "Scare-1 stinger (camcorder), ~1.0 s: attack under 5 ms; 0.3 s noise burst, 45 Hz decaying thump, 3 detuned saws 900-2400 Hz with 10 Hz vibrato and a downward glide, plus camcorder-mic overload crunch; through tanh. Peak -1 dBFS.",
+      "description": "Scare-1 stinger (camcorder), 1.0 s, attack under 5 ms. SCARE PASS rebuild for roughness and nonlinearity (Arnal 2015, Blumstein 2010): a 0.25 s noise burst; a 45 Hz thump with a 0.4 s decay; a screech of 4 detuned saws 900-2400 Hz that JUMP abruptly in pitch twice (+7 semitones at 0.12 s, -11 at 0.30 s) and then glide down; the screech amplitude-modulated at 55 Hz with 50% depth; an octave-down copy of the screech at -10 dB (subharmonic); chaotic noise flickers in the tail; camcorder-mic overload crunch; all through tanh. No synthetic 'aaa' vocal. Peak -1 dBFS.",
       "text": "",
       "voice": "",
       "target_seconds": 1.0,
       "used_in": [
         "7o"
-      ]
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/audio/sfx_stinger_2.wav",
       "kind": "sfx",
-      "description": "Scare-2 stinger (closet), ~1.0 s: attack under 5 ms; sharper and higher: 5 detuned saws 1200-3000 Hz with 12 Hz vibrato and a downward glide, short noise burst, 45 Hz thump; through tanh. Peak -1 dBFS.",
+      "description": "Scare-2 stinger (closet), 1.0 s, attack under 5 ms. SCARE PASS rebuild: higher and sharper than stinger 1: 5 detuned saws 1200-3200 Hz with abrupt pitch jumps (+5 and -9 semitones) and a downward glide, 65 Hz AM at 45% depth, an octave-down subharmonic copy at -10 dB, a short noise burst and a 45 Hz thump; through tanh. It sits under the whispered 'Ten.', which must stay intelligible on the first frame (leave a 2-4 kHz notch of -6 dB for it). Peak -1 dBFS.",
       "text": "",
       "voice": "",
       "target_seconds": 1.0,
       "used_in": [
         "8m"
-      ]
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/audio/sfx_stinger_3.wav",
       "kind": "sfx",
-      "description": "Scare-3 stinger (the biggest), ~1.4 s: attack under 5 ms; 0.3 s noise burst, 45 Hz thump with a long decay, 5 detuned saws 800-3000 Hz with 8-14 Hz vibrato gliding down an octave; through tanh. Peak -1 dBFS.",
+      "description": "Scare-3 stinger (the final and biggest), 1.4 s, attack under 5 ms. SCARE PASS rebuild: 0.3 s noise burst; a 40 Hz thump with a 1.0 s decay; 6 detuned saws 700-3200 Hz with 8-14 Hz vibrato, three abrupt pitch jumps and a glide down an octave; 45 Hz AM at 55% depth; an octave-down subharmonic at -10 dB; chaotic broadband noise flickering through the tail; through tanh. Peak -1 dBFS.",
       "text": "",
       "voice": "",
       "target_seconds": 1.4,
       "used_in": [
-        "10g"
-      ]
+        "11j"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/audio/sfx_scream.wav",
       "kind": "sfx",
-      "description": "Synthetic scream, under 1.5 s: espeak 'aaa' at -p 99 ring-modulated by a 40-70 Hz sine, plus noise through formant band-passes at ~800/1200/2500 Hz with 6-9 Hz vibrato at 4%, and a copy resampled x0.5 underneath as a growl. Attack under 5 ms. Peak -1 dBFS.",
+      "description": "Poppy's scream for scare 3, under 1.4 s, attack under 5 ms. SCARE PASS rebuild - a fake-sounding scream ruins the jump, so it is built from Poppy's OWN Act 1 voice and is recognisably her: render 'Friend!' with the poppy preset at -p 99, granular-stretch the vowel to 1.2 s, jump its pitch abruptly up 7 semitones at 0.15 s and down 12 at 0.6 s, ring-modulate at 55 Hz (60% depth) for roughness, add noise through formant band-passes at ~800/1200/2500 Hz with 6-9 Hz vibrato at 4%, an octave-down copy at -10 dB as a growl, tanh saturation. Peak -1 dBFS.",
       "text": "",
       "voice": "",
       "target_seconds": 1.4,
       "used_in": [
-        "10g"
-      ]
+        "11j"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
+    },
+    {
+      "file": "build/audio/sfx_shepard_riser.wav",
+      "kind": "sfx",
+      "description": "Shepard riser for the scare-1 approach, 14.0 s: 8 octave-spaced sines from 55 Hz (55, 110 ... 7040 Hz) under a fixed sin^2 loudness window over log-frequency (bottom and top layers silent, the middle loud), every layer gliding UP at 0.1 octave per second and wrapping, plus a faint noise layer band-passed around the loudest layer; the overall level rises 12 dB from start to end. NO fade-out: it ends at full level on the last sample (the compositor cuts it dead). Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 14.0,
+      "used_in": [
+        "7h"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/audio/sfx_breath_close.wav",
+      "kind": "sfx",
+      "description": "Dry close-mic breathing of someone standing right beside you, 6.0 s: breath 1 inhale 0.0-1.4 s and exhale 1.6-3.0 s; breath 2 inhale 3.4-4.6 s, then HELD - nothing from 4.6 s to the end (the held breath before a scare). Shaped noise (inhale brighter 1-5 kHz, exhale lower 300-2000 Hz), a +5 dB bell at 150-250 Hz for proximity, two soft wet mouth clicks (1.5 s and 3.3 s), no reverb, slightly irregular. Peak -3 dBFS. The compositor pans it 20% left of centre; 11i reuses only the 3.4-4.6 s inhale.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 6.0,
+      "used_in": [
+        "8k",
+        "11i"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/audio/sfx_rewind.wav",
+      "kind": "sfx",
+      "description": "The VCR rewinding BY ITSELF, 2.0 s: a mechanism clunk at 0.0 (relay and gears engaging), the motor whine rising 400 -> 1100 Hz over 1.5 s with flutter, tape-squeal chirps (short 2-4 kHz glides every 0.2-0.4 s), a faint fast-backwards chatter of high garbled voice (any Poppy line reversed and resampled x6, -18 dB), and the stop clunk at 1.9 s. Peak -1 dBFS. The compositor adds the real programme audio of the previous ~14 s reversed at x7 underneath.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 2.0,
+      "used_in": [
+        "11a"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/audio/sfx_preecho_welcome.wav",
+      "kind": "sfx",
+      "description": "Reversed-reverb pre-echo that swells INTO vo_wrong_welcome ('Welcome back, friend.'), 1.0 s: take the first 0.6 s of vo_wrong_welcome, reverse it, add a long dark reverb (t60 2.5 s, 100% wet, low-passed 3 kHz), reverse the result and keep its last 1.0 s, so the ghost of the word rises for 1.0 s and ends exactly where the line begins. Peak -1 dBFS (mixed about 10 dB under the line). Re-render it whenever vo_wrong_welcome changes.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 1.0,
+      "used_in": [
+        "8b"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/audio/sfx_preecho_tried.wav",
+      "kind": "sfx",
+      "description": "Reversed-reverb pre-echo that swells INTO vo_wrong_stop ('You tried to stop the tape, friend.'), 1.0 s, made exactly like sfx_preecho_welcome from the first 0.6 s of vo_wrong_stop. Re-render it whenever vo_wrong_stop changes. Peak -1 dBFS.",
+      "text": "",
+      "voice": "",
+      "target_seconds": 1.0,
+      "used_in": [
+        "11d"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
     },
     {
       "file": "build/audio/vo_narr_ident.wav",
@@ -1473,7 +1730,7 @@
       "target_seconds": 0.68,
       "used_in": [
         "8c",
-        "10c"
+        "11f"
       ]
     },
     {
@@ -1485,7 +1742,7 @@
       "target_seconds": 0.76,
       "used_in": [
         "8d",
-        "10d"
+        "11g"
       ]
     },
     {
@@ -1497,7 +1754,7 @@
       "target_seconds": 0.84,
       "used_in": [
         "8e",
-        "10e"
+        "11h"
       ]
     },
     {
@@ -1569,13 +1826,15 @@
     {
       "file": "build/audio/vo_hs_10.wav",
       "kind": "voice",
-      "description": "POPPY (WHISPER) - dry whisper right at the microphone, hard attack. Preset 'poppy_whisper' (see STORYBOARD.md section 5). Lands on the first frame of scare 2. Must start with a hard consonant attack.",
+      "description": "POPPY (WHISPER) - dry whisper right at the microphone, hard attack. Preset 'poppy_whisper' (see STORYBOARD.md section 5). Lands on the first frame of scare 2. Must start with a hard consonant attack. SCARE PASS: add roughness - 50 Hz amplitude modulation at 40% depth - and an octave-down subharmonic copy at -10 dB under the whisper; keep it dry and right at the microphone.",
       "text": "Ten.",
       "voice": "poppy_whisper",
       "target_seconds": 0.7,
       "used_in": [
         "8m"
-      ]
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/audio/vo_narr_adv_a.wav",
@@ -1589,26 +1848,17 @@
       ]
     },
     {
-      "file": "build/audio/vo_narr_adv_e.wav",
-      "kind": "voice",
-      "description": "NARRATOR - Sunny Meadow announcer: warm, calm, corporate. Preset 'narrator' (see STORYBOARD.md section 5).",
-      "text": "Thank you for watching Sunny Meadow Home Video. Please stop the tape.",
-      "voice": "narrator",
-      "target_seconds": 4.8,
-      "used_in": [
-        "9e"
-      ]
-    },
-    {
       "file": "build/audio/vo_wrong_stop.wav",
       "kind": "voice",
-      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5).",
-      "text": "You didn't stop the tape, friend.",
+      "description": "POPPY (WRONG) - slowed and deep, dry, too close. Preset 'poppy_wrong' (see STORYBOARD.md section 5). SCARE PASS: new text - it now plays after the tape was stopped and restarted itself, so she answers what the viewer did.",
+      "text": "You tried to stop the tape, friend.",
       "voice": "poppy_wrong",
       "target_seconds": 3.2,
       "used_in": [
-        "10b"
-      ]
+        "11d"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "changed"
     },
     {
       "file": "build/audio/vo_wrong_again.wav",
@@ -1618,7 +1868,7 @@
       "voice": "poppy_wrong",
       "target_seconds": 3.4,
       "used_in": [
-        "10b"
+        "11e"
       ]
     },
     {
@@ -1629,8 +1879,60 @@
       "voice": "poppy",
       "target_seconds": 1.9,
       "used_in": [
-        "11c"
+        "10c"
       ]
+    },
+    {
+      "file": "build/audio/vo_whisper_where.wav",
+      "kind": "voice",
+      "description": "POPPY (WHISPER) - dry whisper right at the microphone, hard attack. Preset 'poppy_whisper' (see STORYBOARD.md section 5). SCARE PASS: three phrases starting at 0.0, 1.9 and 3.8 s (write the starts into manifest.json as 'phrases'); each phrase fades in over 1.0-1.5 s and out over 0.4 s, high-passed at 300 Hz; the first two deliberately just under intelligibility (low-passed at 2.5 kHz, -4 dB), the third clear on 'friend'. The compositor pans phrase 1 hard LEFT, 2 hard RIGHT, 3 hard LEFT, each with a Haas double (the same phrase 22 ms later on the opposite side at -8 dB) so it sits outside the head.",
+      "text": "Where do you live? ... Where do you live? ... Where do you live, friend?",
+      "voice": "poppy_whisper",
+      "target_seconds": 5.6,
+      "used_in": [
+        "9b"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/audio/vo_addr_1.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5). SCARE PASS direct address: exactly the bright sing-song of the Act 1 greeting (that is what makes it wrong), a little drier (reverb 6% wet) and closer.",
+      "text": "Hi, friend! I can see you!",
+      "voice": "poppy",
+      "target_seconds": 2.6,
+      "used_in": [
+        "11e"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/audio/vo_addr_2.wav",
+      "kind": "voice",
+      "description": "POPPY - normal: bright, sing-song kids'-show host. Preset 'poppy' (see STORYBOARD.md section 5). SCARE PASS direct address: same bright delivery; the pitch drops on 'dark'.",
+      "text": "Is that your room? It's so dark in there!",
+      "voice": "poppy",
+      "target_seconds": 2.9,
+      "used_in": [
+        "11e"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/audio/vo_addr_3.wav",
+      "kind": "voice",
+      "description": "POPPY - flat: same voice, slower, no melody, a little too close. Preset 'poppy_flat' (see STORYBOARD.md section 5). SCARE PASS direct address: flat, slow, much too close (+4 dB proximity bass at 150-250 Hz), completely dry, with 45 Hz amplitude modulation at 25% depth for roughness.",
+      "text": "I heard you counting with me.",
+      "voice": "poppy_flat",
+      "target_seconds": 2.2,
+      "used_in": [
+        "11e"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
     }
   ]
 }

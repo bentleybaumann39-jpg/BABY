@@ -1,0 +1,9 @@
+{
+ "text": "Is that your room? It's so dark in there!",
+ "voice": "poppy",
+ "espeak_speed": 172,
+ "pause_limit": null,
+ "max_seconds": 2.9,
+ "fits": true,
+ "scare_pass": true
+}

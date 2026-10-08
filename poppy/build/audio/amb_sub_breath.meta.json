@@ -1,0 +1,5 @@
+{
+ "loop": true,
+ "breath_period_s": 4.0,
+ "scare_pass": true
+}

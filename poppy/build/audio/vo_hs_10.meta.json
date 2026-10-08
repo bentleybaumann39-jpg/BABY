@@ -4,5 +4,6 @@
  "espeak_speed": 120,
  "pause_limit": null,
  "max_seconds": 0.7,
- "fits": true
+ "fits": true,
+ "scare_pass": true
 }

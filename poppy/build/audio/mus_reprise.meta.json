@@ -9,7 +9,7 @@
    "in your house, and out of sight."
   ],
   [
-   8.1,
+   8.12,
    "Close your eyes and hide away,"
   ],
   [
@@ -17,5 +17,6 @@
    "Poppy found you. Now you stay."
   ]
  ],
- "silent_from": 16.5
+ "silent_from": 16.5,
+ "scare_pass": true
 }

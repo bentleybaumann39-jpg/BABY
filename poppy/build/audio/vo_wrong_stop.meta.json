@@ -1,9 +1,10 @@
 {
- "text": "You didn't stop the tape, friend.",
+ "text": "You tried to stop the tape, friend.",
  "voice": "poppy_wrong",
- "espeak_speed": 159,
+ "espeak_speed": 174,
  "pause_limit": 0.18,
  "max_seconds": 3.2,
  "fits": true,
- "word_gap": 4
+ "word_gap": 4,
+ "scare_pass": true
 }

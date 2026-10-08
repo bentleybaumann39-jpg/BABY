@@ -1,0 +1,9 @@
+{
+ "text": "I heard you counting with me.",
+ "voice": "poppy_flat",
+ "espeak_speed": 145,
+ "pause_limit": 0.26,
+ "max_seconds": 2.2,
+ "fits": true,
+ "scare_pass": true
+}

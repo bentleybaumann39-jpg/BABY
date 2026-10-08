@@ -1,0 +1,12 @@
+{
+ "loop": true,
+ "tones": [
+  "E4",
+  "F4",
+  "F#4",
+  "F#4+50c",
+  "G4",
+  "G#4"
+ ],
+ "scare_pass": true
+}

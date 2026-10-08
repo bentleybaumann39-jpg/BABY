@@ -12,16 +12,26 @@ The two songs also carry "lyrics": [[start_seconds, text], ...]. Voice stems
 get build/audio/<name>.env.json: a 30-values-per-second amplitude envelope
 (max 20 ms RMS inside each video frame) so the compositor can flap mouths.
 
-Re-runnable and incremental. A stem whose .wav already exists and reads back
-as valid is skipped unless --force is given or the stem is named explicitly.
-Every stem is written (atomically) as soon as it is done, so an interrupted
-run loses at most one stem.
+Re-runnable and incremental. A stem whose .wav already exists, reads back as
+valid and is current is skipped unless --force is given or the stem is named
+explicitly. A stem is stale (and re-rendered by a plain run) when assets.json
+marks it "scare_pass" but its .meta.json does not, when its RECIPE tag or its
+voice text changed, or when the stem it is cut from changed (the two pre-echoes
+are cut from vo_wrong_welcome / vo_wrong_stop: re-rendering a source re-renders
+them too, after it). Every stem is written (atomically) as soon as it is done,
+so an interrupted run loses at most one stem.
 
-    python3 poppy/make_audio.py                  # everything that is missing
-    python3 poppy/make_audio.py voice sfx        # missing stems of these kinds
+    python3 poppy/make_audio.py                  # everything missing or stale
+    python3 poppy/make_audio.py voice sfx        # missing/stale stems of these kinds
     python3 poppy/make_audio.py vo_hs_1 sfx_pop  # these stems, always re-rendered
     python3 poppy/make_audio.py --force music    # all music stems again
-    python3 poppy/make_audio.py --list           # status of all 76 stems
+    python3 poppy/make_audio.py --list           # status of all 86 stems (OK / -- / OLD + why)
+    python3 poppy/make_audio.py --out DIR names  # review copies in DIR; build/ untouched
+
+Stems stay mono; panning is the compositor's job. Pan and timing notes for it
+live in the manifest: sfx_breath_close "pan" -0.2; vo_whisper_where "phrases"
+[[start, text]], "phrase_spans", "pan" [-1, 1, -1] and a 22 ms / -8 dB Haas
+double; the pre-echoes end exactly on their line's first sample.
 """
 
 import argparse
@@ -40,7 +50,8 @@ import zlib
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "build", "audio")
+BUILD_AUDIO = os.path.join(HERE, "build", "audio")
+OUT = BUILD_AUDIO                   # --out DIR renders a review copy elsewhere
 ASSETS = os.path.join(HERE, "assets.json")
 MANIFEST = os.path.join(OUT, "manifest.json")
 
@@ -630,9 +641,11 @@ def espeak(text, voice="en-us", speed=175, pitch=50, gap=None, prange=None, amp=
         cmd += ["-g", str(int(gap))]
     if amp is not None:
         cmd += ["-a", str(int(amp))]
-    if prange is not None:
+    if prange is not None or "{" in text:
+        # {word} in a line = that word spoken with the pitch dropped (SSML prosody)
         cmd += ["-m"]
-        text = f'<speak><prosody range="{prange}">{html.escape(text, quote=False)}</prosody></speak>'
+        body = re.sub(r"\{([^}]*)\}", r'<prosody pitch="-38%">\1</prosody>', html.escape(text, quote=False))
+        text = f'<speak><prosody range="{prange or "medium"}">{body}</prosody></speak>'
     with tempfile.TemporaryDirectory() as tmp:
         path = os.path.join(tmp, "v.wav")
         subprocess.run(cmd + ["-w", path, text], check=True, capture_output=True)
@@ -880,13 +893,23 @@ VOICE_LINES = [
     ("vo_hs_7", "poppy_wrong", "Seven.", {"factor": 0.75, "double_db": -9}),
     ("vo_hs_8", "poppy_wrong", "Eight.", {"factor": 0.72, "double_db": -8, "close": 4.0}),
     ("vo_hs_9", "poppy_wrong", "Nine.", {"factor": 0.68, "double_db": -6, "close": 5.0}),
-    ("vo_hs_10", "poppy_whisper", "Ten.", {}),
+    # SCARE PASS: rough (50 Hz AM, 40%) with an octave-down copy under the whisper
+    ("vo_hs_10", "poppy_whisper", "Ten.", {"consonant_db": 8.0, "am_hz": 50, "am_depth": 0.4, "sub_db": -10.0}),
     ("vo_narr_adv_a", "narrator",
      "This video cassette was recalled in nineteen ninety-six. If you are watching it, please stop the tape.", {}),
-    ("vo_narr_adv_e", "narrator", "Thank you for watching Sunny Meadow Home Video. Please stop the tape.", {}),
-    ("vo_wrong_stop", "poppy_wrong", "You didn't stop the tape, friend.", {"rev_whisper": 0.25}),
+    # (vo_narr_adv_e is cut by the scare pass: card E is gone; its old .wav may stay on disk)
+    ("vo_wrong_stop", "poppy_wrong", "You tried to stop the tape, friend.", {"rev_whisper": 0.25}),
     ("vo_wrong_again", "poppy_wrong", "That's okay. Let's count again.", {"rev_whisper": 0.18}),
     ("vo_end_see_you", "poppy", "See you tomorrow, friend!", {"pitches": (92,), "end": True}),
+    # SCARE PASS: whispers under card B (the compositor pans them L / R / L with a Haas double)
+    ("vo_whisper_where", "poppy_whisper", "Where do you live? ... Where do you live? ... Where do you live, friend?",
+     {"phrases": [0.0, 1.9, 3.8], "total": 5.6, "pan": [-1.0, 1.0, -1.0]}),
+    # SCARE PASS direct address: the bright Act 1 sing-song, drier and closer
+    ("vo_addr_1", "poppy", "Hi, friend! I can see you!", {"pitches": (80, 90), "wet": 0.06, "close": 2.0}),
+    ("vo_addr_2", "poppy", "Is that your room? It's so {dark} in there!",
+     {"pitches": (86, 84), "wet": 0.06, "close": 2.0}),
+    ("vo_addr_3", "poppy_flat", "I heard you counting with me.",
+     {"speed": 128, "wet": 0.0, "close": 0.0, "prox_db": 4.0, "am_hz": 45, "am_depth": 0.25}),
 ]
 
 PRESET_PEAK = {"poppy": -3.0, "poppy_flat": -3.0, "poppy_wrong": -3.0, "poppy_whisper": -1.0,
@@ -896,9 +919,31 @@ PRESET_SPEED = {"poppy": 172, "poppy_flat": 140, "poppy_wrong": 150, "poppy_whis
 
 
 def render_voice(preset, text, opts, speed, gap=None):
+    x = render_voice_preset(preset, text, opts, speed, gap)
+    # SCARE PASS post-processing (any preset): consonant attack, proximity bass,
+    # roughness, a subharmonic
+    if opts.get("consonant_db"):                       # lift everything before the vowel onset
+        m = moving_rms(x, 0.01)
+        k = int(np.argmax(m > 0.5 * m.max()))
+        g = np.full(len(x), 1.0)
+        g[:k] = db(opts["consonant_db"])
+        x = x * lp(g, 60, 2)
+    if opts.get("prox_db"):
+        x = proximity(x, opts["prox_db"])
+    if opts.get("am_hz"):
+        x = rough(x, opts["am_hz"], opts.get("am_depth", 0.3))
+    if opts.get("sub_db") is not None:
+        x = octave_double(norm(x, 1.0), opts["sub_db"])
+    return x
+
+
+def render_voice_preset(preset, text, opts, speed, gap=None):
     o = dict(opts)
     if preset == "poppy":
-        x = voice_poppy(text, speed, o.get("pitches", (80, 90, 75, 88)), o.get("prange", "high"))
+        x = voice_poppy(text, speed, o.get("pitches", (80, 90, 75, 88)), o.get("prange", "high"),
+                        o.get("wet", 0.12))
+        if o.get("close"):
+            x = low_shelf(x, 300, o["close"])
         if o.get("end"):
             n = len(x)
             x = vari(np.concatenate([x, np.zeros(secs(0.3))]), 0.9 * wow_flutter(n + secs(0.3), 0.006, 0.0015))
@@ -919,9 +964,20 @@ def render_voice(preset, text, opts, speed, gap=None):
     raise ValueError(preset)
 
 
+def clean_text(text):
+    """The script text of a line (without the {pitch-drop} markup)."""
+    return re.sub(r"[{}]", "", text)
+
+
 def make_voice(name, preset, text, opts, max_s):
     """Render a line at its preset; if it overruns its slot, first tighten the pauses,
     then (wrong Poppy) the word gaps, and only then speak faster."""
+    if opts.get("phrases"):                            # timed multi-phrase whisper bed
+        x, meta = make_whisper_where(text, opts)
+        x = norm(x, db(opts.get("peak_db", PRESET_PEAK[preset])))
+        meta.update({"text": clean_text(text), "voice": preset, "max_seconds": max_s,
+                     "fits": bool(not max_s or len(x) / SR <= max_s + 1e-6)})
+        return x, meta
     speed0 = opts.get("speed", PRESET_SPEED[preset])
     plan = [(speed0, None, None), (speed0, None, 0.26), (speed0, 6, 0.22), (speed0, 4, 0.18)]
     if preset != "poppy_wrong":
@@ -946,7 +1002,7 @@ def make_voice(name, preset, text, opts, max_s):
         x = fade(x[:secs(max_s)], 0.0, min(0.12, max_s / 4))
     peak = opts.get("peak_db", PRESET_PEAK[preset])
     x = norm(fade(x, 0.0, 0.01), db(peak))
-    meta = {"text": text, "voice": preset, "espeak_speed": int(round(min(speed, 450))),
+    meta = {"text": clean_text(text), "voice": preset, "espeak_speed": int(round(min(speed, 450))),
             "pause_limit": pause, "max_seconds": max_s,
             "fits": bool(not max_s or len(x) / SR <= max_s + 1e-6)}
     if gap is not None:
@@ -1143,21 +1199,36 @@ def make_reprise():
     beat = 0.45
     starts = [1.0, 4.6, 8.2, 11.8]
     tr = -1.5
+    # SCARE PASS: the whole tune sinks a further 30 cents flat by the end (pitch only, so
+    # the line starts do not move).
+    def drift(t0):
+        return -0.30 * float(np.clip(t0 / 15.0, 0, 1))
+
+    def shift(nt, t0):
+        if nt is None:
+            return None
+        if isinstance(nt, list):
+            return [midi(x) + tr + drift(t0) for x in nt]
+        return midi(nt) + tr + drift(t0)
+
     ev, vox = song_score(REPRISE, starts, beat, rit_last=0.04, transpose=tr)
-    ev = [(t, d, (None if nt is None else ([midi(x) + tr for x in nt] if isinstance(nt, list) else midi(nt) + tr)),
-           inst, vel) for t, d, nt, inst, vel in ev]
+    vox = [(t0, d, syl, m + drift(t0)) for t0, d, syl, m in vox]
+    ev = [(t, d, shift(nt, t), inst, vel) for t, d, nt, inst, vel in ev]
     ev = [e for e in ev if e[3] not in ("kick", "shaker")]       # no bounce left in it
-    # Intro: the hook on a detuned toy piano over a swelling organ.
+    # SCARE PASS: the melody doubled 50 cents flat, so the two copies beat against each other.
+    ev += [(t, d, nt - 0.5, inst, vel * 0.85) for t, d, nt, inst, vel in ev if inst == "toy"]
+    # Intro: the hook on a detuned toy piano (and its flat ghost) over a swelling organ.
     for i, nt in enumerate(["G5", "E5", "G5", "E5"]):
         ev.append((0.1 + i * beat / 2, 0.4, midi(nt) + tr, "toy", 0.45))
+        ev.append((0.1 + i * beat / 2, 0.4, midi(nt) + tr - 0.5, "toy", 0.38))
     ev.append((0.0, 0.95, [midi(x) + tr for x in CHORDS["C"]], "organ", 0.25))
     # The final 'stay' chord is held so the tape can die on it.
     last = max(t for t, *_ in vox)
-    ev.append((last, 2.4, [midi(x) + tr for x in CHORDS["C"]], "organ", 0.45))
-    ev.append((last, 2.4, midi("C3") + tr, "bass", 0.8))
+    ev.append((last, 2.4, [midi(x) + tr + drift(last) for x in CHORDS["C"]], "organ", 0.45))
+    ev.append((last, 2.4, midi("C3") + tr + drift(last), "bass", 0.8))
     music = render_events(ev, n, detune=25.0)
-    vocals, onsets = render_vocals(vox, n, formant=0.85)
-    vocals = octave_double(norm(vocals, 1.0), -16)
+    vocals, onsets = render_vocals(vox, n, formant=0.80)        # deeper, slower vowels
+    vocals = octave_double(norm(vocals, 1.0), -14)
     vocals = tv_voice_chain(vocals, 200, 4000, 1.6, 0.18, 0.45, double=True)[:n]
     music = reverb(music, 0.7, 0.18, damp=4000)[:n]
     mix = 0.6 * norm(music, 1.0) + 0.75 * norm(vocals, 1.0)
@@ -1269,7 +1340,24 @@ def make_music_box():
             ch = chords[bar]
             ev.append(((b0 + bar * 4) * beat, 1.6, midi(ROOTS[ch]) + 12, "mbox", 0.5))
             ev.append(((b0 + bar * 4 + 2) * beat, 1.6, midi(CHORDS[ch][1]) + 12, "mbox", 0.3))
-    src = render_events(ev, secs(src_len), detune=6.0)
+    onsets = sorted({round(e[0], 4) for e in ev if e[2] is not None and e[4] >= 0.8})
+    # SCARE PASS - a mangled box, same note times (so it still dies on 9d's first frame):
+    # every tooth +-20 cents out, the comb sinking 30 cents flat by the wind-down, the melody
+    # doubled 50 cents flat so it beats, and two broken teeth that only thunk.
+    melody = [e for e in ev if e[4] >= 0.8]
+    broken = {min((e for e in melody if e[0] >= tb), key=lambda e: e[0])[0] for tb in (6.0, 11.0)}
+    mangled = []
+    for t0, d, m, inst, vel in ev:
+        if vel >= 0.8 and t0 in broken:
+            continue
+        m = m - 0.30 * float(np.clip(t0 / 14.0, 0, 1))
+        mangled.append((t0, d, m, inst, vel))
+        if vel >= 0.8:
+            mangled.append((t0 + 0.004, d, m - 0.5, inst, vel * 0.55))
+    src = render_events(mangled, secs(src_len), detune=20.0)
+    for tb in sorted(broken):
+        thunk = impact(0.12, [190, 430, 980], [0.02, 0.012, 0.006], (1500, 6000))
+        place(src, thunk * 0.18, tb)
     # mechanism: faint ratchet clicks and a governor whirr, in source time
     clicks = np.zeros(len(src))
     for i in range(int(src_len / 0.125)):
@@ -1277,7 +1365,6 @@ def make_music_box():
         place(clicks, c, i * 0.125 + rng.uniform(-0.004, 0.004))
     whirr = bp(rng.standard_normal(len(src)), 1200, 3500) * 0.006 * (1 + 0.5 * np.sin(2 * np.pi * 16 * tvec(len(src))))
     src = src + clicks + whirr
-    onsets = sorted({round(e[0], 4) for e in ev if e[2] is not None and e[4] >= 0.8})
     # wind-down: speed (tempo and pitch) decays exponentially from t0; pick tau so a note is
     # struck ~50 ms before the end and gets cut off half-way.
     t0 = 14.0
@@ -1759,74 +1846,440 @@ def make_door_creak():
     return norm(y, db(-1)), {}
 
 
-def stinger(dur, saw_lo, saw_hi, n_saws, vib_lo, vib_hi, glide_oct, noise_dur, thump_tau,
-            crunch=0.0, drive=2.5):
+# ==========================================================================
+# SCARE PASS (SCARE_PASS.md section 4, research/scarier.md section 3):
+# roughness, nonlinear pitch jumps, Shepard tones, tone clusters, sub-bass,
+# close breath, the self-rewind and reversed-reverb pre-echoes.
+# ==========================================================================
+
+def blep_saw(freq):
+    """Band-limited (polyBLEP) sawtooth from a per-sample frequency curve."""
+    dt = np.clip(np.asarray(freq, dtype=float) / SR, 1e-9, 0.5)
+    ph = np.cumsum(dt) % 1.0
+    y = 2 * ph - 1
+    a = ph < dt
+    u = ph[a] / dt[a]
+    y[a] -= u + u - u * u - 1
+    b = ph > 1 - dt
+    u = (ph[b] - 1) / dt[b]
+    y[b] -= u * u + u + u + 1
+    return y
+
+
+def rough(x, hz, depth, phase=0.0):
+    """Roughness (Arnal 2015): amplitude modulation at `hz`, modulation index `depth`."""
+    t = tvec(len(x))
+    return x * (1 + depth * np.sin(2 * np.pi * hz * t + phase)) / (1 + depth)
+
+
+def proximity(x, gain_db, fc=200.0, octaves=0.8):
+    """Close-mic bass bump centred on 150-250 Hz."""
+    return peq(x, fc, gain_db, octaves)
+
+
+def jump_curve(n, f0, jumps, glide_from=None, glide_oct=0.0, vib=None):
+    """Frequency curve: f0, abrupt pitch jumps [(t, semitones)], then an exponential glide
+    down `glide_oct` octaves from `glide_from` to the end; optional vib=(rate_hz, depth)."""
+    t = tvec(n)
+    st = np.zeros(n)
+    for tj, s in jumps:
+        st[t >= tj] += s
+    if glide_oct and glide_from is not None and n > 1:
+        k = np.clip((t - glide_from) / max(1e-3, t[-1] - glide_from), 0, 1)
+        st -= 12 * glide_oct * (1 - np.exp(-3 * k)) / (1 - np.exp(-3))
+    f = f0 * 2 ** (st / 12)
+    if vib:
+        f = f * (1 + vib[1] * np.sin(2 * np.pi * vib[0] * t + rng.uniform(0, 6.28)))
+    return f
+
+
+def screech(n, lo, hi, n_saws, jumps, glide_from, glide_oct, vib=(0.0, 0.0), vib_depth=0.0):
+    """Detuned band-limited saws with abrupt jumps; returns (screech, octave-down copy)."""
+    freqs = np.geomspace(lo, hi, n_saws) * 2 ** (rng.uniform(-22, 22, n_saws) / 1200)
+    top, sub = np.zeros(n), np.zeros(n)
+    for f in freqs:
+        v = (rng.uniform(*vib), vib_depth) if vib_depth else None
+        fc = jump_curve(n, f, jumps, glide_from, glide_oct, v)
+        top += blep_saw(fc)
+        sub += blep_saw(fc / 2)                     # subharmonic: the same screech an octave down
+    return top / n_saws, sub / n_saws
+
+
+def flicker_noise(n, t0, t1, density=30.0):
+    """Chaotic noise: random 4-35 ms broadband bursts between t0 and t1, thinning out."""
+    buf = np.zeros(n)
+    t = t0
+    while t < t1:
+        L = rng.uniform(0.004, 0.035)
+        m = max(32, secs(L))
+        lo = rng.uniform(200, 2500)
+        b = bp(rng.standard_normal(m), lo, min(16000, lo * rng.uniform(2.5, 10)), 2) * np.hanning(m)
+        place(buf, b * rng.uniform(0.25, 1.0) / (np.std(b) + 1e-9), t)
+        t += L + rng.exponential(1.0 / density) * (1 + 2.5 * (t - t0) / max(1e-3, t1 - t0))
+    return buf
+
+
+def stinger_v2(dur, lo, hi, n_saws, jumps, glide_from, glide_oct, am_hz, am_depth,
+               noise_dur, thump_hz, thump_decay, vib=(0.0, 0.0), vib_depth=0.0,
+               crunch=0.0, notch=None, drive=2.2, sub_db=-10.0, flicker_from=0.4):
+    """Scare-pass stinger: noise burst + sub thump + rough, pitch-jumping screech with an
+    octave-down subharmonic + chaotic noise in the tail, all through tanh."""
     n = secs(dur)
     t = tvec(n)
-    freqs = np.geomspace(saw_lo, saw_hi, n_saws) * rng.uniform(0.97, 1.03, n_saws)
-    glide = 2 ** (-glide_oct * (1 - np.exp(-t / (dur * 0.45))) / (1 - np.exp(-1 / 0.45)))
-    scr = np.zeros(n)
-    for f in freqs:
-        vr = rng.uniform(vib_lo, vib_hi)
-        fc = f * glide * (1 + 0.03 * np.sin(2 * np.pi * vr * t + rng.uniform(0, 6.28)))
-        scr += saw(fc)
-    scr = scr / n_saws * np.exp(-t / (dur * 0.5))
-    nb = np.zeros(n)
+    top, sub = screech(n, lo, hi, n_saws, jumps, glide_from, glide_oct, vib, vib_depth)
+    body = np.exp(-t / (dur * 0.55)) * np.minimum(1, (dur - t) / 0.12)
+    scr = norm(top, 1) + db(sub_db) * norm(sub, 1)
+    scr = rough(scr * body, am_hz, am_depth)
+    scr = bp(scr, 120, 12000, 2)
     m = secs(noise_dur)
-    nb[:m] = bp(snow(noise_dur), 200, 9000, 2) * np.exp(-tvec(m) / (noise_dur * 0.45))
-    thump = (np.sin(2 * np.pi * 45 * t) + 0.5 * np.sin(2 * np.pi * 90 * t + 0.5)) * np.exp(-t / thump_tau)
-    x = 0.9 * nb / (np.max(np.abs(nb)) + 1e-9) + 1.0 * thump + 0.8 * scr / (np.max(np.abs(scr)) + 1e-9)
-    x = np.tanh(drive * x)
-    if crunch:
+    nb = np.zeros(n)
+    nb[:m] = bp(snow(noise_dur), 200, 10000, 2) * np.exp(-tvec(m) / (noise_dur * 0.28))
+    tau = thump_decay / 3.45                                 # -30 dB at `thump_decay`
+    fth = thump_hz * (1 + 0.7 * np.exp(-t / 0.02))          # a short pitch drop for punch
+    thump = (sine(fth) + 0.35 * sine(2 * fth)) * np.exp(-t / tau)
+    fl = flicker_noise(n, flicker_from * dur, dur - 0.05)
+    fl = fl * np.exp(-np.maximum(0, t - flicker_from * dur) / (dur * 0.5))
+    x = (0.6 * norm(nb, 1) + 1.0 * thump + 0.9 * norm(scr, 1)
+         + 0.35 * fl / (np.max(np.abs(fl)) + 1e-9))
+    x = np.tanh(drive * x) / np.tanh(drive)
+    if crunch:                                               # camcorder-mic overload
         k = np.exp(-t / 0.15)
         x = x * (1 - k * crunch) + k * crunch * bitcrush(np.tanh(6 * x), 5, 4)
-        x = bp(x, 100, 6000, 2)
-    x = attack_ramp(x, 0.0015)
-    x = fade(x, 0, 0.08)
-    return x
+        x = bp(x, 90, 6500, 2)
+    if notch:            # flat cut across notch=(lo, hi, dB[, deeper dB until t_s, t_s])
+        g = np.full(n, db(notch[2]))
+        if len(notch) > 3:
+            g = np.interp(t, [0, notch[4], notch[4] + 0.2], [db(notch[3]), db(notch[3]), db(notch[2])])
+        x = x - (1 - g) * bp(x, notch[0], notch[1], 4)
+    x = attack_ramp(x, 0.001)
+    return fade(x, 0, 0.06)
 
 
 def make_stinger_1():
-    x = stinger(1.0, 900, 2400, 3, 10, 10, 0.8, 0.3, 0.35, crunch=0.7)
+    x = stinger_v2(1.0, 900, 2400, 4, [(0.12, +7), (0.30, -11)], 0.30, 0.9,
+                   am_hz=55, am_depth=0.5, noise_dur=0.25, thump_hz=45, thump_decay=0.4,
+                   crunch=0.7, drive=2.4)
     return norm(x, db(-1)), {}
 
 
 def make_stinger_2():
-    x = stinger(1.0, 1200, 3000, 5, 12, 12, 0.9, 0.15, 0.3, drive=3.0)
-    return norm(x, db(-1)), {}
+    # 'Ten.' sits on it: a -6 dB notch at 2-4 kHz keeps the whisper intelligible
+    x = stinger_v2(1.0, 1200, 3200, 5, [(0.10, +5), (0.26, -9)], 0.26, 1.0,
+                   am_hz=65, am_depth=0.45, noise_dur=0.12, thump_hz=45, thump_decay=0.35,
+                   notch=(2000, 4000, -6.0, -10.0, 0.6), drive=2.8)
+    return norm(x, db(-1)), {"notch_hz": [2000, 4000], "notch_db": -6, "notch_db_under_ten": -10, "ten_until_s": 0.6}
 
 
 def make_stinger_3():
-    x = stinger(1.4, 800, 3000, 5, 8, 14, 1.0, 0.3, 0.7, drive=3.0)
+    x = stinger_v2(1.4, 700, 3200, 6, [(0.09, +7), (0.24, -10), (0.45, +4)], 0.45, 1.0,
+                   am_hz=45, am_depth=0.55, noise_dur=0.3, thump_hz=40, thump_decay=1.0,
+                   vib=(8.0, 14.0), vib_depth=0.025, drive=2.8, flicker_from=0.3)
     return norm(x, db(-1)), {}
+
+
+def pitch_steps(x, steps, xfade=0.004, grain=0.035):
+    """Abrupt pitch jumps that keep the timing: steps = [(t_from, semitones), ...]."""
+    n = len(x)
+    t = tvec(n)
+    out = np.zeros(n)
+    bounds = [s[0] for s in steps] + [t[-1] + 1]
+    for i, (t0, st) in enumerate(steps):
+        y = x if st == 0 else fit(granular(x, 2 ** (st / 12), 1.0, grain), n)
+        w = np.clip((t - t0) / xfade + 0.5, 0, 1) * np.clip((bounds[i + 1] - t) / xfade + 0.5, 0, 1)
+        if i == 0:
+            w = np.clip((bounds[1] - t) / xfade + 0.5, 0, 1)
+        out += y * w
+    return out
 
 
 def make_scream():
+    """Poppy's OWN Act 1 voice torn into a scream: 'Friend!' at -p 99, vowel stretched."""
     dur = 1.4
     n = secs(dur)
     t = tvec(n)
-    v = espeak("aaaah", "en-us+poppysing", 80, 99, 0, prange="0")
-    v = trim_silence(v, -30, 0, 0)
-    v = granular(v, 1.0, max(1.0, dur * 1.1 * SR / len(v)), 0.04)
-    v = fit(v, n)
-    # shriek contour: snaps up, then sags
-    contour = np.interp(t, [0, 0.12, 0.6, dur], [1.0, 1.18, 1.05, 0.82])
-    v = vari(np.concatenate([v, np.zeros(n)]), contour)[:n]
-    ring = np.sin(2 * np.pi * np.cumsum(np.interp(t, [0, dur], [70, 40])) / SR)
-    voice = 0.75 * v * ring + 0.35 * v
+    v = espeak("Friend!", "en-us+poppykid", 160, 99, 2, prange="high")
+    v = trim_silence(v, -40, 0.0, 0.0)
+    hop = 0.005
+    f0 = f0_track(v, hop=hop, win=0.03, fmax=1400)
+    m = moving_rms(v, 0.02)
+    voiced = np.flatnonzero(f0 > 0)
+    a = secs(voiced[0] * hop) if len(voiced) else secs(0.06)
+    b = secs(voiced[-1] * hop + 0.03) if len(voiced) else len(v)
+    # vowel nucleus: the loudest voiced stretch (the 'e' of 'friend')
+    core = m[a:b]
+    loud = np.flatnonzero(core > 0.55 * core.max()) + a
+    va, vb = int(loud[0]), int(loud[-1])
+    onset = v[max(0, va - secs(0.07)):va]                     # 'fr' squeezed to <= 70 ms
+    vowel = v[va:vb]
+    vowel = granular(vowel, 1.0, 1.2 * SR / max(1, len(vowel)), 0.04)
+    tail = fade(v[vb:vb + secs(0.08)], 0.0, 0.05)             # the 'nd' cut short
+    base = np.concatenate([norm(onset, 0.7), norm(vowel, 1.0), norm(tail, 0.6) if len(tail) else tail])
+    base = fit(base, n)
+    base = attack_ramp(base / (moving_rms(base, 0.03) + 0.05 * np.max(np.abs(base))), 0.001)   # flatten: a scream doesn't decay
+    voice = pitch_steps(base, [(0.0, 0), (0.15, +7), (0.60, -5)])   # +7 st, then down 12
+    # a throat that cannot hold the note: wide uneven vibrato plus jitter
+    wob = 1 + 0.03 * np.sin(2 * np.pi * np.cumsum(np.interp(t, [0, dur], [5.5, 8.5])) / SR) \
+        + 0.012 * lfo_noise(n, 15, 60)
+    voice = vari(np.concatenate([voice, np.zeros(n)]), np.concatenate([wob, np.ones(n)]))[:n]
+    voice = voice * (0.4 + 0.6 * np.sin(2 * np.pi * 55 * t))         # ring mod, 60% depth
+    # breath through her formants, with a 6->9 Hz vibrato of 4%
     noise = rng.standard_normal(n)
-    form = sum(a * bp(noise, f * 0.9, f * 1.1, 4) for f, a in ((800, 1.0), (1200, 0.8), (2500, 0.5)))
-    form = form / np.std(form) * np.std(voice) * 0.9
-    x = norm(voice, 1) + norm(form, 1) * 0.7
+    form = sum(g * bp(noise, f * 0.88, f * 1.12, 3) for f, g in ((800, 1.0), (1200, 0.8), (2500, 0.5)))
+    form = form / (np.std(form) + 1e-9) * (moving_rms(voice, 0.03) + 1e-6)
     vib = 1 + 0.04 * np.sin(2 * np.pi * np.cumsum(np.interp(t, [0, dur], [6, 9])) / SR)
-    x = vari(np.concatenate([x, np.zeros(n)]), vib)[:n]
-    growl = resample(x, 0.5)[:n]
-    x = norm(x, 1) + 0.6 * norm(growl, 1)
-    x = np.tanh(3.0 * norm(x, 1))
+    form = vari(np.concatenate([form, np.zeros(n)]), np.concatenate([vib, np.ones(n)]))[:n]
+    x = norm(voice, 1) + 0.8 * norm(form, 1)
+    x = x + db(-10) * norm(fit(granular(x, 0.5, 1.0, 0.05), n), 1)    # octave-down growl
+    x = np.tanh(2.6 * norm(x, 1))
     x = hp(x, 90, 2)
-    env = np.minimum(1, t / 0.002) * np.minimum(1, (dur - t) / 0.25)
-    x = x * env
-    return norm(x, db(-1)), {}
+    env = np.minimum(1, t / 0.002) * np.minimum(1, (dur - t) / 0.2)
+    return norm(x * env, db(-1)), {"source_text": "Friend!", "voice": "poppy -p 99"}
+
+
+def make_shepard_riser():
+    """8 octave-spaced layers under a sin^2 window over log-frequency, gliding up 0.1 oct/s."""
+    dur, layers, rate = 14.0, 8, 0.1
+    n = secs(dur)
+    t = tvec(n)
+    tone, hiss = np.zeros(n), np.zeros(n)
+    for k in range(layers):
+        p = (k + rate * t) % layers                           # octaves above 55 Hz, wrapping
+        f = 55.0 * 2 ** p
+        w = np.sin(np.pi * p / layers) ** 2
+        for c in (-6.0, 6.0):                                 # a slow shimmer, not a test tone
+            tone += 0.5 * w * sine(f * 2 ** (c / 1200), phase=rng.uniform(0, 6.28))
+        band = lp(rng.standard_normal(n), 35, 2)              # narrow noise riding the layer
+        hiss += w ** 3 * band / (np.std(band) + 1e-9) * sine(f, phase=rng.uniform(0, 6.28))
+    x = norm(tone, 1) + db(-20) * norm(hiss, 1)
+    x = x * db(-12 + 12 * t / dur)                            # +12 dB over the riser
+    x[:secs(0.05)] *= np.linspace(0, 1, secs(0.05))           # fade in only: it ends at full level
+    return norm(x, db(-1)), {"glide_oct_per_s": rate, "rise_db": 12, "ends_at_full_level": True}
+
+
+def make_cluster():
+    """Ligeti cluster: E4 F4 F#4 F#4+50c G4 G#4, each its own slow vibrato and drift. Loops."""
+    dur = 20.0
+    n = secs(dur)
+    t = tvec(n)
+    notes = [("E4", 0), ("F4", 0), ("F#4", 0), ("F#4", 50), ("G4", 0), ("G#4", 0)]
+    vib_rates = rng.permutation([0.10, 0.15, 0.20, 0.25, 0.30, 0.20])  # multiples of 1/20 s: loops
+    y = np.zeros(n)
+    breath = np.zeros(n)
+    for i, (nm, c) in enumerate(notes):
+        f0 = mtof(midi(nm) + c / 100)
+        cents = rng.uniform(8, 15)
+        f = f0 * 2 ** (cents / 1200 * np.sin(2 * np.pi * vib_rates[i] * t + rng.uniform(0, 6.28)))
+        cyc = f.sum() / SR
+        f = f * (round(cyc) / cyc)                            # whole cycles per loop: seamless
+        ph = 2 * np.pi * np.cumsum(f) / SR
+        tone = np.zeros(n)
+        for k in range(1, int(9000 / f0) + 1):                # saw spectrum, low-passed at 2 kHz
+            g = (1.0 / k) / np.sqrt(1 + (k * f0 / 2000.0) ** 8)
+            tone += g * np.sin(k * ph + rng.uniform(0, 6.28))
+        amp = 0.62 + 0.38 * np.sin(2 * np.pi * rng.choice([0.05, 0.10, 0.15]) * t + rng.uniform(0, 6.28))
+        y += amp * tone / np.std(tone)
+        nb = bp(rng.standard_normal(n), f0 * 0.8, 3200, 2, circ=True)
+        breath += amp * nb / np.std(nb)
+    y = y + 0.06 * breath                                     # 6% bow/breath noise
+    y = peq(y, 950, 3.0, 1.2, circ=True)                      # a dim vowel-like formant
+    y = peq(y, 2700, 2.0, 1.0, circ=True)
+    y = lp(y, 4500, 2, circ=True)
+    return norm(y, db(-6)), {"loop": True, "tones": ["E4", "F4", "F#4", "F#4+50c", "G4", "G#4"]}
+
+
+def make_sub_breath():
+    """36 + 38 Hz (2 Hz beating) + sub noise, breathing at 0.25 Hz (1.6 s swell, 2.4 s ebb)."""
+    dur = 20.0
+    n = secs(dur)
+    t = tvec(n)
+    x = np.sin(2 * np.pi * 36 * t) + np.sin(2 * np.pi * 38 * t)
+    nz = lp(rng.standard_normal(n), 60, 4, circ=True)
+    x = norm(x, 1) + 0.35 * nz / (np.max(np.abs(nz)) + 1e-9)
+    ph = (t % 4.0)
+    swell = np.where(ph < 1.6, 0.5 - 0.5 * np.cos(np.pi * ph / 1.6),
+                     0.5 + 0.5 * np.cos(np.pi * (ph - 1.6) / 2.4))
+    x = x * (0.3 + 0.7 * swell)                               # 70% depth
+    x = np.tanh(1.6 * norm(x, 1)) / np.tanh(1.6)              # a little 3rd harmonic so laptops feel it
+    x = hp(x, 30, 4, circ=True)                               # nothing below 30 Hz
+    x = lp(x, 160, 2, circ=True)
+    return norm(x, db(-6)), {"loop": True, "breath_period_s": 4.0}
+
+
+def breath_part(dur, kind):
+    """One breath: shaped noise; 'in' brighter (1-5 kHz) with a faint nasal whistle,
+    'out' lower (300-2000 Hz) and chestier."""
+    n = secs(dur)
+    t = tvec(n)
+    src = rng.standard_normal(n)
+    if kind == "in":
+        x = bp(src, 1000, 5000, 2) + 0.35 * bp(rng.standard_normal(n), 350, 1000, 2)
+        x += 0.12 * bp(rng.standard_normal(n), 3000, 3250, 6)    # nasal whistle
+        x = peq(x, 2600, 3.0, 1.0)
+        # air drawn in: builds, peaks late, stops short
+        env = np.minimum(1, t / 0.3) ** 1.3 * (0.55 + 0.45 * (t / dur) ** 0.8) * np.minimum(1, (dur - t) / 0.06)
+    else:
+        x = bp(src, 300, 2000, 2)
+        x = peq(peq(x, 520, 4.0, 0.8), 1400, 3.0, 0.8)
+        # let out: a quick push, then a long sagging tail
+        env = np.minimum(1, t / 0.05) * (0.2 + 0.8 * np.exp(-t / (dur * 0.3))) * np.minimum(1, (dur - t) / 0.3)
+    chest = lp(rng.standard_normal(n), 380, 2) * (0.35 if kind == "out" else 0.15)
+    x = x / (np.std(x) + 1e-9) + chest / (np.std(chest) + 1e-9) * 0.5
+    jitter = 1 + 0.2 * lfo_noise(n, 3, 12)                   # air is never steady
+    return x * env * np.clip(jitter, 0.4, 1.6)
+
+
+def mouth_click(vel=1.0):
+    """A soft wet mouth click: two or three tiny resonant ticks inside ~12 ms."""
+    n = secs(0.03)
+    y = np.zeros(n)
+    for k in range(rng.integers(2, 4)):
+        f = rng.uniform(1100, 2600)
+        tick = resonators([f, f * 1.7], [0.003, 0.002], [1, 0.4], 0.02)
+        place(y, tick * rng.uniform(0.4, 1.0), k * rng.uniform(0.003, 0.006))
+    y += lp(rng.standard_normal(n), 600) * np.exp(-tvec(n) / 0.004) * 0.3
+    return vel * attack_ramp(y, 0.0005)
+
+
+def make_breath_close():
+    dur = 6.0
+    n = secs(dur)
+    buf = np.zeros(n)
+    j = lambda: rng.uniform(-0.03, 0.03)                     # slightly irregular
+    for kind, t0, t1, g in (("in", 0.0, 1.4, 0.85), ("out", 1.6 + j(), 3.0, 1.0),
+                            ("in", 3.4 + j(), 4.6, 0.9)):
+        place(buf, breath_part(t1 - t0, kind) * g, t0)
+    place(buf, mouth_click(0.9), 1.5)
+    place(buf, mouth_click(0.7), 3.3)
+    buf = buf / (np.max(np.abs(buf)) + 1e-9)
+    catch = mouth_click(0.35)                                 # the breath is caught and held
+    place(buf, lp(catch, 1500), 4.585)
+    buf = proximity(buf, 5.0, 200, 0.8)                       # right at the ear
+    buf = hp(buf, 60, 2)
+    buf[secs(4.62):] = 0.0                                    # held: nothing to the end
+    return norm(buf, db(-3)), {"pan": -0.2, "dry": True,
+                               "breaths": [["in", 0.0, 1.4], ["out", 1.6, 3.0], ["in", 3.4, 4.6]],
+                               "held_from": 4.6, "clicks": [1.5, 3.3]}
+
+
+def make_rewind():
+    """The VCR rewinding by itself: clunk, rising motor whine, tape squeal, backwards chatter."""
+    dur = 2.0
+    n = secs(dur)
+    t = tvec(n)
+    buf = np.zeros(n + secs(1))
+    place(buf, impact(0.3, [160, 420, 2300, 3600], [0.05, 0.035, 0.012, 0.008], (600, 5000), 90, 0.05), 0.0, 1.0)
+    place(buf, impact(0.12, [1900, 3100, 4700], [0.012, 0.008, 0.005], (1500, 7000)), 0.06, 0.5)   # gears
+    # motor whine 400 -> 1100 Hz over 1.5 s with flutter, then spinning down into the stop
+    m0, m1 = 0.08, 1.9
+    mn = secs(m1 - m0)
+    tm = tvec(mn)
+    f = np.interp(tm, [0, 1.5, m1 - m0], [400, 1100, 900])
+    f = f * (1 + 0.012 * lfo_noise(mn, 6, 14) + 0.004 * np.sin(2 * np.pi * 23 * tm))
+    whine = sine(f) + 0.35 * sine(2 * f) + 0.12 * sine(3.01 * f)
+    hum = lp(blep_saw(f / 7.3), 900, 2) * 0.6
+    spool = bp(rng.standard_normal(mn), 1500, 7000, 2) * 0.25 * np.clip(tm / 1.2, 0, 1)
+    menv = np.minimum(1, tm / 0.08) * np.minimum(1, (m1 - m0 - tm) / 0.06) * (0.55 + 0.45 * np.clip(tm / 1.5, 0, 1))
+    place(buf, (0.45 * whine + hum + spool) * menv, m0)
+    # tape-squeal chirps every 0.2-0.4 s
+    tc = 0.25
+    while tc < 1.8:
+        L = rng.uniform(0.03, 0.08)
+        f0, f1 = rng.uniform(2000, 4000), rng.uniform(2000, 4000)
+        cf = np.geomspace(f0, f1, secs(L)) * (1 + 0.01 * np.sin(2 * np.pi * 70 * tvec(secs(L))))
+        place(buf, sine(cf) * np.hanning(secs(L)) * rng.uniform(0.35, 0.6), tc)
+        tc += rng.uniform(0.2, 0.4)
+    # a Poppy line, reversed and resampled x6: chipmunk-backwards chatter
+    lines = ["Hi, friend! It's me, Poppy! Welcome to my world!", "Let's count my flower friends! Count with me, friend!"]
+    chat = np.concatenate([voice_poppy(s)[::-1] for s in lines])
+    chat = resample(norm(chat, 1), 6.0)
+    chat = bp(chat, 400, 7000, 2)
+    cn = min(len(chat), secs(1.7))
+    chat = fade(chat[:cn], 0.05, 0.1)
+    place(buf, norm(chat, 1) * db(-18) / db(-1), 0.15)
+    place(buf, impact(0.25, [200, 520, 2600, 3900], [0.05, 0.03, 0.012, 0.008], (600, 5000), 95, 0.04), 1.9, 1.0)
+    y = buf[:n]
+    y = np.tanh(1.2 * norm(y, 1)) / np.tanh(1.2)
+    y = bp(y, 60, 9000, 2)
+    return norm(fade(y, 0, 0.01), db(-1)), {"stop_clunk_at": 1.9}
+
+
+PRE_ECHO = {"sfx_preecho_welcome": "vo_wrong_welcome", "sfx_preecho_tried": "vo_wrong_stop"}
+
+
+def source_wav(name):
+    """A stem this run (or an earlier one) has written: the review dir first, then build/audio."""
+    for d in (OUT, BUILD_AUDIO):
+        p = os.path.join(d, name + ".wav")
+        if wav_ok(p):
+            return p
+    raise FileNotFoundError(f"{name}.wav is needed first")
+
+
+def make_preecho(src_name, lead=1.0, take=0.6, t60=2.5):
+    """Reverse the first `take` s of a line, drown it in a long dark reverb (100% wet,
+    low-passed 3 kHz) and reverse again: the ghost of the word swells for `lead` s and
+    ends exactly on the line's first sample."""
+    path = source_wav(src_name)
+    x = read_wav(path)
+    seg = x[:secs(take)]
+    ir = make_ir(t60, damp=3000, predelay=0.0, seed=11)
+    wet = lp(fftconv(seg[::-1], ir), 3000, 4)
+    rev = wet[::-1]
+    end = len(rev) - len(seg)                       # rev[end:] lines up with the line itself
+    out = rev[max(0, end - secs(lead)):end]
+    out = np.concatenate([np.zeros(secs(lead) - len(out)), out])
+    out = out * np.linspace(0, 1, len(out)) ** 1.2            # out of nothing, into the word
+    out = fade(out, 0.0, 0.006)
+    meta = {"source": "build/audio/" + src_name + ".wav", "source_crc": file_crc(path),
+            "ends_at_line_onset": True, "lead_s": lead}
+    return norm(out, db(-1)), meta
+
+
+def make_preecho_welcome():
+    return make_preecho("vo_wrong_welcome")
+
+
+def make_preecho_tried():
+    return make_preecho("vo_wrong_stop")
+
+
+def make_whisper_phrases(phrases, starts, total, dim=(True, True, False)):
+    """Whispered phrases that each swell in (1.0-1.5 s) and fade out (0.4 s), high-passed at
+    300 Hz; dimmed ones are low-passed at 2.5 kHz and 4 dB down (just under intelligibility)."""
+    buf = np.zeros(secs(total))
+    spans = []
+    for i, (txt, st) in enumerate(zip(phrases, starts)):
+        slot = (starts[i + 1] if i + 1 < len(starts) else total) - st
+        speed = 112
+        x = None
+        for _ in range(4):
+            x = espeak(txt, "en-us+whisperf", speed, 50)
+            x = trim_silence(x, -50, 0.0, 0.12)
+            if len(x) / SR <= slot - 0.05:
+                break
+            speed *= (len(x) / SR) / (slot - 0.08)
+        x = attack_ramp(x[:secs(slot - 0.02)], 0.001)
+        x = hp(x, 300, 2)
+        x = norm(x, 1.0)
+        if dim[i]:
+            x = lp(x, 2500, 3) * db(-4)
+        L = len(x) / SR
+        tt = tvec(len(x))
+        fin = float(np.clip(0.7 * L, 1.0, 1.5)) if dim[i] else 1.0
+        env = np.clip(tt / fin, 0, 1) ** 1.6 * np.clip((L - tt) / 0.4, 0, 1) ** 0.7
+        place(buf, x * env, st)
+        spans.append([st, round(st + L, 3)])
+    return buf, spans
+
+
+def make_whisper_where(text, opts):
+    phrases = [p.strip() for p in text.split("...")]
+    starts = opts["phrases"]
+    x, spans = make_whisper_phrases(phrases, starts, opts["total"])
+    meta = {"phrases": [[s, p] for s, p in zip(starts, phrases)], "phrase_spans": spans,
+            "pan": opts.get("pan", [-1.0, 1.0, -1.0]), "haas_ms": 22, "haas_db": -8,
+            "clear_word": "friend"}
+    return x, meta
 
 
 # ==========================================================================
@@ -1864,8 +2317,18 @@ GENERATORS = {
     "sfx_stinger_2": make_stinger_2,
     "sfx_stinger_3": make_stinger_3,
     "sfx_scream": make_scream,
+    # SCARE PASS
+    "amb_cluster": make_cluster,
+    "amb_sub_breath": make_sub_breath,
+    "sfx_shepard_riser": make_shepard_riser,
+    "sfx_breath_close": make_breath_close,
+    "sfx_rewind": make_rewind,
+    "sfx_preecho_welcome": make_preecho_welcome,
+    "sfx_preecho_tried": make_preecho_tried,
 }
 VOICES = {name: (preset, text, opts) for name, preset, text, opts in VOICE_LINES}
+# stems cut from another stem: re-rendered whenever their source changes
+DEPENDS = dict(PRE_ECHO)
 
 
 def load_assets():
@@ -1960,6 +2423,62 @@ def update_manifest(assets, names):
     atomic_write_json(MANIFEST, man)
 
 
+# Extra stems changed by the scare pass that assets.json does not flag: a recipe tag in
+# their .meta.json marks the current version (a stem without it is re-rendered).
+RECIPE = {"mus_music_box": "scare-pass-mangled-1"}
+
+
+def file_crc(path):
+    with open(path, "rb") as fh:
+        return zlib.crc32(fh.read()) & 0xFFFFFFFF
+
+
+def read_meta(name):
+    try:
+        with open(os.path.join(OUT, name + ".meta.json")) as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+
+def stale_reason(name, asset):
+    """Why a stem must be (re-)rendered, or None if its .wav is current."""
+    if not wav_ok(wav_path(name)):
+        return "missing"
+    meta = read_meta(name)
+    if asset.get("scare_pass") and not meta.get("scare_pass"):
+        return "scare pass " + asset.get("scare_pass_status", "")
+    if name in RECIPE and meta.get("recipe") != RECIPE[name]:
+        return "recipe changed"
+    if name in VOICES and "text" in meta and meta["text"] != clean_text(VOICES[name][1]):
+        return "text changed"
+    src = DEPENDS.get(name)
+    if src:
+        try:
+            if meta.get("source_crc") != file_crc(source_wav(src)):
+                return f"{src} changed"
+        except FileNotFoundError:
+            return f"{src} missing"
+    return None
+
+
+def order_with_deps(todo, assets):
+    """Pull in stale sources of dependents, append dependents of re-rendered sources,
+    and render every source before the stems cut from it."""
+    todo = list(dict.fromkeys(todo))
+    for d, s in DEPENDS.items():
+        if d in todo and s in assets and s not in todo and stale_reason(s, assets[s]):
+            todo.insert(todo.index(d), s)
+    for d, s in DEPENDS.items():
+        if s in todo and d in assets and d not in todo:
+            todo.append(d)
+    for d, s in DEPENDS.items():
+        if d in todo and s in todo and todo.index(d) < todo.index(s):
+            todo.remove(d)
+            todo.insert(todo.index(s) + 1, d)
+    return todo
+
+
 def render_stem(name, asset):
     global rng
     rng = np.random.default_rng(zlib.crc32(name.encode()))
@@ -1973,6 +2492,10 @@ def render_stem(name, asset):
     peak = np.max(np.abs(x))
     if peak > 0.98:
         x = x * (0.98 / peak)
+    if asset.get("scare_pass"):
+        meta["scare_pass"] = True
+    if name in RECIPE:
+        meta["recipe"] = RECIPE[name]
     write_wav(wav_path(name), x)
     env = meta.pop("vocals_env", None)
     if asset["kind"] == "voice":
@@ -1988,11 +2511,15 @@ def render_stem(name, asset):
 
 
 def main():
+    global OUT
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("names", nargs="*", help="stem names (re-rendered) or kinds: voice music ambience sfx")
-    ap.add_argument("--force", action="store_true", help="re-render even if the .wav exists")
-    ap.add_argument("--list", action="store_true", help="show which stems exist")
+    ap.add_argument("--force", action="store_true", help="re-render even if the .wav is current")
+    ap.add_argument("--list", action="store_true", help="show which stems exist and which are stale")
+    ap.add_argument("--out", metavar="DIR", help="render review copies into DIR (build/ and the manifest untouched)")
     args = ap.parse_args()
+    if args.out:
+        OUT = os.path.abspath(args.out)
     os.makedirs(OUT, exist_ok=True)
     assets = load_assets()
     missing_gen = [n for n in assets if n not in GENERATORS and n not in VOICES]
@@ -2012,8 +2539,9 @@ def main():
 
     if args.list:
         for name, a in assets.items():
-            ok = wav_ok(wav_path(name))
-            print(f"{'OK ' if ok else '-- '} {a['kind']:9s} {name}")
+            why = stale_reason(name, a)
+            tag = "OK " if not why else ("-- " if why == "missing" else "OLD")
+            print(f"{tag} {a['kind']:9s} {name:26s} {why or ''}")
         return
 
     if explicit:
@@ -2021,9 +2549,10 @@ def main():
     else:
         todo = [n for n, a in assets.items() if not kind_sel or a["kind"] in kind_sel]
         if not args.force:
-            todo = [n for n in todo if not wav_ok(wav_path(n))]
+            todo = [n for n in todo if stale_reason(n, assets[n])]
+    todo = order_with_deps(todo, assets)
 
-    print(f"{len(todo)} stem(s) to render")
+    print(f"{len(todo)} stem(s) to render" + (f" into {OUT}" if args.out else ""))
     print(f"{'stem':26s} {'kind':9s} {'dur':>7s} {'target':>7s} {'peak':>7s} {'pk dB':>7s} {'rms dB':>7s}")
     for name in todo:
         a = assets[name]
@@ -2039,10 +2568,14 @@ def main():
             flag = "  LONGER THAN SLOT"
         print(f"{name:26s} {a['kind']:9s} {s['duration']:7.3f} {tgt if tgt else 0:7.2f} {s['peak']:7.4f} "
               f"{s['peak_dbfs']:7.2f} {s['rms_dbfs']:7.2f}{flag}", flush=True)
-        update_manifest(assets, [name])
+        if not args.out:
+            update_manifest(assets, [name])
+    if args.out:
+        return
     update_manifest(assets, list(assets))
     done = sum(wav_ok(wav_path(n)) for n in assets)
-    print(f"{done}/{len(assets)} stems present in {OUT}")
+    stale = [n for n, a in assets.items() if stale_reason(n, a)]
+    print(f"{done}/{len(assets)} stems present in {OUT}" + (f"; still stale: {stale}" if stale else ""))
 
 
 if __name__ == "__main__":
