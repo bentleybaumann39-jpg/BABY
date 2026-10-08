@@ -23,7 +23,10 @@ const { chromium } = require('playwright');
 
 const HERE = __dirname;
 const ROOT = path.resolve(HERE, '..', '..');           // poppy/
-const SOURCES = ['helpers.js', 'pieces_brand.js', 'pieces_props.js', 'pieces_wrong.js'];
+// helpers + pieces, then the scare-pass realism libraries from ../ (horror.js needs nothing; scare.js
+// needs poppy.js for the felt texture) and pieces_scare.js, which replaces / adds the scare-pass pieces.
+const SOURCES = ['helpers.js', 'pieces_brand.js', 'pieces_props.js', 'pieces_wrong.js',
+  '../poppy.js', '../scenes.js', '../horror.js', '../scare.js', 'pieces_scare.js'];
 
 const args = process.argv.slice(2);
 let outDir = null, force = false, ss = 2, list = false;

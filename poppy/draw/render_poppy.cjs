@@ -4,6 +4,8 @@
  *
  *   NODE_PATH=$(npm root -g) node poppy/draw/render_poppy.cjs [name ...] [--out DIR]
  *
+ * Libraries: poppy.js, scenes.js, horror.js, scare.js, wrong.js (in that order).
+ *
  * With no names every manifest entry is rendered into poppy/build/art/poppy/;
  * --out DIR writes to a scratch folder instead (for review passes).
  * Each file is drawn at the manifest size; "transparent": true entries keep
@@ -14,6 +16,7 @@ const path = require('path');
 const { chromium } = require('playwright');
 
 const HERE = __dirname;
+const SOURCES = ['poppy.js', 'scenes.js', 'horror.js', 'scare.js', 'wrong.js'];
 const ROOT = path.resolve(HERE, '..');
 const args = process.argv.slice(2);
 let outDir = null;
@@ -32,8 +35,13 @@ for (let i = 0; i < args.length; i++) {
   page.on('console', m => console.log('[page]', m.text()));
   page.on('pageerror', e => console.error('[page error]', e.message));
   await page.setContent('<!doctype html><html><body style="margin:0;background:transparent"><canvas id="c"></canvas></body></html>');
-  await page.addScriptTag({ content: fs.readFileSync(path.join(HERE, 'poppy.js'), 'utf8') });
-  await page.addScriptTag({ content: fs.readFileSync(path.join(HERE, 'scenes.js'), 'utf8') });
+  // poppy.js + scenes.js (Act 1 / base presets), then the scare-pass libraries, which add or
+  // replace presets: horror.js (realism toolkit, window.HZ), scare.js (scare faces + boil
+  // frames), wrong.js (wrong Poppy, cover eyes, direct address, hidden figures).
+  for (const f of SOURCES) {
+    if (!fs.existsSync(path.join(HERE, f))) continue;
+    await page.addScriptTag({ content: fs.readFileSync(path.join(HERE, f), 'utf8') });
+  }
   const loaded = await page.evaluate(() => !!(window.Poppy && window.Poppy.ASSETS));
   if (!loaded) {
     console.error('poppy.js / scenes.js failed to load (see [page error] above)');
@@ -63,7 +71,8 @@ for (let i = 0; i < args.length; i++) {
     if (res.error) { console.error(`${name}: ${res.error}`); missing.push(name); continue; }
     const out = outDir ? path.join(outDir, name + '.png') : path.join(ROOT, it.file);
     fs.mkdirSync(path.dirname(out), { recursive: true });
-    fs.writeFileSync(out, Buffer.from(res.url.split(',')[1], 'base64'));
+    fs.writeFileSync(out + '.tmp', Buffer.from(res.url.split(',')[1], 'base64'));
+    fs.renameSync(out + '.tmp', out);      // atomic: an interrupted run never leaves a truncated PNG
     console.log(`${name} ${w}x${h} -> ${path.relative(process.cwd(), out)} (${Date.now() - t0} ms)`);
   }
   await browser.close();

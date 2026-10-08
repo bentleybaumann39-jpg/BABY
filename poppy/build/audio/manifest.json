@@ -176,9 +176,9 @@
  "build/audio/amb_cluster.wav": {
   "duration": 20.0,
   "peak": 0.5012,
-  "rms": 0.11641,
+  "rms": 0.09979,
   "peak_dbfs": -6.0,
-  "rms_dbfs": -18.68,
+  "rms_dbfs": -20.02,
   "kind": "ambience",
   "target_seconds": 20.0,
   "loop": true,
@@ -190,7 +190,14 @@
    "G4",
    "G#4"
   ],
-  "scare_pass": true
+  "players_per_tone": 3,
+  "player_detune_cents": [
+   -7,
+   0,
+   6
+  ],
+  "scare_pass": true,
+  "recipe": "scare-pass-2"
  },
  "build/audio/amb_sub_breath.wav": {
   "duration": 20.0,
@@ -334,19 +341,20 @@
  "build/audio/sfx_stinger_1.wav": {
   "duration": 1.0,
   "peak": 0.8912,
-  "rms": 0.17098,
+  "rms": 0.3172,
   "peak_dbfs": -1.0,
-  "rms_dbfs": -15.34,
+  "rms_dbfs": -9.97,
   "kind": "sfx",
   "target_seconds": 1.0,
-  "scare_pass": true
+  "scare_pass": true,
+  "recipe": "scare-pass-2"
  },
  "build/audio/sfx_stinger_2.wav": {
   "duration": 1.0,
   "peak": 0.8912,
-  "rms": 0.26458,
+  "rms": 0.28532,
   "peak_dbfs": -1.0,
-  "rms_dbfs": -11.55,
+  "rms_dbfs": -10.89,
   "kind": "sfx",
   "target_seconds": 1.0,
   "notch_hz": [
@@ -356,17 +364,19 @@
   "notch_db": -6,
   "notch_db_under_ten": -10,
   "ten_until_s": 0.6,
-  "scare_pass": true
+  "scare_pass": true,
+  "recipe": "scare-pass-2"
  },
  "build/audio/sfx_stinger_3.wav": {
   "duration": 1.4,
   "peak": 0.8912,
-  "rms": 0.38192,
+  "rms": 0.42256,
   "peak_dbfs": -1.0,
-  "rms_dbfs": -8.36,
+  "rms_dbfs": -7.48,
   "kind": "sfx",
   "target_seconds": 1.4,
-  "scare_pass": true
+  "scare_pass": true,
+  "recipe": "scare-pass-2"
  },
  "build/audio/sfx_scream.wav": {
   "duration": 1.4,
@@ -383,22 +393,29 @@
  "build/audio/sfx_shepard_riser.wav": {
   "duration": 14.0,
   "peak": 0.8912,
-  "rms": 0.15237,
+  "rms": 0.12063,
   "peak_dbfs": -1.0,
-  "rms_dbfs": -16.34,
+  "rms_dbfs": -18.37,
   "kind": "sfx",
   "target_seconds": 14.0,
   "glide_oct_per_s": 0.1,
   "rise_db": 12,
   "ends_at_full_level": true,
-  "scare_pass": true
+  "tritone_stack_db": -9,
+  "pulse_hz": [
+   1.2,
+   6.0
+  ],
+  "pulse_depth": 0.3,
+  "scare_pass": true,
+  "recipe": "scare-pass-2"
  },
  "build/audio/sfx_breath_close.wav": {
   "duration": 6.0,
   "peak": 0.7079,
-  "rms": 0.08542,
+  "rms": 0.08427,
   "peak_dbfs": -3.0,
-  "rms_dbfs": -21.37,
+  "rms_dbfs": -21.49,
   "kind": "sfx",
   "target_seconds": 6.0,
   "pan": -0.2,
@@ -425,7 +442,8 @@
    1.5,
    3.3
   ],
-  "scare_pass": true
+  "scare_pass": true,
+  "recipe": "scare-pass-2"
  },
  "build/audio/sfx_rewind.wav": {
   "duration": 2.0,
@@ -1277,20 +1295,21 @@
   "env": "build/audio/vo_addr_2.env.json"
  },
  "build/audio/vo_addr_3.wav": {
-  "duration": 2.141,
+  "duration": 2.148,
   "peak": 0.7079,
-  "rms": 0.1541,
+  "rms": 0.14495,
   "peak_dbfs": -3.0,
-  "rms_dbfs": -16.24,
+  "rms_dbfs": -16.78,
   "kind": "voice",
   "target_seconds": 2.2,
   "text": "I heard you counting with me.",
   "voice": "poppy_flat",
-  "espeak_speed": 145,
+  "espeak_speed": 149,
   "pause_limit": 0.26,
   "max_seconds": 2.2,
   "fits": true,
   "scare_pass": true,
+  "recipe": "scare-pass-2",
   "env": "build/audio/vo_addr_3.env.json"
  }
 }

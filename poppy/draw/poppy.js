@@ -329,6 +329,7 @@ function eyeGeom(H) {
   for (const side of [-1, 1]) {
     let w = H.eyeW * 2, h = w * (H.eyeAspect || 1.3), cy = H.eyeY;
     if (H.asym && side === 1) { w *= 1.07; h *= 1.07; cy -= 3 / 80; }   // 3 px at full-body scale
+    if (H.asymDy && side === 1) cy -= H.asymDy;                         // scare pass: one eye higher (head units)
     out.push({ side, cx: side * H.eyeSep, cy, w, h });
   }
   return out;
@@ -917,6 +918,7 @@ function drawEyes(ctx, H) {
     else if (H.eyes === 'black') blackEye(ctx, H, e);
     else if (H.eyes === 'hollow') hollowEye(ctx, H, e, i);
     else if (H.eyes === 'real') out.push(realEye(ctx, H, e, Object.assign({ gx: H.gaze.x, gy: H.gaze.y, key: 'r' }, H.real || {})));
+    else if (H.eyes === 'custom' && H.eyeFn) out.push(H.eyeFn(ctx, H, e, i));
   });
   return { E, real: out };
 }
@@ -938,6 +940,7 @@ function arcSample(fn, n) {
 function drawMouth(ctx, H) {
   const P = ENV.P, m = H.mouth, lw = lpx(ctx, 1);
   const W = H.smileW, y0 = H.mouthY !== undefined ? H.mouthY : 0.33;
+  if (m === 'custom' && H.mouthFn) { H.mouthFn(ctx, H); return; }
   if (m === 'smile') {
     const D = H.smileD || 0.19;
     const fn = smileCurve(W, y0, D);
@@ -1215,9 +1218,15 @@ function drawHead(ctx, H) {
   drawPetals(ctx, H);
   drawFace(ctx, H);
   if (!H.noCheeks) drawCheeks(ctx, H);
-  drawMouth(ctx, H);
-  const eyes = drawEyes(ctx, H);
-  drawNose(ctx, H);
+  // levelFeatures: the head (outline, petals) is tilted but the mouth, eyes and nose are turned
+  // back to level about their own anchors - an impossible head (scare pass)
+  const level = (ay, fn) => {
+    if (!H.levelFeatures) return fn();
+    ctx.save(); ctx.translate(0, ay); ctx.rotate(-H.tilt * DEG); ctx.translate(0, -ay); const r = fn(); ctx.restore(); return r;
+  };
+  level(H.mouthY !== undefined ? H.mouthY + (H.smileD || 0.15) * 0.5 : 0.4, () => drawMouth(ctx, H));
+  const eyes = level(H.eyeY, () => { H._eyeT = ctx.getTransform(); return drawEyes(ctx, H); });
+  level(H.noseY !== undefined ? H.noseY : 0.15, () => drawNose(ctx, H));
   drawDecayHead(ctx, H);
   if (H.front) H.front(ctx, H, eyes);
   const T = ctx.getTransform();
@@ -1319,6 +1328,7 @@ function bodyRig(o) {
     R: 80 * (o.headScale || 1),
   };
   B.headC = [210, 340 - 150 * (neck === 1 ? 1 : 1 + (neck - 1) * 0.95)];
+  if (o.headC) B.headC = o.headC.slice();            // scare pass: explicit head centre (long neck kept in frame)
   B.armLen = arms;
   return B;
 }
@@ -1479,6 +1489,7 @@ function drawPoppy(ctx, opts) {
   // render the figure on its own layer so lighting/tint can be applied with alpha preserved
   const FIG = mk(W, Hh), f = FIG.getContext('2d');
   if (opts.transform) f.setTransform(...opts.transform);
+  ENV.baseT = f.getTransform();
   const pose = opts.pose || 'stand';
   let headInfo = null;
   if (pose === 'close') headInfo = drawBust(f, opts);
@@ -1570,7 +1581,9 @@ function coverHands(ctx, H, eyes, opts, B) {
   const P = ENV.P;
   const T = ctx.getTransform();
   const E = eyeGeom(H);
-  const eL = toScreen(ctx, E[0].cx, E[0].cy), eR = toScreen(ctx, E[1].cx, E[1].cy);
+  const ET = H._eyeT || T, BT = ENV.baseT || new DOMMatrix(), BI = BT.inverse();
+  const toBase = (x, y) => { const p = BI.transformPoint(ET.transformPoint(new DOMPoint(x, y))); return { x: p.x, y: p.y }; };
+  const eL = toBase(E[0].cx, E[0].cy), eR = toBase(E[1].cx, E[1].cy);
   const fingers = (opts.stretch && opts.stretch.fingers) || 1.55;
   const gs = opts.gloveScale || 1.5;
   const up = H.tilt;
@@ -1587,7 +1600,7 @@ function coverHands(ctx, H, eyes, opts, B) {
   const fore = opts.forearm || 118;
   const elbow = (w, ang, out) => [w[0] + Math.sin(ang * DEG) * fore + out, w[1] - Math.cos(ang * DEG) * fore];
   const elL = elbow(wL, oL.ang, -4), elR = elbow(wR, oR.ang, 4);
-  ctx.save(); ident(ctx);
+  ctx.save(); ctx.setTransform(BT);
   drawArm(ctx, P, [[156, 360], elL, [wL[0], wL[1]]]);
   drawArm(ctx, P, [[264, 360], elR, [wR[0], wR[1]]]);
   const cast = { alpha: 0.6, blur: 8, dist: 6 };

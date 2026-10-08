@@ -909,7 +909,8 @@ VOICE_LINES = [
     ("vo_addr_2", "poppy", "Is that your room? It's so {dark} in there!",
      {"pitches": (86, 84), "wet": 0.06, "close": 2.0}),
     ("vo_addr_3", "poppy_flat", "I heard you counting with me.",
-     {"speed": 128, "wet": 0.0, "close": 0.0, "prox_db": 4.0, "am_hz": 45, "am_depth": 0.25}),
+     {"speed": 128, "wet": 0.0, "close": 0.0, "under_db": -18.0, "prox_db": 4.0, "am_hz": 45,
+      "am_depth": 0.25, "smack": True}),
 ]
 
 PRESET_PEAK = {"poppy": -3.0, "poppy_flat": -3.0, "poppy_wrong": -3.0, "poppy_whisper": -1.0,
@@ -928,12 +929,19 @@ def render_voice(preset, text, opts, speed, gap=None):
         g = np.full(len(x), 1.0)
         g[:k] = db(opts["consonant_db"])
         x = x * lp(g, 60, 2)
+    if opts.get("under_db") is not None:               # a faint octave-down body for the proximity
+        x = octave_double(norm(x, 1.0), opts["under_db"])   # bell to lift (her voice starts ~300 Hz)
     if opts.get("prox_db"):
-        x = proximity(x, opts["prox_db"])
+        x = proximity(x, opts["prox_db"], 200.0, 1.2)
     if opts.get("am_hz"):
         x = rough(x, opts["am_hz"], opts.get("am_depth", 0.3))
     if opts.get("sub_db") is not None:
         x = octave_double(norm(x, 1.0), opts["sub_db"])
+    if opts.get("smack"):                              # lips parting right at the microphone
+        x = trim_silence(x, -50, 0.0, 0.0)
+        click = mouth_click(1.0)
+        click = click / (np.max(np.abs(click)) + 1e-9) * 0.3 * np.max(np.abs(x))
+        x = np.concatenate([click, np.zeros(secs(0.045)), x])
     return x
 
 
@@ -1921,25 +1929,32 @@ def flicker_noise(n, t0, t1, density=30.0):
 
 def stinger_v2(dur, lo, hi, n_saws, jumps, glide_from, glide_oct, am_hz, am_depth,
                noise_dur, thump_hz, thump_decay, vib=(0.0, 0.0), vib_depth=0.0,
-               crunch=0.0, notch=None, drive=2.2, sub_db=-10.0, flicker_from=0.4):
+               crunch=0.0, notch=None, drive=2.2, sub_db=-10.0, flicker_from=0.4,
+               scr_drive=3.0, thump_gain=0.4, burst_gain=0.55):
     """Scare-pass stinger: noise burst + sub thump + rough, pitch-jumping screech with an
-    octave-down subharmonic + chaotic noise in the tail, all through tanh."""
+    octave-down subharmonic + chaotic noise in the tail, all through tanh.
+
+    Balance (scare pass 2): the screech is driven on its own and leads; the thump sits
+    under it at `thump_gain`. A full-level 40-45 Hz thump used to take the whole peak
+    budget, so after normalising the part the ear hears (1-4 kHz) came out 2-4 dB
+    quieter than the old stingers; now it is ~6 dB louder (A-weighted, first 0.3 s)."""
     n = secs(dur)
     t = tvec(n)
     top, sub = screech(n, lo, hi, n_saws, jumps, glide_from, glide_oct, vib, vib_depth)
-    body = np.exp(-t / (dur * 0.55)) * np.minimum(1, (dur - t) / 0.12)
+    body = np.exp(-t / (dur * 0.6)) * np.minimum(1, (dur - t) / 0.12)
     scr = norm(top, 1) + db(sub_db) * norm(sub, 1)
     scr = rough(scr * body, am_hz, am_depth)
-    scr = bp(scr, 120, 12000, 2)
+    scr = np.tanh(scr_drive * norm(scr, 1)) / np.tanh(scr_drive) * body ** 0.3   # dense, rasping
+    scr = bp(scr, 150, 11000, 2)
     m = secs(noise_dur)
     nb = np.zeros(n)
-    nb[:m] = bp(snow(noise_dur), 200, 10000, 2) * np.exp(-tvec(m) / (noise_dur * 0.28))
+    nb[:m] = bp(snow(noise_dur), 300, 10000, 2) * np.exp(-tvec(m) / (noise_dur * 0.3))
     tau = thump_decay / 3.45                                 # -30 dB at `thump_decay`
     fth = thump_hz * (1 + 0.7 * np.exp(-t / 0.02))          # a short pitch drop for punch
     thump = (sine(fth) + 0.35 * sine(2 * fth)) * np.exp(-t / tau)
     fl = flicker_noise(n, flicker_from * dur, dur - 0.05)
     fl = fl * np.exp(-np.maximum(0, t - flicker_from * dur) / (dur * 0.5))
-    x = (0.6 * norm(nb, 1) + 1.0 * thump + 0.9 * norm(scr, 1)
+    x = (burst_gain * norm(nb, 1) + thump_gain * thump + 1.0 * norm(scr, 1)
          + 0.35 * fl / (np.max(np.abs(fl)) + 1e-9))
     x = np.tanh(drive * x) / np.tanh(drive)
     if crunch:                                               # camcorder-mic overload
@@ -2036,55 +2051,79 @@ def make_scream():
     return norm(x * env, db(-1)), {"source_text": "Friend!", "voice": "poppy -p 99"}
 
 
-def make_shepard_riser():
-    """8 octave-spaced layers under a sin^2 window over log-frequency, gliding up 0.1 oct/s."""
-    dur, layers, rate = 14.0, 8, 0.1
-    n = secs(dur)
-    t = tvec(n)
+def shepard_stack(t, base, layers, rate, cents=(-6.0, 6.0)):
+    """Octave-spaced sines from `base` under a sin^2 window over log-frequency, all gliding
+    up `rate` octaves per second and wrapping; plus narrow noise riding each layer."""
+    n = len(t)
     tone, hiss = np.zeros(n), np.zeros(n)
     for k in range(layers):
-        p = (k + rate * t) % layers                           # octaves above 55 Hz, wrapping
-        f = 55.0 * 2 ** p
+        p = (k + rate * t) % layers                           # octaves above base, wrapping
+        f = base * 2 ** p
         w = np.sin(np.pi * p / layers) ** 2
-        for c in (-6.0, 6.0):                                 # a slow shimmer, not a test tone
+        for c in cents:                                       # a slow shimmer, not a test tone
             tone += 0.5 * w * sine(f * 2 ** (c / 1200), phase=rng.uniform(0, 6.28))
         band = lp(rng.standard_normal(n), 35, 2)              # narrow noise riding the layer
         hiss += w ** 3 * band / (np.std(band) + 1e-9) * sine(f, phase=rng.uniform(0, 6.28))
-    x = norm(tone, 1) + db(-20) * norm(hiss, 1)
+    return tone, hiss
+
+
+def make_shepard_riser():
+    """8 octave-spaced layers from 55 Hz gliding up 0.1 oct/s (the endless rise), a second,
+    quieter endless stack a tritone above it (so the riser is always a tritone), and a
+    pulse that quickens toward the cut like a heartbeat speeding up."""
+    dur, layers, rate = 14.0, 8, 0.1
+    n = secs(dur)
+    t = tvec(n)
+    tone, hiss = shepard_stack(t, 55.0, layers, rate)
+    tri, _ = shepard_stack(t, 55.0 * 2 ** 0.5, layers, rate, cents=(-9.0, 4.0))
+    x = norm(tone, 1) + db(-9) * norm(tri, 1) + db(-20) * norm(hiss, 1)
+    k = t / dur
+    ph = 2 * np.pi * np.cumsum(1.2 + 4.8 * k ** 1.6) / SR    # 1.2 -> 6 pulses per second
+    ph -= ph[-1]                                              # ends ON a pulse peak (full level)
+    x = x * (1 - 0.30 * k ** 1.3 * (0.5 - 0.5 * np.cos(ph))) / (1 - 0.15 * k ** 1.3)  # mean kept
     x = x * db(-12 + 12 * t / dur)                            # +12 dB over the riser
     x[:secs(0.05)] *= np.linspace(0, 1, secs(0.05))           # fade in only: it ends at full level
-    return norm(x, db(-1)), {"glide_oct_per_s": rate, "rise_db": 12, "ends_at_full_level": True}
+    return norm(x, db(-1)), {"glide_oct_per_s": rate, "rise_db": 12, "ends_at_full_level": True,
+                             "tritone_stack_db": -9, "pulse_hz": [1.2, 6.0], "pulse_depth": 0.3}
 
 
 def make_cluster():
-    """Ligeti cluster: E4 F4 F#4 F#4+50c G4 G#4, each its own slow vibrato and drift. Loops."""
+    """Ligeti cluster: E4 F4 F#4 F#4+50c G4 G#4, each a small section of three detuned
+    string-like saws (-7 / 0 / +6 cents, never in tune with each other), every player with
+    its own slow vibrato and bow drift, each tone with its own slow swell. Loops seamlessly."""
     dur = 20.0
     n = secs(dur)
     t = tvec(n)
     notes = [("E4", 0), ("F4", 0), ("F#4", 0), ("F#4", 50), ("G4", 0), ("G#4", 0)]
-    vib_rates = rng.permutation([0.10, 0.15, 0.20, 0.25, 0.30, 0.20])  # multiples of 1/20 s: loops
+    rates = [0.10, 0.15, 0.20, 0.25, 0.30]                    # multiples of 1/20 Hz: loops
     y = np.zeros(n)
     breath = np.zeros(n)
-    for i, (nm, c) in enumerate(notes):
+    for nm, c in notes:
         f0 = mtof(midi(nm) + c / 100)
-        cents = rng.uniform(8, 15)
-        f = f0 * 2 ** (cents / 1200 * np.sin(2 * np.pi * vib_rates[i] * t + rng.uniform(0, 6.28)))
-        cyc = f.sum() / SR
-        f = f * (round(cyc) / cyc)                            # whole cycles per loop: seamless
-        ph = 2 * np.pi * np.cumsum(f) / SR
-        tone = np.zeros(n)
-        for k in range(1, int(9000 / f0) + 1):                # saw spectrum, low-passed at 2 kHz
-            g = (1.0 / k) / np.sqrt(1 + (k * f0 / 2000.0) ** 8)
-            tone += g * np.sin(k * ph + rng.uniform(0, 6.28))
         amp = 0.62 + 0.38 * np.sin(2 * np.pi * rng.choice([0.05, 0.10, 0.15]) * t + rng.uniform(0, 6.28))
-        y += amp * tone / np.std(tone)
+        sec = np.zeros(n)
+        for det in (-7.0, 0.0, 6.0):
+            cents = rng.uniform(8, 15)
+            fv = f0 * 2 ** ((det + rng.uniform(-2, 2)) / 1200)
+            f = fv * 2 ** (cents / 1200 * np.sin(2 * np.pi * rng.choice(rates) * t + rng.uniform(0, 6.28)))
+            cyc = f.sum() / SR
+            f = f * (round(cyc) / cyc)                        # whole cycles per loop: seamless
+            ph = 2 * np.pi * np.cumsum(f) / SR
+            tone = np.zeros(n)
+            for k in range(1, int(9000 / f0) + 1):            # saw spectrum, low-passed at 2 kHz
+                g = (1.0 / k) / np.sqrt(1 + (k * f0 / 2000.0) ** 8)
+                tone += g * np.sin(k * ph + rng.uniform(0, 6.28))
+            bow = 0.85 + 0.15 * np.sin(2 * np.pi * rng.choice([0.05, 0.10]) * t + rng.uniform(0, 6.28))
+            sec += bow * tone / np.std(tone)
+        y += amp * sec / np.std(sec)
         nb = bp(rng.standard_normal(n), f0 * 0.8, 3200, 2, circ=True)
         breath += amp * nb / np.std(nb)
     y = y + 0.06 * breath                                     # 6% bow/breath noise
     y = peq(y, 950, 3.0, 1.2, circ=True)                      # a dim vowel-like formant
     y = peq(y, 2700, 2.0, 1.0, circ=True)
     y = lp(y, 4500, 2, circ=True)
-    return norm(y, db(-6)), {"loop": True, "tones": ["E4", "F4", "F#4", "F#4+50c", "G4", "G#4"]}
+    return norm(y, db(-6)), {"loop": True, "tones": ["E4", "F4", "F#4", "F#4+50c", "G4", "G#4"],
+                             "players_per_tone": 3, "player_detune_cents": [-7, 0, 6]}
 
 
 def make_sub_breath():
@@ -2105,26 +2144,72 @@ def make_sub_breath():
     return norm(x, db(-6)), {"loop": True, "breath_period_s": 4.0}
 
 
-def breath_part(dur, kind):
-    """One breath: shaped noise; 'in' brighter (1-5 kHz) with a faint nasal whistle,
-    'out' lower (300-2000 Hz) and chestier."""
+def formant_noise(n, formants, tilt_db_oct=0.0, src=None):
+    """Noise (or `src`) through a vocal-tract-like gain curve: resonant peaks (f, bw, gain).
+    Unshaped band noise reads as wind; resonances make it a mouth and a nose."""
+    x = rng.standard_normal(n) if src is None else src
+
+    def g(f):
+        f = np.maximum(f, 1.0)
+        h = np.zeros_like(f)
+        for fc, bw, a in formants:
+            h += a / (1 + ((f - fc) / (bw / 2)) ** 2)
+        return h * (f / 1000.0) ** (tilt_db_oct / 6.02)
+    return _ffilt(x, g)
+
+
+def creak(n, f0=(70, 48), jitter=0.12):
+    """Irregular glottal pulses (vocal fry) slowing from f0[0] to f0[1] Hz."""
+    y = np.zeros(n)
+    t, T = 0.0, n / SR
+    while t < T:
+        f = np.interp(t, [0, T], f0) * (1 + jitter * rng.standard_normal())
+        i = int(t * SR)
+        if i < n:
+            y[i] += rng.uniform(0.5, 1.0)
+        t += 1.0 / max(20.0, f)
+    m = secs(0.006)
+    pulse = np.exp(-tvec(m) / 0.0012) * np.sin(2 * np.pi * 700 * tvec(m))
+    return fftconv(y, pulse)[:n]
+
+
+def crackle(n, density=18.0):
+    """Sparse wet lip/saliva crackle: tiny 1-3 ms ticks."""
+    y = np.zeros(n)
+    t = rng.exponential(1 / density)
+    while t < n / SR - 0.01:
+        m = secs(rng.uniform(0.001, 0.003))
+        tick = hp(rng.standard_normal(m), 2500, 2) * np.hanning(m)
+        place(y, tick * rng.uniform(0.2, 1.0), t)
+        t += rng.exponential(1 / density)
+    return y
+
+
+def breath_part(dur, kind, shift=0.0):
+    """One breath through a vocal tract. 'in': drawn in through nose and teeth - nasal
+    resonances, a bright 2.6-4 kHz hiss and a faint whistle; builds, peaks late, stops
+    short. 'out': let out through an open mouth - 'haa' formants, an air puff on the mic
+    capsule, a long sag, and the last of the air catching in the throat (a faint creak)."""
     n = secs(dur)
     t = tvec(n)
-    src = rng.standard_normal(n)
+    d = 1 + shift                                             # each breath its own mouth shape
     if kind == "in":
-        x = bp(src, 1000, 5000, 2) + 0.35 * bp(rng.standard_normal(n), 350, 1000, 2)
-        x += 0.12 * bp(rng.standard_normal(n), 3000, 3250, 6)    # nasal whistle
-        x = peq(x, 2600, 3.0, 1.0)
-        # air drawn in: builds, peaks late, stops short
+        x = formant_noise(n, [(320 * d, 160, 0.25), (1150 * d, 380, 0.55), (2650 * d, 520, 1.0),
+                              (3900 * d, 700, 0.8), (6200, 2500, 0.45)])
+        x += 0.10 * bp(rng.standard_normal(n), 3050 * d, 3250 * d, 6)     # a faint nasal whistle
         env = np.minimum(1, t / 0.3) ** 1.3 * (0.55 + 0.45 * (t / dur) ** 0.8) * np.minimum(1, (dur - t) / 0.06)
     else:
-        x = bp(src, 300, 2000, 2)
-        x = peq(peq(x, 520, 4.0, 0.8), 1400, 3.0, 0.8)
-        # let out: a quick push, then a long sagging tail
+        x = formant_noise(n, [(640 * d, 220, 1.0), (1180 * d, 300, 0.75), (2450 * d, 450, 0.4),
+                              (3500, 900, 0.15)], tilt_db_oct=-2.0)
+        puff = lp(rng.standard_normal(n), 160, 2) * np.exp(-t / 0.18)
+        x = x / (np.std(x) + 1e-9) + 0.5 * puff / (np.std(puff) + 1e-9)
         env = np.minimum(1, t / 0.05) * (0.2 + 0.8 * np.exp(-t / (dur * 0.3))) * np.minimum(1, (dur - t) / 0.3)
-    chest = lp(rng.standard_normal(n), 380, 2) * (0.35 if kind == "out" else 0.15)
-    x = x / (np.std(x) + 1e-9) + chest / (np.std(chest) + 1e-9) * 0.5
-    jitter = 1 + 0.2 * lfo_noise(n, 3, 12)                   # air is never steady
+        k0 = int(0.68 * n)
+        cr = formant_noise(n - k0, [(640, 200, 1.0), (1180, 300, 0.7), (2450, 450, 0.35)], src=creak(n - k0))
+        x = x / (np.std(x) + 1e-9)
+        x[k0:] += 0.45 * cr / (np.std(cr) + 1e-9) * np.hanning(n - k0) ** 0.7
+    x = x / (np.std(x) + 1e-9)
+    jitter = 1 + 0.22 * lfo_noise(n, 3, 12)                  # air is never steady
     return x * env * np.clip(jitter, 0.4, 1.6)
 
 
@@ -2145,9 +2230,12 @@ def make_breath_close():
     n = secs(dur)
     buf = np.zeros(n)
     j = lambda: rng.uniform(-0.03, 0.03)                     # slightly irregular
-    for kind, t0, t1, g in (("in", 0.0, 1.4, 0.85), ("out", 1.6 + j(), 3.0, 1.0),
-                            ("in", 3.4 + j(), 4.6, 0.9)):
-        place(buf, breath_part(t1 - t0, kind) * g, t0)
+    for kind, t0, t1, g, sh in (("in", 0.0, 1.4, 0.85, 0.0), ("out", 1.6 + j(), 3.0, 1.0, 0.02),
+                                ("in", 3.4 + j(), 4.6, 0.9, -0.03)):
+        place(buf, breath_part(t1 - t0, kind, sh) * g, t0)
+        if kind == "out":                                     # lips parting: wet crackle in the air
+            m = secs(t1 - t0)
+            place(buf, 0.1 * crackle(m) * np.exp(-tvec(m) / 0.6), t0)
     place(buf, mouth_click(0.9), 1.5)
     place(buf, mouth_click(0.7), 3.3)
     buf = buf / (np.max(np.abs(buf)) + 1e-9)
@@ -2423,9 +2511,22 @@ def update_manifest(assets, names):
     atomic_write_json(MANIFEST, man)
 
 
-# Extra stems changed by the scare pass that assets.json does not flag: a recipe tag in
-# their .meta.json marks the current version (a stem without it is re-rendered).
-RECIPE = {"mus_music_box": "scare-pass-mangled-1"}
+# Recipe tags: a stem whose .meta.json does not carry its current tag is stale and is
+# re-rendered by a plain run. Bump a tag whenever its generator changes. (mus_music_box is
+# changed by the scare pass although assets.json does not flag it.)
+RECIPE = {
+    "mus_music_box": "scare-pass-mangled-1",
+    # scare pass 2: stingers rebalanced (screech leads, thump under it: ~6 dB louder to the
+    # ear), formant-shaped breathing, a 3-player string cluster, a tritone Shepard stack
+    # with a quickening pulse, and 'I heard you counting' even closer
+    "sfx_stinger_1": "scare-pass-2",
+    "sfx_stinger_2": "scare-pass-2",
+    "sfx_stinger_3": "scare-pass-2",
+    "sfx_breath_close": "scare-pass-2",
+    "amb_cluster": "scare-pass-2",
+    "sfx_shepard_riser": "scare-pass-2",
+    "vo_addr_3": "scare-pass-2",
+}
 
 
 def file_crc(path):

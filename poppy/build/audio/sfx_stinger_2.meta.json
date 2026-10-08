@@ -6,5 +6,6 @@
  "notch_db": -6,
  "notch_db_under_ten": -10,
  "ten_until_s": 0.6,
- "scare_pass": true
+ "scare_pass": true,
+ "recipe": "scare-pass-2"
 }

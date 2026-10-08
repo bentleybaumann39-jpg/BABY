@@ -8,5 +8,12 @@
   "G4",
   "G#4"
  ],
- "scare_pass": true
+ "players_per_tone": 3,
+ "player_detune_cents": [
+  -7,
+  0,
+  6
+ ],
+ "scare_pass": true,
+ "recipe": "scare-pass-2"
 }

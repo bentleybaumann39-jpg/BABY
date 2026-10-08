@@ -273,6 +273,7 @@ function feltLetters(g, text, x, y, size, color, o) {
   return { total };
 }
 LIB.feltLetters = feltLetters;
+LIB.cardBase = (...a) => cardBase(...a); LIB.faceDisc = (...a) => faceDisc(...a); LIB.wordStrip = (...a) => wordStrip(...a);   // used by pieces_scare.js
 
 const CW = 240, CH = 300, FX = 120, FY = 116, FR = 90;
 function cardBase(g, seed, o) {
