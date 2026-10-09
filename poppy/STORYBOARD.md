@@ -1,6 +1,6 @@
 # THE WORLD OF POPPY - Storyboard and shot list
 
-**Runtime: 307.5 s (5:07.5)** at 640x480, 30 fps. 11 segments, 89 shots. Real scares at 2:50.4, 3:39.5, 5:04.7 (gaps 49.1 s, 85.2 s).
+**Runtime: 309.4 s (5:09.4)** at 640x480, 30 fps. 11 segments, 89 shots. Real scares at 2:50.4, 3:39.5, 5:06.6 (gaps 49.1 s, 87.1 s).
 
 This file and `assets.json` are generated from one source (`gen_storyboard.py`, which also writes `SCARE_PASS.md`), so every asset path named here is in the manifest and every manifest entry is used here. Edit the generator, not this file. Paths are relative to `/home/user/BABY/poppy/`. Times are `m:ss.s` from the start of the tape; cue offsets inside a shot are `+seconds` from the shot's first frame. Shots touched by the scare pass carry a **Scare pass** line; assets touched by it carry `"scare_pass": true` in `assets.json`.
 
@@ -22,8 +22,8 @@ A home-video cassette of *THE WORLD OF POPPY, Volume 4: Counting with Poppy* (©
 | 8 | BACK TO THE SHOW (WRONG): HIDE AND SEEK | 2:53.1 | 3:47.8 | 54.7 s | Act 2 -> 3 | The splice ends inside a different, wrong episode: the playroom is dark and red, Poppy's head lies on its side while her eyes stay level, and she never opens her mouth. In the glitches she comes closer, then flips. She counts for hide-and-seek over cuts to a viewer's home while something stands outside the window and inside a doorway; the count slows; she leaves the TV; someone breathes right beside you and holds their breath; 'Ten.' arrives in the closet. Then the black screen turns out to be the glass of a dark TV, and in its reflection something stands behind your bed. |
 | 9 | A MESSAGE FROM SUNNY MEADOW | 3:47.8 | 4:09.2 | 21.4 s | Act 3 | Calm, low-stimulus advisory cards from the distributor while a music box winds down - but under card B something whispers 'where do you live?' from the left, then the right, and card C hides a subliminal. The music box dies on 'SHE ALWAYS FINDS YOU ON TEN.' |
 | 10 | SEE YOU TOMORROW | 4:09.2 | 4:36.6 | 27.4 s | Act 3 | The show 'ends': the theme comes back slowed, detuned and beating against itself, Poppy waves goodbye a little too close, the end card cracks, a last subliminal, Poppy closer to the lens than ever, and the tape stops. Blue screen. True silence. It is over. |
-| 11 | THE TAPE DOES NOT STOP | 4:36.6 | 5:07.5 | 30.9 s | Act 3 | Nobody touches the VCR. It rewinds by itself (the tape runs backwards, faces flicker past), presses PLAY, and starts again wrong: the colour bars say HIDE AND SEEK, the dark playroom is empty but something stands in the doorway. 'You tried to stop the tape, friend.' Then Poppy is right in front of the lens, level and dead centre, chirping in her happy Act 1 voice while her face slowly stretches: 'I can see you! Is that your room?' She counts again: one, two, three - four never comes. The last image of the tape is her face. |
-| | **TOTAL** | 0:00.0 | 5:07.5 | **307.5 s** | | |
+| 11 | THE TAPE DOES NOT STOP | 4:36.6 | 5:09.4 | 32.8 s | Act 3 | Nobody touches the VCR. It rewinds by itself (the tape runs backwards, faces flicker past), presses PLAY, and starts again wrong: the colour bars say HIDE AND SEEK, the dark playroom is empty but something stands in the doorway. 'You tried to stop the tape, friend.' Then Poppy is right in front of the lens, level and dead centre, chirping in her happy Act 1 voice while her face slowly stretches: 'I can see you! Is that your room?' She counts again: one, two, three - four never comes. The last image of the tape is her face. |
+| | **TOTAL** | 0:00.0 | 5:09.4 | **309.4 s** | | |
 
 ### Scare map
 
@@ -36,7 +36,7 @@ Three real scares, each closer and longer than the last (0.7 / 0.8 / 1.0 s filli
 | False scare 2 | 3:16.0 | 8g | hide-and-seek count in the hallway; a figure (H4) in the left doorway | `sfx_toy_fall` at -12 dBFS from screen-left; after the jolt the doorway is empty |
 | **SCARE 2** | **3:39.5** | 8m | count slows and deepens; 'Nine.'; close breathing beside you (20% left), cluster + sub-bass, a held breath and a dead cut; door moved between cuts; creak pulls the eye LEFT | redrawn `poppy_scare_closet` (+ `_b`) 0.8 s, 75% of frame; rough whispered 'Ten.' + rebuilt `sfx_stinger_2`; digital silence; then the dark-CRT reflection with H5 behind your bed |
 | False ending | 4:33.6 | 10i-11c | the show says goodbye, the tape stops: blue STOP screen in true silence for 3 s | the VCR rewinds by itself (S6, S7 inside), presses PLAY, and the bars read HIDE AND SEEK |
-| **SCARE 3** | **5:04.7** | 11j | 'You tried to stop the tape'; 12 s direct address with the stretching face and the happy voice; One/Two/Three on a 2.0 s rhythm while the cluster rises; everything cut dead; a single close inhale on the left; 'Four' never comes; cut 0.7 s early | redrawn `poppy_scare_final` (+ `_b`) 1.0 s, 90% of frame; rebuilt `sfx_stinger_3` + `sfx_scream` made from Poppy's own voice; digital silence to the end |
+| **SCARE 3** | **5:06.6** | 11j | 'You tried to stop the tape'; 12 s direct address with the stretching face and the happy voice; One/Two/Three on a 2.0 s rhythm while the cluster rises; everything cut dead; a single close inhale on the left; 'Four' never comes; cut 0.7 s early | redrawn `poppy_scare_final` (+ `_b`) 1.0 s, 90% of frame; rebuilt `sfx_stinger_3` + `sfx_scream` made from Poppy's own voice; digital silence to the end |
 
 Subliminal frames (1-3 frames each, hidden inside glitches, at least 1 s apart):
 
@@ -80,7 +80,7 @@ Changes between cuts (most hidden behind a glitch, a jolt or a cut; 8b's second 
 
 'Did I see that?' moments (on screen for real, never mentioned): the empty third friend slot (2d), Poppy's eyes shut on 'hide away' (2e), the 7-second freeze and one-eyed blink (4c), the flower eye turning to the lens (4d), the HUNGRY face appearing un-introduced (5d), the eye in the door gap (6b), the mouth that keeps flapping after the line (5f), the figure in the studio (7b), the eye glints in the dark corridor (7j), Poppy moving closer and flipping during glitches (8b), the figure at the window (8e) and in the doorway (8f), Poppy gone from the TV (8j), the closet door wider (8l), the figure behind your bed in the dark screen (8o), the doorway figure (11d), the face stretching while she chats (11e).
 
-Silences: true digital silence only 3 times: 3:40.3 (after scare 2), 4:33.6 (the false ending: STOP), 5:05.7 (after scare 3, to the end). After scare 1 the tape goes to near-silence (camcorder hiss at -60 dBFS). Near-silences before scares sit at room tone (~-42 dBFS) with hiss, and each hit is preceded by exactly one sound (7n hanger, 8l creak, 11i inhale).
+Silences: true digital silence only 3 times: 3:40.3 (after scare 2), 4:33.6 (the false ending: STOP), 5:07.6 (after scare 3, to the end). After scare 1 the tape goes to near-silence (camcorder hiss at -60 dBFS). Near-silences before scares sit at room tone (~-42 dBFS) with hiss, and each hit is preceded by exactly one sound (7n hanger, 8l creak, 11i inhale).
 
 ## 3. Characters (design bible for the Poppy and misc artists)
 
@@ -938,7 +938,7 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 - **Notes:** THE FALSE ENDING. Its setup is planted at 0:13.5 ('BE KIND, PLEASE REWIND!' on the home-viewing card) and in 1b ('PLAY ▶' and the counter).
 - **Scare pass:** Was 11i + 11j (STOP 1.4 s + black 0.7 s) -> STOP held 3.0 s in true silence.
 
-### Segment 11 - THE TAPE DOES NOT STOP (4:36.6-5:07.5, 30.9 s, Act 3)
+### Segment 11 - THE TAPE DOES NOT STOP (4:36.6-5:09.4, 32.8 s, Act 3)
 
 *Nobody touches the VCR. It rewinds by itself (the tape runs backwards, faces flicker past), presses PLAY, and starts again wrong: the colour bars say HIDE AND SEEK, the dark playroom is empty but something stands in the doorway. 'You tried to stop the tape, friend.' Then Poppy is right in front of the lens, level and dead centre, chirping in her happy Act 1 voice while her face slowly stretches: 'I can see you! Is that your room?' She counts again: one, two, three - four never comes. The last image of the tape is her face.*
 
@@ -1020,28 +1020,28 @@ Each shot gives its timecode, duration, picture (with exact asset files), camera
 - **Audio:** +0.3 s `build/audio/vo_hs_3.wav` **POPPY (WRONG)** (slowed and deep, dry, too close): “Three.” - reused, full band.
 - **Scare pass:** Was 10e (one hungry face) -> five hungry faces.
 
-#### 11i · 5:03.4-5:04.7 (1.3 s) · (Four never comes)
+#### 11i · 5:03.4-5:06.6 (3.2 s) · (Four never comes)
 
-- **Picture:** `build/rooms/playroom_dark.png` wide, empty (window panes still black, doorway empty).
+- **Picture:** `build/rooms/playroom_dark.png` wide, empty and held: the doorway, the black panes, the negative space (window panes still black, doorway empty).
 - **Camera:** Static.
 - **VHS:** V3.
 - **Audio:**
-  - On the first frame cut the cluster, the sub-bass and the drone DEAD: room tone and hiss only. The viewer expects 'Four' at +0.3 s; it never comes.
-  - +0.4 s `build/audio/sfx_breath_close.wav` - only its 3.4-4.6 s inhale, -20 dBFS, 20% LEFT: a single breath drawn in right beside you. The ONE sound before the hit.
-- **Notes:** Cut 0.7 s early against the 2.0 s rhythm of 11f-11h. No creak this time (scares 1 and 2 used a side noise): the misdirection is the breath and the broken rhythm.
-- **Scare pass:** Was 10f. The creak is replaced by a single close inhale.
+  - On the first frame cut the cluster, the sub-bass and the drone DEAD: room tone (-46 dBFS) and hiss only. The viewer expects 'Four' at +0.3 s; it never comes.
+  - +1.5 s `build/audio/sfx_breath_close.wav` - only its 3.4-4.6 s inhale (0.8 s), -23 dBFS, LEFT: a single breath drawn in right beside you. The ONE sound before the hit; then 0.9 s of held breath (room tone only).
+- **Notes:** The longest hold of the tape (3.2 s) before its biggest scare: the count's rhythm breaks, nothing comes, then the breath, then nothing again.
+- **Scare pass:** Was 10f. The creak is replaced by a single close inhale; held 1.3 -> 3.2 s.
 
-#### 11j · 5:04.7-5:05.7 (1.0 s) · SCARE 3
+#### 11j · 5:06.6-5:07.6 (1.0 s) · SCARE 3
 
-- **Picture:** `build/art/poppy/poppy_scare_final.png` alternating with `build/art/poppy/poppy_scare_final_b.png` every 4 frames, scaled so the face fills ~90% of the frame height. NOT a red frame.
-- **Camera:** Zoom 1.00 -> 1.06, shake +-6 px.
+- **Picture:** Frames 0-9: `build/art/poppy/poppy_scare_final.png` alternating with `build/art/poppy/poppy_scare_final_b.png` every 4 frames (the eyes still searching); from frame 10: `build/art/poppy/poppy_scare_final_c.png` / `build/art/poppy/poppy_scare_final_d.png` (the gaze snaps into the lens, the slits pulled wide). Extreme close-up: the eyes fill ~70% of the frame width. NOT a red frame.
+- **Camera:** Loom: zoom 0.62x -> 1.0x over the first 3 frames (ease-out, zoom blur), then 1.00 -> 1.06; a 2-frame 10-degree head-snap at ~55%; shake +-6 px.
 - **VHS:** V0 CLEAN.
 - **Audio:**
   - +0.0 s `build/audio/sfx_stinger_3.wav` - peak -1 dBFS, attack < 5 ms (rebuilt).
   - +0.0 s `build/audio/sfx_scream.wav` - -3 dBFS: Poppy's own voice, torn (rebuilt).
 - **Scare pass:** Was 10g. Redrawn face; 0.9 -> 1.0 s; 90% of the frame; now the last image of the tape.
 
-#### 11k · 5:05.7-5:07.5 (1.8 s) · Black
+#### 11k · 5:07.6-5:09.4 (1.8 s) · Black
 
 - **Picture:** Black to the end.
 - **VHS:** none.
@@ -1068,7 +1068,7 @@ Every file the builders produce, and every shot that uses it. The full specs are
 | `build/rooms/closet_door.png` | 640x480 | 8i, 8k |
 | `build/rooms/closet_door_open.png` | 640x480 | 8l |
 
-### Poppy art (27)
+### Poppy art (29)
 
 | File | Size | Used in |
 |---|---|---|
@@ -1095,6 +1095,8 @@ Every file the builders produce, and every shot that uses it. The full specs are
 | `build/art/poppy/poppy_scare_costume_b.png` | 800x600 opaque | 7o |
 | `build/art/poppy/poppy_scare_closet_b.png` | 800x600 opaque | 8m |
 | `build/art/poppy/poppy_scare_final_b.png` | 800x600 opaque | 11j |
+| `build/art/poppy/poppy_scare_final_c.png` | 800x600 opaque | 11j |
+| `build/art/poppy/poppy_scare_final_d.png` | 800x600 opaque | 11j |
 | `build/art/poppy/poppy_address.png` | 640x480 alpha | 11e |
 | `build/art/poppy/poppy_address_talk.png` | 640x480 alpha | 11e |
 | `build/art/poppy/hidden_poppy_stand.png` | 240x640 alpha | 7b, 8e, 8f, 8g, 8o, 11d |
@@ -1227,7 +1229,7 @@ Not files (the compositor makes these in code): tape hiss, 60 Hz hum, colour bar
 ## 8. Builder hand-off checklist
 
 - **Rooms (Blender, bpy 5.2, Cycles CPU, 32-64 samples, denoising on):** 11 renders, three of them variants of the same .blend (`playroom_wide` / `playroom_wide_ajar` / `playroom_dark`, and `closet_door` / `closet_door_open`). Write `build/rooms/rooms_meta.json` with the anchors listed in each room's notes. Leave the empty spaces described; never put a figure in a room.
-- **Poppy art (canvas):** 27 files. Keep identical registration inside each family (full-body, close-up) so frames can be swapped without jumping. Make a contact sheet and check the Stage 1 frames look friendly at a glance and only slightly off, and that the scare frames are the sharpest, most finished images.
+- **Poppy art (canvas):** 29 files. Keep identical registration inside each family (full-body, close-up) so frames can be swapped without jumping. Make a contact sheet and check the Stage 1 frames look friendly at a glance and only slightly off, and that the scare frames are the sharpest, most finished images.
 - **Misc art (canvas):** 26 files. Felt texture for the show props; real-paper texture for the memo and crayon drawing. Text inside the art must be spelled exactly as given.
 - **Audio (numpy + espeak-ng):** 86 files at 44.1 kHz mono 16-bit, plus `build/audio/manifest.json` with each file's duration and the `lyrics` start times for `mus_theme` and `mus_reprise`.
 - **Compositor:** follow sections 2, 4 and 6 (and `SCARE_PASS.md` for what changed). Total runtime must stay within 290-320 s; if a voice line comes back longer than its slot, extend the shot's hold and trim the following static/black shot rather than moving the scare beats.
@@ -1324,8 +1326,8 @@ One shot per line: id, segment, start (s), duration (s), title, asset files, and
   {"id": "11f", "seg": "11", "start": 297.4, "dur": 2.0, "title": "One (the chair)", "assets": ["build/rooms/playroom_dark.png", "build/audio/vo_hs_1.wav"], "cues": [[297.7, "build/audio/vo_hs_1.wav"]]},
   {"id": "11g", "seg": "11", "start": 299.4, "dur": 2.0, "title": "Two (the doorway)", "assets": ["build/rooms/playroom_dark.png", "build/audio/vo_hs_2.wav"], "cues": [[299.7, "build/audio/vo_hs_2.wav"]]},
   {"id": "11h", "seg": "11", "start": 301.4, "dur": 2.0, "title": "Three (the board)", "assets": ["build/rooms/playroom_dark.png", "build/art/misc/feel_hungry.png", "build/audio/vo_hs_3.wav"], "cues": [[301.7, "build/audio/vo_hs_3.wav"]]},
-  {"id": "11i", "seg": "11", "start": 303.4, "dur": 1.3, "title": "(Four never comes)", "assets": ["build/rooms/playroom_dark.png", "build/audio/sfx_breath_close.wav"], "cues": [[303.8, "build/audio/sfx_breath_close.wav"]]},
-  {"id": "11j", "seg": "11", "start": 304.7, "dur": 1.0, "title": "SCARE 3", "assets": ["build/art/poppy/poppy_scare_final.png", "build/art/poppy/poppy_scare_final_b.png", "build/audio/sfx_stinger_3.wav", "build/audio/sfx_scream.wav"], "cues": [[304.7, "build/audio/sfx_stinger_3.wav"], [304.72, "build/audio/sfx_scream.wav"]]},
-  {"id": "11k", "seg": "11", "start": 305.7, "dur": 1.8, "title": "Black", "assets": [], "cues": []}
+  {"id": "11i", "seg": "11", "start": 303.4, "dur": 3.2, "title": "(Four never comes)", "assets": ["build/rooms/playroom_dark.png", "build/audio/sfx_breath_close.wav"], "cues": [[304.9, "build/audio/sfx_breath_close.wav"]]},
+  {"id": "11j", "seg": "11", "start": 306.6, "dur": 1.0, "title": "SCARE 3", "assets": ["build/art/poppy/poppy_scare_final.png", "build/art/poppy/poppy_scare_final_b.png", "build/art/poppy/poppy_scare_final_c.png", "build/art/poppy/poppy_scare_final_d.png", "build/audio/sfx_stinger_3.wav", "build/audio/sfx_scream.wav"], "cues": [[306.6, "build/audio/sfx_stinger_3.wav"], [306.62, "build/audio/sfx_scream.wav"]]},
+  {"id": "11k", "seg": "11", "start": 307.6, "dur": 1.8, "title": "Black", "assets": [], "cues": []}
 ]
 ```

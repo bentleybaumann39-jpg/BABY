@@ -1295,7 +1295,7 @@ function lidMargins(g, st, o, S, lw, h, w) {
   g.lineCap = 'round'; g.lineJoin = 'round';
   // lower lid margin (pink-brown band) and the wet waterline along its inner edge
   g.save();
-  g.strokeStyle = rgba(mixc(o.lidSkin, '#7E5250', 0.4), 0.55); g.lineWidth = Math.max(lw * 1.2, h * 0.03);
+  g.strokeStyle = rgba(mixc(o.lidSkin, '#7E5250', 0.4), o.marginA === undefined ? 0.55 : o.marginA); g.lineWidth = Math.max(lw * 1.2, h * 0.03);
   g.translate(0, Math.max(lw * 1.0, h * 0.022)); g.stroke(polyPath(S.lo.slice(3, -3), false));
   g.restore();
   if (o.waterline) {

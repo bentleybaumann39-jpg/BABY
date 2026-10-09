@@ -188,7 +188,8 @@ function neckSkin(bg, s) {
   bg.restore();
 }
 
-A.poppy_wrong_idle = (cv) => at2x(cv, wrongOpts(), (bg, info, s) => neckSkin(bg, s));
+// the head lolls right off the top of the 1.5x neck (pivoting at the neck, so the tilt reads on a round head), the face kept level
+A.poppy_wrong_idle = (cv) => at2x(cv, wrongOpts({ tilt: 48, headC: [262, 150], patchButton: true }), (bg, info, s) => neckSkin(bg, s));
 
 /* the counting pose: hands over the eyes; through the gap one REAL wet human eye stares into the lens */
 A.poppy_cover_eyes = (cv) => {
@@ -318,25 +319,26 @@ function address(talk) {
     return pts; };
   const c = {
     W: 640, H: 480, cx: 320, cy: 210, R, sx: 1, sy: 1, tilt: 0, seed: 'address3', boil: 'A', bg: null, hatch: false, contour: false,
-    petalR: 1.5, petalCol: '#8A1E24', faceCol: '#E6D0AE', decay: 0.35, pills: 240, crumple: 0.12, petalRag: 0.03,
+    petalR: 1.5, petalCol: '#A0262A', faceCol: '#D9C7A4', decay: 0.4, pills: 340, crumple: 0.12, petalRag: 0.0,
     nose: { x: 0, y: 0.13, s: 1.0 },
+    // the cool TV glow from ~35 degrees below: the chin lit, the forehead about half as bright
     lights: () => ({
-      light: { x: 320 * SS, y: 640 * SS, z: 420 * SS, col: [0.84, 0.95, 1.16], power: 1.5, d0: 520 * SS },
-      fill: { x: 320 * SS, y: -300 * SS, z: 900 * SS, col: [0.1, 0.1, 0.12], power: 0.3, d0: 4000 * SS },
-      ambient: [0.018, 0.02, 0.028],
+      light: { x: 320 * SS, y: 600 * SS, z: 250 * SS, col: [1.0, 0.98, 1.02], power: 1.7, d0: 330 * SS },
+      fill: { x: 320 * SS, y: -300 * SS, z: 900 * SS, col: [0.06, 0.06, 0.07], power: 0.3, d0: 4000 * SS },
+      ambient: [0.014, 0.016, 0.022],
     }),
-    tone: { exp: 1.1, shoulder: 1.2, gamma: 1.3 }, fuzzH: 0.9, pillH: 1.0, feltK: 0.85, stainK: 0.5,
-    petalDim: 0.42, petalRim: '150,64,62', grain: 4,
+    tone: { exp: 1.1, shoulder: 1.2, gamma: 1.25 }, fuzzH: 1.0, pillH: 1.1, feltK: 1.0, stainK: 0.5,
+    petalDim: 0.85, petalRim: '214,112,86', grain: 4,
   };
   c.albedo = (ag, G, U) => {
-    G.sockets = eyes.map(e => { const pts = []; for (let k = 0; k < 72; k++) { const a = k / 72 * TAU, j = 1 + 0.03 * HZ.noise1(k * 0.6, e.u > 0 ? 3 : 7); pts.push([e.u + Math.cos(a) * EW * 0.6 * j, e.v + Math.sin(a) * EW * 0.42 * j]); } return U.mapPts(G.e, pts); });
-    for (const s of G.sockets) { ag.fillStyle = '#1A1210'; ag.fill(U.path(s)); }
-    // faded pink felt cheeks
-    for (const sd of [-1, 1]) {
-      const [x, y] = G.h(sd * 0.6, 0.22), gr = ag.createRadialGradient(x, y, 0, x, y, G.R * 0.15);
-      gr.addColorStop(0, 'rgba(214,138,140,0.75)'); gr.addColorStop(0.75, 'rgba(214,138,140,0.55)'); gr.addColorStop(1, 'rgba(214,138,140,0)');
-      ag.fillStyle = gr; ag.beginPath(); ag.ellipse(x, y, G.R * 0.15, G.R * 0.13, 0, 0, TAU); ag.fill();
-    }
+    // slits cut in the felt hugging each eye (no lid-skin ring, no cheeks: a felt face with real eyes in it)
+    G.sockets = eyes.map(e => {
+      const S = HZ.eyeShape({ w: EW, open: 1.25, side: e.side, lowerFlat: 0.85 }), [ex, ey] = G.e(e.u, e.v), k = G.kf(e.u);
+      const TU = new DOMMatrix().translate(ex, ey).scale(G.R * G.sx * k, G.R * G.sx * k), r = rng(e.seed + ':slit');
+      const pts = S.up.map(([x, y]) => [x * 1.04, y * 1.05 - 0.004 + (r() - 0.5) * 0.005]).concat(S.lo.slice().reverse().map(([x, y]) => [x * 1.04, y * 1.06 + 0.005 + (r() - 0.5) * 0.005]));
+      return pts.map(([x, y]) => { const p = TU.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; });
+    });
+    for (const s of G.sockets) { ag.fillStyle = '#0E0A09'; ag.fill(U.path(s)); }
     ag.save(); ag.setTransform(G.TH);
     if (!talk) {
       // the Stage 1 painted smile (cherry felt paint, slightly faded), dimple ticks at the corners
@@ -352,10 +354,7 @@ function address(talk) {
   };
   c.height = (h, mat, G, U) => {
     const R2 = G.R;
-    for (const s of G.sockets) {
-      const m = U.maskOf(g => g.fill(U.path(s)), 3), rim = U.maskOf(g => { g.lineWidth = R2 * 0.05; g.stroke(U.path(s)); }, R2 * 0.02);
-      for (let i = 0; i < h.length; i++) { if (rim[i]) h[i] += rim[i] * R2 * 0.012; if (m[i]) h[i] -= m[i] * R2 * 0.05; }
-    }
+    for (const s of G.sockets) { const m = U.maskOf(g => g.fill(U.path(s)), R2 * 0.025); for (let i = 0; i < h.length; i++) if (m[i]) h[i] -= m[i] * R2 * 0.045; }
     if (talk) { const m = U.maskOf(g => g.fill(U.path(G.mouthScr)), 2), lip = U.maskOf(g => { g.lineWidth = R2 * 0.04; g.stroke(U.path(G.mouthScr)); }, R2 * 0.015);
       for (let i = 0; i < h.length; i++) { if (lip[i]) h[i] += lip[i] * R2 * 0.02; if (m[i]) h[i] -= m[i] * R2 * 0.25; } }
   };
@@ -377,8 +376,8 @@ function address(talk) {
   };
   c.overlay = (cg, G, U) => {
     const LI = cg.getImageData(0, 0, G.W, G.H).data, litAt = (x, y) => { const i = (clamp(y | 0, 0, G.H - 1) * G.W + clamp(x | 0, 0, G.W - 1)) * 4; return Math.min(1.4, (LI[i] + LI[i + 1] + LI[i + 2]) / 3 / 200 + 0.05); };
-    eyes.forEach((e, k) => SC.eyeInSocket(cg, G, Object.assign({ socketPath: G.sockets[k], w: EW, open: 1.25, iris: 0.205, pupil: 0.1, irisCol: ['#A4A8A2', '#9AA4A8', '#3E484E'], veins: 4, gaze: [0, 0], lowerFlat: 0.85,
-      window: { x: 0, y: -0.05, s: 0.28, a: 0.95 }, lidSkin: '#A48478', ring: 0.11, recess: 0.04, lidShadow: 0.55, lashes: 14, shadeLo: 0.45, shadeA: -1.2, shadeB: 1.2, gain: 1.15, rimShadow: 0.35, lidSpread: 1.45 }, e)));
+    eyes.forEach((e, k) => SC.eyeInSocket(cg, G, Object.assign({ socketPath: G.sockets[k], w: EW, open: 1.25, iris: 0.19, pupil: 0.1, irisCol: ['#8E8458', '#788262', '#2C3426'], veins: 5, gaze: [0, 0], lowerFlat: 0.85,
+      window: { x: 0, y: -0.05, s: 0.28, a: 0.95, panes: 1 }, ring: 0, socket: 0.45, recess: 0.03, lidShadow: 0.65, lashes: 14, shadeLo: 0.4, shadeA: -1.2, shadeB: 1.2, gain: 1.2, rimShadow: 0.7, marginA: 0.15 }, e)));
     G.sockets.forEach((s, k) => SC.fray(cg, s, { n: 2, len: [2, 6], side: 1, seed: 'addr:sf' + k, col: [220, 206, 182], alpha: [0.25, 0.6], light: litAt, every: 2 }));
     if (talk) {
       const R2 = G.R, upL = [], loL = [];

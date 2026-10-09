@@ -346,7 +346,7 @@ function mouthPP(cg, G, M) {
   lg.fillStyle = M.cavity || '#050203'; lg.fill(op);
   if (M.interior) M.interior(lg, G);
   const lwH = SS / (G.R * Math.sqrt(G.sx * G.sy));
-  const rows = M.rows.map(rw => rw.between === undefined ? Object.assign({ list: HZ.archTeeth(rw.line, Object.assign({ lw: lwH }, rw)) }, rw) : Object.assign({}, rw));
+  const rows = M.rows.map(rw => rw.between === undefined ? Object.assign({ list: HZ.archTeeth(rw.line, Object.assign({ lw: lwH }, rw)).filter((t, i) => !(rw.missing || []).includes(i)) }, rw) : Object.assign({}, rw));
   // a second row hanging BETWEEN the teeth of a front row, set back, longer and in shadow
   for (const rw of rows) if (rw.between !== undefined) {
     const F = rows[rw.between].list.slice().sort((a, b) => a.x - b.x), rr = rng(rw.seed + ':between'), out = [];
@@ -436,7 +436,7 @@ function wornPatch(cg, G, o) {
       lg.stroke();
     }
     lg.restore();
-  }, { mat: MAT.skin, height: Math.min(rx, ry) * 0.12, round: Math.min(rx, ry) * 0.6, z: z - G.R * 0.02, lw: SS, pores: 0.6, poreScale: 0.55, noise: [0.6, 5], seed: o.seed + 'sk' });
+  }, { mat: MAT.skin, height: Math.min(rx, ry) * 0.12, round: Math.min(rx, ry) * 0.6, z: z - G.R * 0.02, lw: SS, pores: o.pores || 0.6, poreScale: o.poreScale || 0.55, noise: [0.6, 5], seed: o.seed + 'sk' });
   // inner shadow under the felt rim, then the frayed felt edge and a few pills on it
   cg.save(); cg.clip(pp); cg.filter = 'blur(4px)'; cg.strokeStyle = 'rgba(0,0,0,0.75)'; cg.lineWidth = 10; cg.stroke(pp); cg.restore();
   const vis = (px, py) => { const i = (clamp(py | 0, 0, G.H - 1)) * G.W + clamp(px | 0, 0, G.W - 1); return G.key[i]; };
@@ -455,14 +455,15 @@ function wornPatch(cg, G, o) {
  * worn felt on the left cheek; the closet door edges squeeze the petals. */
 function closet(boil) {
   const R = 187;
-  const mouthX = 1.16;
-  const yU = (x) => { const t = clamp(x / mouthX, -1, 1); return 0.25 + 0.2 * (1 - t * t) + 0.012 * Math.sin(x * 9); };
-  const yL = (x) => { const t = clamp(x / mouthX, -1, 1); return yU(x) + 0.5 * Math.pow(Math.max(0, 1 - t * t), 0.75) + 0.012; };
-  const lips = lipOpening(-mouthX, mouthX, yU, yL, 90, 0.008, 'closet');
+  // an asymmetric grimace, ~0.7x the old ear-to-ear width: the screen-right corner pulled up, the jaw hanging open
+  const mouthX = 0.8;
+  const yU = (x) => { const t = clamp(x / mouthX, -1, 1); return 0.4 + 0.07 * (1 - t * t) - 0.11 * t + 0.014 * Math.sin(x * 11); };
+  const yL = (x) => { const t = clamp(x / mouthX, -1, 1); return yU(x) + 0.46 * Math.pow(Math.max(0, 1 - t * t), 0.7) * (1 + 0.15 * t) + 0.012; };
+  const lips = lipOpening(-mouthX, mouthX, yU, yL, 80, 0.01, 'closet');
   const c = {
     W: 800, H: 600, cx: 400, cy: 300, R, sx: 1, sy: 1.15, tilt: -28, eyeTilt: 0, crumple: 0.6, jaw: 0.1, seed: 'closet4', boil,
     petalR: 1.55, crush: [{ angle: 28 * DEG, amount: 0.42, squeeze: 0.6 }, { angle: Math.PI + 28 * DEG, amount: 0.42, squeeze: 0.6 }],
-    petalCol: '#300A0E', faceCol: '#CFC4AE', decay: 0.7, petalRag: 0.06, pills: 300,
+    petalCol: '#22080B', faceCol: '#CFC4AE', decay: 0.7, petalRag: 0.06, pills: 300,
     nose: { x: 0.0, y: 0.1, s: 0.95 },
     lights: (G) => ({
       light: { x: 290 * SS, y: 630 * SS, z: 210 * SS, col: [0.86, 0.98, 1.25], power: 2.2, d0: 210 * SS, cut: 0.22, cutSoft: 0.14 },
@@ -470,27 +471,29 @@ function closet(boil) {
     }),
     lost: { ang: -10, a: 0.25, b: 1.05, k: 0.92 },
     shadow: { soft: 9 },
-    tone: { exp: 2.05, shoulder: 1.6, gamma: 1.05 }, fuzzH: 0.5, pills: 200, feltK: 0.7, petalDim: 0.45, petalRim: '120,40,44',
-    hatch: { n: 470 },
+    tone: { exp: 2.05, shoulder: 1.6, gamma: 1.05 }, fuzzH: 0.5, pills: 200, feltK: 0.7, petalDim: 0.28, petalRim: '96,36,40',
+    // fewer, longer, form-following strokes at lower contrast (not stubble)
+    hatch: { n: 210, len: [30, 64], w: 1.2, alpha: [0.25, 0.5], cluster: [5, 9], gap: 5, lite: 0.12, angles: [-0.6 - 28 * DEG, -0.3 - 28 * DEG, 1.0] },
   };
   const eyes = [
     { u: -0.47, v: -0.27 - 0.04 * 1.15, side: -1, seed: 'closet:eL' },
     { u: 0.47, v: -0.27, side: 1, seed: 'closet:eR' },
   ];
   const EW = 0.54;                        // eye width = 27% of head width (head width = 2 units)
+  const OPEN = 1.5;
+  // slits cut in the felt, hugging the eye aperture (no lid-skin ring: the frayed felt is the lid)
+  const slit = (G, e) => {
+    const S = HZ.eyeShape({ w: EW, open: OPEN, side: e.side, lowerFlat: 0.85 }), [ex, ey] = G.e(e.u, e.v), k = G.kf(e.u);
+    const TU = new DOMMatrix().translate(ex, ey).rotate(G.c.eyeTilt || 0).scale(G.R * G.sx * k, G.R * G.sx * k), r = rng(e.seed + ':slit');
+    const pts = S.up.map(([x, y]) => [x * 1.03, y * 1.04 - 0.004 + (r() - 0.5) * 0.006]).concat(S.lo.slice().reverse().map(([x, y]) => [x * 1.03, y * 1.05 + 0.005 + (r() - 0.5) * 0.006]));
+    return pts.map(([x, y]) => { const p = TU.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; });
+  };
   c.albedo = (ag, G, U) => {
-    // eye sockets: dark holes cut in the felt (the real eyes sit inside)
-    G.sockets = eyes.map(e => { const pts = []; for (let k = 0; k < 72; k++) { const a = k / 72 * TAU, j = 1 + 0.05 * HZ.noise1(k * 0.6, e.u > 0 ? 3 : 7); pts.push([e.u + Math.cos(a) * EW * 0.58 * j, e.v + Math.sin(a) * EW * 0.4 * j + 0.01]); } return mapPts(G.e, pts); });
-    for (const s of G.sockets) { ag.fillStyle = '#1A1210'; ag.fill(path(s)); }
-    // brows: thin dark felt strips raised high (terror over a smile)
-    G.brows = eyes.map(e => { const pts = []; for (let k = 0; k <= 20; k++) { const t = k / 20 * 2 - 1; pts.push([e.u + t * EW * 0.36 - e.side * EW * 0.06, e.v - 0.44 - 0.03 * (1 - t * t) + e.side * t * 0.07]); } return mapPts(G.e, pts); });
-    ag.save(); ag.lineCap = 'round';
-    for (const b of G.brows) { ag.strokeStyle = '#3A2C24'; ag.lineWidth = G.R * 0.045; ag.stroke(path(b, false)); }
-    ag.restore();
-    // the mouth opening (felt cut) and the old painted smile line along the upper lip
+    G.sockets = eyes.map(e => slit(G, e));
+    for (const s of G.sockets) { ag.fillStyle = '#0A0808'; ag.fill(path(s)); }
     G.mouthScr = mapPts(G.h, lips.open);
     ag.fillStyle = '#060304'; ag.fill(path(G.mouthScr));
-    G.nostrils = nostrilShapes(G, { y: 0.205, sep: 0.068, s: 0.046 }); nostrilAlbedo(ag, G, G.nostrils);
+    G.nostrils = nostrilShapes(G, { y: 0.205, sep: 0.06, s: 0.04 }); nostrilAlbedo(ag, G, G.nostrils, { rimCol: '#4A3C38' });
     // creases at the mouth corners (grime in the folds)
     ag.save(); ag.strokeStyle = 'rgba(70,58,44,0.6)'; ag.lineCap = 'round';
     for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) {
@@ -501,59 +504,48 @@ function closet(boil) {
   };
   c.height = (h, mat, G, U) => {
     const R2 = G.R;
-    // sockets: a raised felt rim and a deep hole
-    for (const s of G.sockets) {
-      const m = U.maskOf(g => g.fill(path(s)), 3), rim = U.maskOf(g => { g.lineWidth = R2 * 0.06; g.stroke(path(s)); }, R2 * 0.025);
-      for (let i = 0; i < h.length; i++) { if (rim[i]) h[i] += rim[i] * R2 * 0.012; if (m[i]) h[i] -= m[i] * R2 * 0.06; }
-    }
-    // brows: raised felt strips
-    U.addTo(h, U.maskOf(g => { g.lineCap = 'round'; g.lineWidth = R2 * 0.05; for (const b of G.brows) g.stroke(path(b, false)); }, R2 * 0.012), R2 * 0.035);
-    // cheeks pushed up by the smile, chin
+    // the felt falls into the slits (no raised rim)
+    for (const s of G.sockets) { const m = U.maskOf(g => g.fill(path(s)), R2 * 0.03); for (let i = 0; i < h.length; i++) if (m[i]) h[i] -= m[i] * R2 * 0.05; }
     const bump = (u, v, rx, ry, amp) => { const [x, y] = G.h(u, v); const m = U.maskOf(g => { g.beginPath(); g.ellipse(x, y, rx * R2, ry * R2 * G.sy, (G.c.tilt || 0) * DEG, 0, TAU); g.fill(); }, R2 * Math.min(rx, ry) * 0.7); U.addTo(h, m, amp * R2); };
-    bump(-0.62, 0.12, 0.26, 0.2, 0.06); bump(0.62, 0.12, 0.26, 0.2, 0.06); bump(0, 0.98, 0.34, 0.12, 0.03);
-    // lips: frayed felt ridges around the opening, deep hole inside
+    bump(-0.62, 0.12, 0.26, 0.2, 0.05); bump(0.62, 0.05, 0.26, 0.2, 0.06); bump(0, 0.98, 0.34, 0.12, 0.03);
     const mp = path(G.mouthScr);
-    const lip = U.maskOf(g => { g.lineWidth = R2 * 0.07; g.lineJoin = 'round'; g.stroke(mp); }, R2 * 0.02), m = U.maskOf(g => g.fill(mp), 2.5);
-    for (let i = 0; i < h.length; i++) { if (lip[i]) h[i] += lip[i] * R2 * 0.035; if (m[i]) h[i] -= m[i] * R2 * 0.3; }
+    const lip = U.maskOf(g => { g.lineWidth = R2 * 0.06; g.lineJoin = 'round'; g.stroke(mp); }, R2 * 0.02), m = U.maskOf(g => g.fill(mp), 2.5);
+    for (let i = 0; i < h.length; i++) { if (lip[i]) h[i] += lip[i] * R2 * 0.03; if (m[i]) h[i] -= m[i] * R2 * 0.3; }
     nostrilHeight(h, mat, G, U, G.nostrils);
-    // creases at the mouth corners
     U.addTo(h, U.maskOf(g => { g.lineCap = 'round'; for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) { const a = G.h(sd * (mouthX - 0.05), yU(sd * mouthX) + 0.03 + k * 0.03), b = G.h(sd * (mouthX + 0.08 + k * 0.03), yU(sd * mouthX) - 0.1 + k * 0.08); g.lineWidth = 3 + k * 2; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); } }, 2), -R2 * 0.012);
   };
   c.overlay = (cg, G, U) => {
     const R2 = G.R;
-    // ---- mouth
-    const up = [], lo = [], up2 = [];
+    // ---- mouth: one uneven upper row (three teeth gone, the gum above it in shadow), the lower row mostly lost to black
+    const up = [], lo = [];
     for (let i = 0; i <= 60; i++) {
-      const x = lerp(-mouthX * 0.97, mouthX * 0.97, i / 60);
-      up.push([x, yU(x) + 0.045]); lo.push([x * 0.97, yL(x) - 0.045]); up2.push([x * 0.88 + 0.03, yU(x) + 0.07]);
+      const x = lerp(-mouthX * 0.9, mouthX * 0.9, i / 60);
+      up.push([x, yU(x) + 0.04]); lo.push([x * 0.95, yL(x) - 0.04]);
     }
-    const lowVis = (X, Y) => { const [u, v] = G.toHead(X, Y); return 0.25 + 0.75 * sstep(0.03, 0.12, yL(u) - v); };
+    const upVis = (X, Y) => { const [u, v] = G.toHead(X, Y); return 0.35 + 0.65 * sstep(0.0, 0.08, v - yU(u) - 0.03); };
+    const lowVis = (X, Y) => { const [u, v] = G.toHead(X, Y); return 0.1 + 0.25 * sstep(0.03, 0.12, yL(u) - v); };
     mouthPP(cg, G, {
       open: lips.open,
       rows: [
-        { between: 1, back: true, ao: [0.42, 0.12], lk: 1.6, wk: 0.78, up: 0.015, seed: 'closet:b', skip: 0.5 },
-        { line: up, dir: 1, n: 16, len: 0.145, crooked: 2.2, jit: 0.22, persp: 0.5, z: R2 * 0.08, zBack: R2 * 0.12, ao: [1, 0.3], seed: 'closet:u', gum: { depth: 0.08, height: 0.016, round: 0.012, pap: 0.24, arc: 0.07 } },
-        { line: lo, dir: -1, n: 12, len: 0.11, crooked: 2.5, jit: 0.22, persp: 0.45, lower: true, z: R2 * 0.06, zBack: R2 * 0.12, ao: [0.95, 0.28], seed: 'closet:l', vis: lowVis, gum: { depth: 0.07, height: 0.014, round: 0.012, pap: 0.22, arc: 0.06 } },
+        { line: up, dir: 1, n: 11, len: 0.15, crooked: 3.0, jit: 0.3, persp: 0.5, z: R2 * 0.08, zBack: R2 * 0.12, ao: [1, 0.25], seed: 'closet:u2', missing: [2, 6, 7], vis: upVis, gum: { depth: 0.07, height: 0.016, round: 0.012, pap: 0.24, arc: 0.07, vis: (X, Y) => 0.3 } },
+        { line: lo, dir: -1, n: 9, len: 0.1, crooked: 3.0, jit: 0.3, persp: 0.45, lower: true, z: R2 * 0.05, zBack: R2 * 0.12, ao: [0.9, 0.25], seed: 'closet:l2', missing: [4], vis: lowVis, gum: null },
       ],
-      shadowLip: [{ pts: mapPts((u, v) => [u, v], lips.lo), width: 0.05, blur: 8, a: 0.7 }], ivory: '#EADBB8',
+      shadowLip: [{ pts: mapPts((u, v) => [u, v], lips.lo), width: 0.06, blur: 8, a: 0.8 }, { pts: lips.up, width: 0.05, blur: 8, a: 0.75 }], ivory: '#E2D4B4',
     });
-    // ---- eyes
-    eyes.forEach((e, k) => eyeInSocket(cg, G, Object.assign({ socketPath: G.sockets[k], w: EW, open: 1.5, iris: 0.19, pupil: 0.09, lidSpread: 1.25, irisCol: ['#77705C', '#8E9EA6', '#34424A'], veins: 6, gaze: [0, 0], lowerFlat: 0.85,
-      window: { x: 0, y: -0.32, s: 0.28, a: 0.95 }, lidSkin: '#86685E', ring: 0.1, recess: 0.05, lidShadow: 0.85, lashes: 14, gain: 1.55, shadeLo: 0.2 }, e)));
-    // frayed felt over the socket edges
+    // ---- eyes: real, in felt slits; pinpoint pupils in the dark (physiologically wrong), pale grey irises
+    eyes.forEach((e, k) => eyeInSocket(cg, G, Object.assign({ socketPath: G.sockets[k], w: EW, open: OPEN, iris: 0.15, pupil: 0.09, lidSpread: 1.25, irisCol: ['#B0B6B0', '#A4B0B4', '#3E4C54'], veins: 9, gaze: [0, 0], lowerFlat: 0.85,
+      window: { x: 0, y: -0.32, s: 0.26, a: 0.95, panes: 1 }, ring: 0, socket: 0.5, recess: 0.03, lidShadow: 0.85, lashes: 14, gain: 1.55, shadeLo: 0.2, marginA: 0.12, rimShadow: 0.85 }, e)));
     const LI = cg.getImageData(0, 0, G.W, G.H).data, litAt = (x, y) => { const i = (clamp(y | 0, 0, G.H - 1) * G.W + clamp(x | 0, 0, G.W - 1)) * 4; return Math.min(1.4, (LI[i] + LI[i + 1] + LI[i + 2]) / 3 / 200 + 0.04); };
-    G.sockets.forEach((s, k) => fray(cg, s, { n: 2, len: [2, 7], side: 1, seed: 'closet:sf' + k, col: [200, 190, 170], alpha: [0.3, 0.7], light: litAt, every: 2 }));
-    // felt fibres along the lip edges, crossing in front of the teeth
+    G.sockets.forEach((s, k) => fray(cg, s, { n: 2, len: [2, 8], side: 1, seed: 'closet:sf' + k, col: [200, 190, 170], alpha: [0.3, 0.75], light: litAt, every: 2 }));
     fray(cg, mapPts(G.h, lips.up), { n: 3, len: [3, 11], side: 1, seed: 'closet:lu', col: [205, 195, 172], alpha: [0.4, 0.9], light: litAt });
     fray(cg, mapPts(G.h, lips.lo), { n: 3, len: [3, 11], side: -1, seed: 'closet:ll', col: [205, 195, 172], alpha: [0.4, 0.9], light: litAt });
-    // ---- two real nostrils under the button nose
-    // ---- skin through the worn felt on the left cheek (40x30 px)
-    wornPatch(cg, G, { u: -0.58, v: 0.12, rx: 20 / R, ry: 15 / R / 1.15, rot: 15, seed: 'closet:skin', skin: ['#9C928A', '#6E6460'], light: litAt, feltRGB: [200, 190, 170] });
+    // ---- skin through the worn felt on the left cheek (~60x45 px): pores, faint veins, a frayed felt edge; grey, not pink
+    wornPatch(cg, G, { u: -0.6, v: 0.1, rx: 30 / R, ry: 22 / R / 1.15, rot: 15, seed: 'closet:skin2', skin: ['#A39A92', '#6C6460'], veinA: 0.2, pores: 1.0, poreScale: 0.5, light: litAt, feltRGB: [200, 190, 170] });
   };
-  c.foreground = (cg, G) => doors(cg, G, [150, 650]);
+  // the door edges press INTO the face (inner edges inside the face outline): the felt bulges between them
+  c.grade = (cg, G) => { capRed(cg, G.W, G.H, 0.6); doors(cg, G, [236, 566]); };   // after the tone curve: the doors stay near-black
   c.contourExtra = (cg, G, b, fadeLit) => {
     HZ.tremor(cg, G.mouthScr, { lw: SS, seed: 'closet:ctm:' + b, closed: true, passes: 2, w: [0.5, 1.4], alpha: 0.7, fade: fadeLit([0, 10]) });
-    G.sockets.forEach((s, k) => HZ.tremor(cg, s, { lw: SS, seed: 'closet:cts' + k + ':' + b, closed: true, passes: 2, w: [0.4, 1.0], alpha: 0.35, fade: fadeLit([0, 8]) }));
   };
   return buildFace(c);
 }
@@ -585,10 +577,11 @@ function nostrilShapes(G, o) {
   }
   return out;
 }
-function nostrilAlbedo(ag, G, N) {
+function nostrilAlbedo(ag, G, N, o) {
+  o = o || {};
   for (const n of N) {
-    ag.save(); ag.filter = 'blur(3px)'; ag.fillStyle = 'rgba(120,92,80,0.55)'; ag.fill(path(n.ala)); ag.restore();
-    ag.fillStyle = '#7A5A50'; ag.fill(path(n.hole));
+    ag.save(); ag.filter = 'blur(3px)'; ag.fillStyle = o.alaCol || 'rgba(120,92,80,0.55)'; ag.fill(path(n.ala)); ag.restore();
+    ag.fillStyle = o.rimCol || '#7A5A50'; ag.fill(path(n.hole));
     ag.save(); ag.clip(path(n.hole)); ag.filter = 'blur(2px)'; ag.fillStyle = '#040202';
     const c0 = n.hole.reduce((a, p) => [a[0] + p[0] / n.hole.length, a[1] + p[1] / n.hole.length], [0, 0]);
     ag.beginPath(); ag.moveTo(n.hole[0][0] * 0.8 + c0[0] * 0.2, n.hole[0][1] * 0.8 + c0[1] * 0.2);
@@ -643,128 +636,106 @@ function doors(cg, G, edges) {
 }
 
 /* ======================================================= SCARE 3: FINAL
- * The last image of the tape: the closest, most realistic, most broken Poppy.
- * Face ~560 px tall (forehead and chin cut by the frame), tilted 35 degrees
- * clockwise with the eyes kept level, stretched 18% vertically, the left half
- * 6% larger. A dim warm underlight off the playroom floor. Blown black pupils
- * with white all round; a silent scream wider than the face and past the chin
- * with 38 real teeth, wet gums top and bottom, a black throat. Two real
- * nostrils, a cracked seed-pod nose, skin through the worn felt at the temple
- * seam. Not a red frame: red only as thin petal rims. */
-function finalFace(boil) {
-  const R = 238, TILT = 35;
-  const MX = 1.12;                                   // mouth half-width (15% of head width past the outline at its height)
-  // a tall screaming 'O' in the middle whose corners are stretched into thin slits past the outline
-  const OW = 0.5;                                    // half-width of the screaming O (fraction of MX)
-  const ring = (t) => { const q = t / OW; return q * q < 1 ? Math.sqrt(1 - q * q) : 0; };
-  const yU = (x) => { const t = clamp(x / MX, -1, 1); return 0.4 + 0.08 * t * t - 0.2 * Math.pow(ring(t), 0.8) + 0.01 * Math.sin(x * 11) + 0.02 * t; };
-  const yL = (x) => { const t = clamp(x / MX, -1, 1); return 0.4 + 0.08 * t * t + 0.62 * Math.pow(ring(t), 0.9) * (1 + 0.06 * t) + 0.055 * Math.pow(Math.max(0, 1 - t * t), 0.5) + 0.01 + 0.01 * Math.sin(x * 7); };
-  const lips = lipOpening(-MX, MX, yU, yL, 110, 0.01, 'final');
+ * The last image of the tape, and NOT another grin: an extreme close-up where
+ * the two eyes and the bridge of the nose fill ~70% of the frame width and the
+ * mouth is below the frame edge (only the black top of an open jaw shows at
+ * the bottom). The head is cocked ~16 degrees, the screen-left half 9% larger.
+ * Real wet eyes behind slits cut in the felt (no lid-skin ring: the felt
+ * itself is the lid, frayed over the eyeball), blown black pupils, white all
+ * round, bloodshot; lit only from below by a dim warm floor bounce, so the
+ * lower lids and the cheeks catch the light and the nose throws its shadow up
+ * between the eyes. A running-stitch seam down the bridge, skin showing
+ * through the worn felt under the left eye, two real nostrils.
+ * lock = false: the eyes are still searching (gaze off to screen left);
+ * lock = true: the eyes have found you (gaze into the lens, lids pulled wide). */
+function finalFace(boil, lock) {
+  const R = 400, TILT = 16;
   const c = {
-    W: 800, H: 600, cx: 392, cy: 292, R, sx: 1, sy: 1.18, tilt: TILT, eyeTilt: 0, eyeAnchor: -0.38, halfK: 1.06, crumple: 0.4, jaw: 0.1, seed: 'final5', boil,
-    petalR: 1.42, petalCol: '#2A080B', faceCol: '#BCAE94', decay: 0.45, petalRag: 0.1, pills: 380,
-    nose: { x: 0.0, y: 0.02, s: 1.0 },
+    W: 800, H: 600, cx: 352, cy: 436, R, sx: 1, sy: 1.1, tilt: TILT, eyeTilt: TILT, halfK: 1.13, crumple: 0.3, jaw: 0.0, dome: 0.26,
+    seed: 'final6', boil: boil + (lock ? 'L' : ''),
+    petalR: 1.42, petalCol: '#2A080B', faceCol: '#C9B898', decay: 0.4, stainK: 0.45, petalRag: 0.1, pills: 520,
+    nose: { x: 0.0, y: 0.06, s: 0.68 },
     lights: (G) => ({
-      light: { x: 300 * SS, y: 700 * SS, z: 250 * SS, col: [1.28, 1.02, 0.8], power: 2.0, d0: 240 * SS, cut: 0.22, cutSoft: 0.14 },
-      ambient: [0.006, 0.004, 0.004],
+      light: { x: 330 * SS, y: 830 * SS, z: 330 * SS, col: [1.3, 1.04, 0.8], power: 2.0, d0: 240 * SS, cut: 0.2, cutSoft: 0.16 },
+      ambient: [0.004, 0.003, 0.003],
     }),
-    tone: { exp: 2.1, shoulder: 1.6, gamma: 0.92 }, fuzzH: 0.5, pillH: 1.0, feltK: 0.65, petalDim: 0.35, petalRim: '150,40,36',
-    shadow: { soft: 8 },
-    hatch: { n: 560 },
-    contour: { passes: 3 },
+    lost: { ang: -60, a: 0.2, b: 0.95, k: 0.9 },
+    tone: { exp: 2.0, shoulder: 1.5, gamma: 0.95 }, fuzzH: 0.7, pillH: 1.1, feltK: 0.75, petalDim: 0.3,
+    shadow: { soft: 12 },
+    hatch: { n: 240, len: [34, 80], w: 1.3, alpha: [0.22, 0.45], cluster: [5, 9], gap: 6, lite: 0.1 },
+    contour: false,
   };
   const EW = 0.54;
+  const OPEN = lock ? 1.78 : 1.42;
   const eyes = [
-    { u: -0.44, v: -0.38 - 0.1, side: -1, seed: 'final:eL' },
-    { u: 0.44, v: -0.38, side: 1, seed: 'final:eR' },
+    { u: -0.44, v: -0.36, side: -1, seed: 'final:eL' },
+    { u: 0.44, v: -0.36, side: 1, seed: 'final:eR' },
   ];
+  // the eye frame exactly as eyeInSocket builds it (uniform scale R*sx*k)
+  const eyeTU = (G, e) => { const [ex, ey] = G.e(e.u, e.v), k = G.kf(e.u); return new DOMMatrix().translate(ex, ey).rotate(G.c.eyeTilt || 0).scale(G.R * G.sx * k, G.R * G.sx * k); };
+  // the slit in the felt: the eye aperture, a little larger, ragged
+  const slit = (G, e) => {
+    const S = HZ.eyeShape({ w: EW, open: OPEN, side: e.side, lowerFlat: 0.9 }), TU = eyeTU(G, e), r = rng(e.seed + ':slit');
+    const pts = S.up.map(([x, y], i) => [x * 1.03, y * 1.03 - 0.004 + (r() - 0.5) * 0.005]).concat(S.lo.slice().reverse().map(([x, y]) => [x * 1.03, y * 1.04 + 0.004 + (r() - 0.5) * 0.005]));
+    return pts.map(([x, y]) => { const p = TU.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; });
+  };
+  const mouthTop = (G) => {           // the black top of the open jaw, past the bottom edge
+    const pts = []; for (let k = 0; k <= 40; k++) { const t = k / 40 * 2 - 1; pts.push([t * 0.36, 0.47 - 0.06 * (1 - t * t) + 0.008 * Math.sin(t * 9)]); }
+    pts.push([0.5, 1.4], [-0.5, 1.4]);
+    return mapPts(G.h, pts);
+  };
   c.albedo = (ag, G, U) => {
-    G.sockets = eyes.map(e => { const k = G.kf(e.u), pts = []; for (let q = 0; q < 72; q++) { const a = q / 72 * TAU, j = 1 + 0.05 * HZ.noise1(q * 0.6, e.u > 0 ? 5 : 9); pts.push([e.u + Math.cos(a) * EW * 0.58 * k * j, e.v + Math.sin(a) * EW * 0.45 * k / 1.18 * j + 0.005]); } return mapPts(G.e, pts); });
-    for (const s of G.sockets) { ag.fillStyle = '#140E0C'; ag.fill(path(s)); }
-    G.brows = eyes.map(e => { const pts = []; for (let k = 0; k <= 20; k++) { const t = k / 20 * 2 - 1; pts.push([e.u + t * EW * 0.36 - e.side * EW * 0.06, e.v - 0.5 - 0.03 * (1 - t * t) + e.side * t * 0.08]); } return mapPts(G.e, pts); });
-    ag.save(); ag.lineCap = 'round';
-    for (const b of G.brows) { ag.strokeStyle = '#33261E'; ag.lineWidth = G.R * 0.04; ag.stroke(path(b, false)); }
+    G.sockets = eyes.map(e => slit(G, e));
+    for (const s of G.sockets) { ag.fillStyle = '#0C0807'; ag.fill(path(s)); }
+    G.mouthScr = mouthTop(G);
+    ag.fillStyle = '#040202'; ag.fill(path(G.mouthScr));
+    G.nostrils = nostrilShapes(G, { y: 0.15, sep: 0.05, s: 0.032 }); nostrilAlbedo(ag, G, G.nostrils, { rimCol: '#3E2C26', alaCol: 'rgba(90,68,60,0.4)' });
+    // one running-stitch seam down the bridge of the nose (an old repair), none across the mouth
+    G.seams = [[[0.62, -0.95], [0.78, -0.7], [0.9, -0.42]].map(p => G.h(...p))];   // the temple seam, far from the eyes
+    ag.save(); ag.setLineDash([16, 11]); ag.lineCap = 'round';
+    for (const sm of G.seams) { ag.strokeStyle = 'rgba(40,28,20,0.85)'; ag.lineWidth = 4; ag.stroke(path(sm, false)); }
     ag.restore();
-    G.mouthScr = mapPts(G.h, lips.open);
-    ag.fillStyle = '#050203'; ag.fill(path(G.mouthScr));
-    G.nostrils = nostrilShapes(G, { y: 0.125, sep: 0.068, s: 0.05 }); nostrilAlbedo(ag, G, G.nostrils);
-    // running-stitch seams on the felt (an old repair across the cheek, the temple seam)
-    G.seams = [
-      [[-0.95, 0.05], [-0.7, 0.0], [-0.5, 0.04]].map(p => G.h(...p)),
-      [[0.62, -0.78], [0.8, -0.45], [0.92, -0.12]].map(p => G.h(...p)),
-    ];
-    ag.save(); ag.setLineDash([9, 6]); ag.lineCap = 'round';
-    for (const sm of G.seams) { ag.strokeStyle = 'rgba(40,28,20,0.9)'; ag.lineWidth = 3.2; ag.stroke(path(U.splineClosed ? sm : sm, false)); }
-    ag.restore();
-    // crack across the seed-pod nose (hairline, highlight on one side)
-    const [nx, ny] = G.noseC || G.h(0, 0.05), ns = G.R * 0.1;
+    const [nx, ny] = G.noseC || G.h(0, 0.06), ns = G.R * 0.09;
     G.crack = [[nx - ns * 0.8, ny - ns * 0.4], [nx - ns * 0.3, ny - ns * 0.05], [nx - ns * 0.1, ny + ns * 0.12], [nx + ns * 0.35, ny + ns * 0.25], [nx + ns * 0.7, ny + ns * 0.55]];
   };
   c.height = (h, mat, G, U) => {
     const R2 = G.R;
+    // the felt falls INTO the slits (no raised rim): a soft bevel down to the eyeball
     for (const s of G.sockets) {
-      const m = U.maskOf(g => g.fill(path(s)), 3), rim = U.maskOf(g => { g.lineWidth = R2 * 0.06; g.stroke(path(s)); }, R2 * 0.025);
-      for (let i = 0; i < h.length; i++) { if (rim[i]) h[i] += rim[i] * R2 * 0.012; if (m[i]) h[i] -= m[i] * R2 * 0.06; }
+      const m = U.maskOf(g => g.fill(path(s)), R2 * 0.02);
+      for (let i = 0; i < h.length; i++) if (m[i]) h[i] -= m[i] * R2 * 0.05;
     }
-    U.addTo(h, U.maskOf(g => { g.lineCap = 'round'; g.lineWidth = R2 * 0.045; for (const b of G.brows) g.stroke(path(b, false)); }, R2 * 0.012), R2 * 0.03);
-    const mp = path(G.mouthScr);
-    // felt lips only around the screaming O; the stretched corners are bare slits cut in the felt
-    const oClip = (g) => { g.save(); g.setTransform(G.TH); g.beginPath(); g.ellipse(0, (yU(0) + yL(0)) / 2, OW * MX * 1.25, 0.62, 0, 0, TAU); g.restore(); g.clip(); };
-    const lip = U.maskOf(g => { oClip(g); g.lineWidth = R2 * 0.08; g.lineJoin = 'round'; g.stroke(mp); }, R2 * 0.02), m = U.maskOf(g => g.fill(mp), 2.5);
-    for (let i = 0; i < h.length; i++) { if (lip[i]) h[i] += lip[i] * R2 * 0.04; if (m[i]) h[i] -= m[i] * R2 * 0.35; }
-    // seams: pinched grooves
-    U.addTo(h, U.maskOf(g => { g.lineWidth = 6; g.lineCap = 'round'; for (const sm of G.seams) g.stroke(path(sm, false)); }, 3), -R2 * 0.01);
+    // brow ridge and cheekbones (felt stuffed lumpy), the bridge of the nose
+    const bump = (u, v, rx, ry, amp, rot) => { const [x, y] = G.h(u, v); const mm = U.maskOf(g => { g.beginPath(); g.ellipse(x, y, rx * R2, ry * R2 * G.sy, ((G.c.tilt || 0) + (rot || 0)) * DEG, 0, TAU); g.fill(); }, R2 * Math.min(rx, ry) * 0.7); U.addTo(h, mm, amp * R2); };
+    bump(-0.46, -0.72, 0.3, 0.12, 0.015); bump(0.46, -0.72, 0.3, 0.12, 0.012);
+    bump(-0.52, 0.0, 0.32, 0.2, 0.012, -10); bump(0.52, 0.02, 0.3, 0.2, 0.01, 10);
+    bump(0.0, -0.3, 0.1, 0.3, 0.015);
+    // seam: a pinched groove
+    U.addTo(h, U.maskOf(g => { g.lineWidth = 8; g.lineCap = 'round'; for (const sm of G.seams) g.stroke(path(sm, false)); }, 4), -R2 * 0.012);
+    const mp = path(G.mouthScr), m = U.maskOf(g => g.fill(mp), R2 * 0.03);
+    for (let i = 0; i < h.length; i++) if (m[i]) h[i] -= m[i] * R2 * 0.12;
     nostrilHeight(h, mat, G, U, G.nostrils);
-    // stretched cheeks beside the scream
-    const bump = (u, v, rx, ry, amp) => { const [x, y] = G.h(u, v); const mm = U.maskOf(g => { g.beginPath(); g.ellipse(x, y, rx * R2, ry * R2 * G.sy, (G.c.tilt || 0) * DEG, 0, TAU); g.fill(); }, R2 * Math.min(rx, ry) * 0.7); U.addTo(h, mm, amp * R2); };
-    bump(-0.7, 0.05, 0.22, 0.25, 0.05); bump(0.7, 0.05, 0.22, 0.25, 0.05);
   };
   c.overlay = (cg, G, U) => {
-    const R2 = G.R;
     const LI = cg.getImageData(0, 0, G.W, G.H).data, litAt = (x, y) => { const i = (clamp(y | 0, 0, G.H - 1) * G.W + clamp(x | 0, 0, G.W - 1)) * 4; return Math.min(1.4, (LI[i] + LI[i + 1] + LI[i + 2]) / 3 / 200 + 0.04); };
-    // ---- the scream: teeth across the top and bottom of the O, small clenched rows in the stretched slits
-    const ox = OW * MX, yTop = yU(0), yBot = yL(0);
-    const arc = (x0, x1, f) => { const out = []; for (let i = 0; i <= 40; i++) { const x = lerp(x0, x1, i / 40); out.push([x, f(x)]); } return out; };
-    const up = arc(-ox * 0.95, ox * 0.95, x => yTop + 0.055 + 0.3 * Math.pow(x / ox, 2));
-    const lo = arc(-ox * 0.8, ox * 0.8, x => yBot - 0.065 - 0.28 * Math.pow(x / ox, 2));
-    const slit = (sd, top) => arc(sd > 0 ? ox * 0.9 : -MX * 0.93, sd > 0 ? MX * 0.93 : -ox * 0.9, x => top ? yU(x) + 0.012 : yL(x) - 0.012);
-    const lowVis = (X, Y) => { const [u, v] = G.toHead(X, Y); return 0.3 + 0.7 * sstep(0.03, 0.14, yL(u) - v); };
-    const slitRow = (sd, top, seed) => ({ line: slit(sd, top), dir: top ? 1 : -1, n: 3, len: 0.05, persp: 0.55, lower: !top, z: R2 * 0.05, zBack: R2 * 0.04, ao: [0.75, 0.4], seed, crooked: 2, jit: 0.3, gapK: 0.08 });
-    mouthPP(cg, G, {
-      open: lips.open,
-      interior: (lg) => {
-        // the throat: black, a faint warm sheen far below the light
-        const [tx, ty] = [0, (yTop + yBot) / 2 + 0.2];
-        const tg = lg.createRadialGradient(tx, ty, 0.02, tx, ty, 0.5);
-        tg.addColorStop(0, 'rgba(18,7,7,0.9)'); tg.addColorStop(1, 'rgba(4,2,2,0)');
-        lg.fillStyle = tg; lg.beginPath(); lg.ellipse(tx, ty, 0.6, 0.3, 0, 0, TAU); lg.fill();
-      },
-      rows: [
-        { line: up, dir: 1, n: 13, len: 0.2, persp: 0.4, z: R2 * 0.08, zBack: R2 * 0.12, ao: [1, 0.4], seed: 'final:u', crooked: 2.4, jit: 0.24, gum: { depth: 0.12, height: 0.022, round: 0.016, pap: 0.24, arc: 0.07 } },
-        { line: lo, dir: -1, n: 11, len: 0.15, persp: 0.4, lower: true, z: R2 * 0.05, zBack: R2 * 0.12, ao: [0.95, 0.35], seed: 'final:l', vis: lowVis, crooked: 2.8, jit: 0.24, gum: { depth: 0.12, height: 0.02, round: 0.016, pap: 0.22, arc: 0.06 } },
-        { between: 0, back: true, ao: [0.42, 0.15], lk: 1.45, wk: 0.8, up: 0.02, seed: 'final:b', skip: 0.3 },
-        { between: 1, back: true, ao: [0.36, 0.12], lk: 1.35, wk: 0.8, up: 0.02, seed: 'final:b2', skip: 0.3 },
-      ],
-      shadowLip: [{ pts: lips.lo, width: 0.06, blur: 10, a: 0.7 }, { pts: lips.up, width: 0.03, blur: 6, a: 0.5 }], ivory: '#E8D8B4',
-    });
-    // ---- eyes: blown pupils, white all round
-    eyes.forEach((e, k) => eyeInSocket(cg, G, Object.assign({ socketPath: G.sockets[k], w: EW, open: 1.42, iris: 0.19, pupil: 0.9, irisCol: ['#6E7A64', '#71806A', '#28322A'], veins: 8, gaze: [0, 0], lowerFlat: 0.9, irisDy: -0.05,
-      window: { x: 0, y: -0.05, s: 0.32, a: 0.97 }, lidSkin: '#7E6458', ring: 0.1, recess: 0.05, lidShadow: 0.8, lashes: 14, shadeLo: 0.22, gain: 1.7 }, e)));
-    G.sockets.forEach((s, k) => fray(cg, s, { n: 2, len: [2, 7], side: 1, seed: 'final:sf' + k, col: [200, 188, 166], alpha: [0.3, 0.7], light: litAt, every: 2 }));
-    const inO = ([u]) => Math.abs(u) < OW * MX * 1.15;
-    fray(cg, mapPts(G.h, lips.up.filter(inO)), { n: 3, len: [3, 12], side: 1, seed: 'final:lu', col: [205, 192, 168], alpha: [0.4, 0.9], light: litAt });
-    fray(cg, mapPts(G.h, lips.lo.filter(inO)), { n: 3, len: [3, 12], side: -1, seed: 'final:ll', col: [205, 192, 168], alpha: [0.4, 0.9], light: litAt });
-    // ---- nostrils, cracked nose, temple skin
+    // ---- the eyes: blown pupils, white all round, bloodshot; no lid-skin ring (the felt is the lid)
+    // searching: the two eyes look different ways (wrong); found you: both converge on the lens
+    const gazes = lock ? [[0.012, -0.01], [-0.012, -0.01]] : [[-0.14, 0.03], [0.09, 0.07]];
+    eyes.forEach((e, k) => eyeInSocket(cg, G, Object.assign({ socketPath: G.sockets[k], w: EW, open: OPEN, iris: 0.165, pupil: lock ? 0.6 : 0.78, irisCol: ['#6E7A64', '#6A7862', '#26302A'], veins: 16, veinCol: '#C98E8A',
+      gaze: gazes[k], lowerFlat: 0.9, irisDy: lock ? -0.02 : 0.02, window: { x: lock ? 0.05 : 0.25, y: -0.12, s: 0.34, a: 0.97 }, ring: 0, socket: 0.55, recess: 0.03, lidShadow: 0.9, lashes: 18, lashLen: 0.09,
+      shadeLo: 0.3, shadeA: -0.9, shadeB: 0.7, gain: 1.75, rimShadow: 0.85, wetK: 1.0, marginA: 0.12 }, e)));
+    // the felt frays over the eyeball: fibres crossing the slit edges, lit only where the light reaches
+    G.sockets.forEach((s, k) => fray(cg, s, { n: 3, len: [3, 12], side: 1, seed: 'final:sf' + k + (lock ? 'L' : ''), col: [204, 190, 166], alpha: [0.35, 0.85], light: litAt, every: 2 }));
+    // ---- cracked seed-pod nose
     cg.save(); cg.lineCap = 'round'; cg.lineJoin = 'round';
-    cg.strokeStyle = 'rgba(0,0,0,0.95)'; cg.lineWidth = 2.2; cg.stroke(path(G.crack, false));
-    cg.translate(-1.2, -1.4); cg.strokeStyle = 'rgba(255,226,190,0.55)'; cg.lineWidth = 1.2; cg.stroke(path(G.crack, false));
+    cg.strokeStyle = 'rgba(0,0,0,0.95)'; cg.lineWidth = 3; cg.stroke(path(G.crack, false));
+    cg.translate(-1.5, -1.8); cg.strokeStyle = 'rgba(255,226,190,0.5)'; cg.lineWidth = 1.4; cg.stroke(path(G.crack, false));
     cg.restore();
-    wornPatch(cg, G, { u: 0.8, v: -0.42, rx: 0.12, ry: 0.065, rot: 70, seed: 'final:skin', skin: ['#968676', '#5E5048'], veinA: 0.15, light: litAt, feltRGB: [196, 182, 156] });
+    // ---- skin through the worn felt under the big (left) eye: pores, a frayed rim
   };
-  c.grade = (cg, G) => capRed(cg, G.W, G.H, 0.3);
+  c.grade = (cg, G) => capRed(cg, G.W, G.H, 0.5);
   c.contourExtra = (cg, G, b, fadeLit) => {
-    HZ.tremor(cg, G.mouthScr, { lw: SS, seed: 'final:ctm:' + b, closed: true, passes: 3, w: [0.5, 1.6], alpha: 0.75, fade: fadeLit([0, 10]) });
-    G.sockets.forEach((s, k) => HZ.tremor(cg, s, { lw: SS, seed: 'final:cts' + k + ':' + b, closed: true, passes: 2, w: [0.4, 1.0], alpha: 0.35, fade: fadeLit([0, 8]) }));
+    G.sockets.forEach((s, k) => HZ.tremor(cg, s, { lw: SS, seed: 'final:cts' + k + ':' + b, closed: true, passes: 2, w: [0.5, 1.2], alpha: 0.5, fade: fadeLit([0, 8]) }));
   };
   return buildFace(c);
 }
@@ -780,7 +751,7 @@ function costume(boil) {
   const R = 182;
   const c = {
     W: 800, H: 600, cx: 380, cy: 306, R, sx: 1, sy: 1.02, tilt: 32, eyeTilt: 32, crumple: 1.1, jaw: 0.05, seed: 'costume6', boil,
-    petalR: 1.48, crush: [{ angle: Math.PI - 32 * DEG, amount: 0.25, squeeze: 0.5 }], petalCol: '#4A0E12', faceCol: '#C8BCA2', decay: 0.85, petalRag: 0.08, pills: 300,
+    petalR: 1.48, crush: [{ angle: Math.PI - 32 * DEG, amount: 0.25, squeeze: 0.5 }], petalCol: '#2A080B', faceCol: '#C8BCA2', decay: 0.85, petalRag: 0.08, pills: 300,
     nose: { x: 0.0, y: 0.1, s: 1.05 },
     lights: (G) => ({
       light: { x: 440 * SS, y: 590 * SS, z: 270 * SS, col: [1.3, 1.22, 1.08], power: 1.6, d0: 330 * SS, hard: 0.85, cut: 0.12, cutSoft: 0.1 },
@@ -788,7 +759,7 @@ function costume(boil) {
     }),
     lost: { ang: -8, a: 0.2, b: 0.95, k: 0.98 },
     shadow: { soft: 3, bias: 2.5 },
-    tone: { exp: 1.45, shoulder: 1.2, gamma: 1.3 }, fuzzH: 0.6, feltK: 0.85, petalDim: 0.72, petalRim: '150,42,40', petalShadowK: 0.85,
+    tone: { exp: 1.45, shoulder: 1.2, gamma: 1.3 }, fuzzH: 0.6, feltK: 0.85, petalDim: 0.3, petalRim: '84,30,30', petalShadowK: 0.85,
     hatch: { n: 430 },
     smear: { zoom: 0.075, fn: (u, v) => Math.max(sstep(0.36, 0.05, v), sstep(0.6, 0.95, u)) * 0.9 },
   };
@@ -843,7 +814,7 @@ function costume(boil) {
     const R2 = G.R;
     for (const hp of G.holes) {
       const m = U.maskOf(g => g.fill(path(hp)), 3), rim = U.maskOf(g => { g.lineWidth = R2 * 0.05; g.stroke(path(hp)); }, R2 * 0.02);
-      for (let i = 0; i < h.length; i++) { if (m[i]) h[i] -= m[i] * R2 * 0.3; if (rim[i]) h[i] += rim[i] * R2 * 0.02; }
+      for (let i = 0; i < h.length; i++) { if (m[i]) h[i] -= m[i] * R2 * 0.3; if (rim[i]) h[i] -= rim[i] * R2 * 0.012; }
     }
     const bump = (u, v, rx, ry, amp) => { const [x, y] = G.h(u, v); const m = U.maskOf(g => { g.beginPath(); g.ellipse(x, y, rx * R2, ry * R2, (G.c.tilt || 0) * DEG, 0, TAU); g.fill(); }, R2 * Math.min(rx, ry) * 0.8); U.addTo(h, m, amp * R2); };
     bump(-0.4, -0.52, 0.32, 0.1, 0.035); bump(0.4, -0.44, 0.3, 0.1, 0.03);
@@ -858,13 +829,13 @@ function costume(boil) {
     const LI = cg.getImageData(0, 0, G.W, G.H).data, litAt = (x, y) => { const i = (clamp(y | 0, 0, G.H - 1) * G.W + clamp(x | 0, 0, G.W - 1)) * 4; return Math.min(1.4, (LI[i] + LI[i + 1] + LI[i + 2]) / 3 / 200 + 0.03); };
     // ---- teeth through the tear (upper row hanging, lower row standing), set back behind the felt
     const upL = [], loL = [];
-    for (let i = 0; i <= 40; i++) { const x = lerp(-0.62, 0.7, i / 40), xs = x / 0.74, y = 0.36 + 0.16 * (1 - xs * xs); upL.push([x, y - 0.09]); loL.push([x * 0.97, y + 0.17]); }
+    for (let i = 0; i <= 40; i++) { const x = lerp(-0.3, 0.4, i / 40), xs = x / 0.74, y = 0.36 + 0.16 * (1 - xs * xs); upL.push([x, y - 0.09]); loL.push([x * 0.97, y + 0.17]); }
     const lowVis = (X, Y) => 0.55;
     mouthPP(cg, G, {
       open: TM.open,
       rows: [
-        { line: upL, dir: 1, n: 8, len: 0.15, persp: 0.45, z: R2 * 0.02, zBack: R2 * 0.08, ao: [1, 0.35], seed: 'costume:u', crooked: 2, jit: 0.2, gum: { depth: 0.06, height: 0.014, round: 0.012, pap: 0.24, arc: 0.07 } },
-        { line: loL, dir: -1, n: 7, len: 0.12, persp: 0.45, lower: true, z: R2 * 0.0, zBack: R2 * 0.08, ao: [0.8, 0.3], seed: 'costume:l', crooked: 2.4, jit: 0.2, gum: { depth: 0.05, height: 0.012, round: 0.012, pap: 0.22, arc: 0.06 } },
+        { line: upL, dir: 1, n: 5, len: 0.15, persp: 0.45, z: R2 * 0.02, zBack: R2 * 0.08, ao: [1, 0.35], seed: 'costume:u', crooked: 2, jit: 0.2, gum: { depth: 0.06, height: 0.014, round: 0.012, pap: 0.24, arc: 0.07 } },
+        { line: loL, dir: -1, n: 4, len: 0.12, persp: 0.45, lower: true, z: R2 * 0.0, zBack: R2 * 0.08, ao: [0.8, 0.3], seed: 'costume:l', crooked: 2.4, jit: 0.2, gum: { depth: 0.05, height: 0.012, round: 0.012, pap: 0.22, arc: 0.06 } },
       ],
       shadowLip: [{ pts: TM.up, width: 0.035, blur: 6, a: 0.75 }, { pts: TM.lo, width: 0.03, blur: 6, a: 0.6 }], ivory: '#E8DFC8',
     });
@@ -890,8 +861,8 @@ function costume(boil) {
     const TU = new DOMMatrix().translate(ex, ey).rotate(14).scale(G.R * G.sx, G.R * G.sx);
     const L0 = G.st.L[0], hpx = 0.4 * 0.38 * 1.2 * G.R, ldx = L0.x - ex, ldy = L0.y - ey, ll = Math.hypot(ldx, ldy);
     cg.save(); cg.setTransform(TU);
-    const eye = HZ.eyePP(cg, G.st, { cx: 0, cy: 0, w: 0.52, open: 1.3, side: -1, iris: 0.2, pupil: 0.09, irisCol: ['#8E7A50', '#7E8676', '#2E3634'], veins: 5, lowerFlat: 0.6,
-      window: { x: 0, y: -0.3, s: 0.28, a: 0.95 }, lashes: 16, lashLen: 0.12, press: 0.9, lidSkin: '#7A5E52', ring: 0.12, socket: 0.3, lw: lwH, seed: 'costume:eye',
+    const eye = HZ.eyePP(cg, G.st, { cx: 0, cy: 0, w: 0.6, open: 1.35, side: -1, iris: 0.2, pupil: 0.14, irisCol: ['#7A6236', '#5E6650', '#1E2622'], veins: 9, lowerFlat: 0.6, marginA: 0.2,
+      window: { x: 0, y: -0.3, s: 0.3, a: 0.97, panes: 1 }, lashes: 16, lashLen: 0.12, press: 0.9, lidSkin: '#5E4A42', ring: 0.08, socket: 0.3, lw: lwH, seed: 'costume:eye',
       z: G.hAt(ex, ey) - R2 * 0.08, lidShadow: 0.5, gain: 2.3,
       vis: (X, Y) => 0.35 + 0.65 * sstep(-0.9, 0.7, ((X - ex) * ldx + (Y - ey) * ldy) / ll / hpx) });
     cg.restore();
@@ -903,15 +874,14 @@ function costume(boil) {
     cg.save(); cg.clip(hp2); cg.fillStyle = '#010101'; cg.fill(hp2); meshGrid(cg, G, hp2, rx, ry, false, litAt); cg.restore();
   };
   function meshGrid(cg, G, hp, ex, ey, bright, litAt) {
-    const R2 = G.R, step = R2 * 0.085, a = (G.c.tilt || 0) * DEG + Math.PI / 4;
+    // fine black nylon mesh: 1 px threads at a 3 px pitch, low contrast (the eye reads THROUGH it)
+    const R2 = G.R, step = 3 * SS, a = (G.c.tilt || 0) * DEG + Math.PI / 4;
     cg.save(); cg.clip(hp); cg.translate(ex, ey); cg.rotate(a);
     for (const dir of [0, 1]) {
-      for (let k = -14; k <= 14; k++) {
+      for (let k = -Math.ceil(R2 / step); k <= Math.ceil(R2 / step); k++) {
         const o = k * step;
         cg.save(); if (dir) cg.rotate(Math.PI / 2);
-        cg.fillStyle = 'rgba(10,9,8,0.9)'; cg.fillRect(-R2, o - 1.1, R2 * 2, 2.2);
-        // the lower edge of each wire catches the low light
-        cg.fillStyle = bright ? 'rgba(170,160,140,0.32)' : 'rgba(70,64,56,0.18)'; cg.fillRect(-R2, o + 1.0, R2 * 2, 0.9);
+        cg.fillStyle = bright ? 'rgba(6,5,4,0.34)' : 'rgba(6,5,4,0.6)'; cg.fillRect(-R2, o - 0.9, R2 * 2, 1.8);
         cg.restore();
       }
     }
@@ -919,8 +889,8 @@ function costume(boil) {
   }
   c.contourExtra = (cg, G, b, fadeLit) => {
     HZ.tremor(cg, G.mouthScr, { lw: SS, seed: 'costume:ctm:' + b, closed: true, passes: 2, w: [0.5, 1.5], alpha: 0.75, fade: fadeLit([0, -10]) });
-    for (let k = 0; k < 2; k++) HZ.tremor(cg, G.holes[k], { lw: SS, seed: 'costume:cth' + k + ':' + b, closed: true, passes: 2, w: [0.5, 1.6], alpha: 0.75, fade: fadeLit([0, 10]) });
   };
+  c.grade = (cg, G) => capRed(cg, G.W, G.H, 0.6);
   return buildFace(c);
 }
 
@@ -929,8 +899,10 @@ A.poppy_scare_closet = (cv) => { const { out } = closet('A'); cv.getContext('2d'
 A.poppy_scare_closet_b = (cv) => { const { out } = closet('B'); cv.getContext('2d').drawImage(out, 0, 0); };
 A.poppy_scare_costume = (cv) => { const { out } = costume('A'); cv.getContext('2d').drawImage(out, 0, 0); };
 A.poppy_scare_costume_b = (cv) => { const { out } = costume('B'); cv.getContext('2d').drawImage(out, 0, 0); };
-A.poppy_scare_final = (cv) => { const { out } = finalFace('A'); cv.getContext('2d').drawImage(out, 0, 0); };
-A.poppy_scare_final_b = (cv) => { const { out } = finalFace('B'); cv.getContext('2d').drawImage(out, 0, 0); };
+A.poppy_scare_final = (cv) => { const { out } = finalFace('A', false); cv.getContext('2d').drawImage(out, 0, 0); };
+A.poppy_scare_final_b = (cv) => { const { out } = finalFace('B', false); cv.getContext('2d').drawImage(out, 0, 0); };
+A.poppy_scare_final_c = (cv) => { const { out } = finalFace('A', true); cv.getContext('2d').drawImage(out, 0, 0); };
+A.poppy_scare_final_d = (cv) => { const { out } = finalFace('B', true); cv.getContext('2d').drawImage(out, 0, 0); };
 
 root.Poppy.SCARE = { SS, buildFace, rig, faceLocal, petalsLocal, splineClosed, maskOf, mouthPP, lipOpening, eyeInSocket, wornPatch, nostrils, doors, fray, closet, finalFace, costume };
 })(typeof window !== 'undefined' ? window : globalThis);

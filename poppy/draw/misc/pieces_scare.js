@@ -106,12 +106,18 @@ MISC.sub_eyes_dark = function (g, W, H) {
     lost: { ang: 0, a: 0.5, b: 1.3, k: 0.95 }, hatch: { n: 520, band: [0.015, 0.08, 0.3] },
   };
   const EW = 0.42, eyes = [{ u: -0.3, v: -0.08 - 0.12, side: -1, seed: 'se:l' }, { u: 0.3, v: -0.08, side: 1, seed: 'se:r' }];
+  // slits cut in the felt hugging the eyes: no rings round them (they read as goggles)
   c.albedo = (ag, G, U) => {
-    G.sockets = eyes.map(e => { const pts = []; for (let k = 0; k < 72; k++) { const a = k / 72 * TAU, j = 1 + 0.05 * HZ.noise1(k * 0.6, e.u > 0 ? 3 : 7); pts.push([e.u + Math.cos(a) * EW * 0.6 * j, e.v + Math.sin(a) * EW * 0.45 * j]); } return U.mapPts(G.e, pts); });
-    for (const s of G.sockets) { ag.fillStyle = '#140E0C'; ag.fill(U.path(s)); }
+    G.sockets = eyes.map(e => {
+      const S = HZ.eyeShape({ w: EW, open: 1.42, side: e.side, lowerFlat: 0.85 }), [ex, ey] = G.e(e.u, e.v), k = G.kf(e.u);
+      const TU = new DOMMatrix().translate(ex, ey).scale(G.R * G.sx * k, G.R * G.sx * k), r = rng(e.seed + ':slit');
+      const pts = S.up.map(([x, y]) => [x * 1.03, y * 1.04 - 0.004 + (r() - 0.5) * 0.006]).concat(S.lo.slice().reverse().map(([x, y]) => [x * 1.03, y * 1.05 + 0.005 + (r() - 0.5) * 0.006]));
+      return pts.map(([x, y]) => { const p = TU.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; });
+    });
+    for (const s of G.sockets) { ag.fillStyle = '#0A0808'; ag.fill(U.path(s)); }
   };
   c.height = (h, mat, G, U) => {
-    for (const s of G.sockets) { const m = U.maskOf(q => q.fill(U.path(s)), 3); for (let i = 0; i < h.length; i++) if (m[i]) h[i] -= m[i] * G.R * 0.06; }
+    for (const s of G.sockets) { const m = U.maskOf(q => q.fill(U.path(s)), G.R * 0.03); for (let i = 0; i < h.length; i++) if (m[i]) h[i] -= m[i] * G.R * 0.05; }
   };
   // darkness closes in on everything but the eyes and a sliver of cheek under them
   c.grade = (cg, G) => {
@@ -124,7 +130,7 @@ MISC.sub_eyes_dark = function (g, W, H) {
   };
   c.overlay = (cg, G) => {
     eyes.forEach((e, k) => SC.eyeInSocket(cg, G, Object.assign({ socketPath: G.sockets[k], w: EW, open: 1.42, iris: 0.19, pupil: 0.09, irisCol: ['#7E7A66', '#86969A', '#2E3C42'], veins: 5, lowerFlat: 0.85,
-      window: { x: 0, y: -0.05, s: 0.3, a: 0.97 }, lidSkin: '#7E6458', ring: 0.11, recess: 0.05, lidShadow: 0.8, lashes: 14, shadeLo: 0.22, gain: 2.1 }, e)));
+      window: { x: 0, y: -0.05, s: 0.3, a: 0.97 }, ring: 0, socket: 0.5, recess: 0.03, lidShadow: 0.8, lashes: 14, shadeLo: 0.22, gain: 2.1, marginA: 0.12, rimShadow: 0.85 }, e)));
   };
   const { out } = SC.buildFace(c);
   blit2x(g, out, W, H);
@@ -224,11 +230,13 @@ MISC.sub_scrawl_face = function (g, W, H) {
   // pressure blots where the pen stopped
   for (let k = 0; k < 7; k++) { const a = r() * TAU, rr = fr * (0.98 + r() * 0.5); g.fillStyle = `rgba(${ink},${0.5 + r() * 0.4})`; g.beginPath(); g.ellipse(fx + Math.cos(a) * rr, fy + Math.sin(a) * rr, 1.5 + r() * 2.5, 1.2 + r() * 2, r() * 3, 0, TAU); g.fill(); }
   // eyes: dense cross-hatched black voids, one tiny glint each, the left one higher
-  const eyes = [[fx - 44, fy - 30, 30, 34], [fx + 44, fy - 18, 30, 34]];
-  for (const [ex, ey, rx, ry] of eyes) {
-    const ov = []; for (let i = 0; i < 50; i++) { const a = i / 50 * TAU; ov.push([ex + Math.cos(a) * rx, ey + Math.sin(a) * ry]); }
+  // eyes: irregular almond voids (pointed corners, slanted, uneven), not round patches
+  const eyes = [[fx - 46, fy - 30, 40, 17, -0.22], [fx + 46, fy - 16, 37, 15, 0.3]];
+  for (const [ex, ey, rx, ry, rot] of eyes) {
+    const ov = []; for (let i = 0; i < 60; i++) { const t = i / 60 * TAU, c = Math.cos(t), sn = Math.sin(t), yy = sn * ry * Math.pow(Math.abs(sn), -0.15) * (sn < 0 ? 1.15 : 0.8) * (1 + 0.08 * Math.sin(t * 5 + ex)), xx = c * rx * (1 + 0.05 * Math.sin(t * 3));
+      ov.push([ex + xx * Math.cos(rot) - yy * Math.sin(rot), ey + xx * Math.sin(rot) + yy * Math.cos(rot)]); }
     T(ov, { closed: true, passes: 4, w: [1, 2.5], seed: 'sc:e' + ex });
-    g.save(); g.beginPath(); g.ellipse(ex, ey, rx, ry, 0, 0, TAU); g.clip();
+    g.save(); g.beginPath(); g.moveTo(ov[0][0], ov[0][1]); for (const q of ov) g.lineTo(q[0], q[1]); g.closePath(); g.clip();
     g.lineCap = 'round';
     for (const ang of [0.8, -0.7, 0.1, 1.5]) for (let k = -40; k <= 40; k += 1.6) {
       const ca = Math.cos(ang), sa = Math.sin(ang);
@@ -272,8 +280,8 @@ MISC.sub_scrawl_face = function (g, W, H) {
   }
   g.restore();
   // the line at the bottom margin, in shaky capitals
-  const txt = M.strokeText(g, 'tech', 'SHE FINDS YOU ON TEN', 320, 438, 34, { align: 'center', noDraw: true, jitter: 0.02, rot: 5, bounce: 0.08, scaleJit: 0.1, seed: 'scrawltxt' });
-  for (const [k, stroke] of txt.strokes.entries()) T(stroke, { closed: false, passes: 2, w: [0.9, 2.2], amp: [0.5, 1.2], seed: 'sc:t' + k });
+  const txt = M.strokeText(g, 'tech', 'SHE FINDS YOU ON TEN', 320, 404, 36, { align: 'center', noDraw: true, jitter: 0.02, rot: 3, bounce: 0.06, scaleJit: 0.08, seed: 'scrawltxt' });
+  for (const [k, stroke] of txt.strokes.entries()) T(stroke, { closed: false, passes: 3, w: [1.6, 3.2], amp: [0.5, 1.1], alpha: 0.95, seed: 'sc:t' + k });
   // weak lamp: warm, from the upper left, falling to near black at the edges
   g.save();
   const lamp = g.createRadialGradient(300, 200, 30, 315, 225, 420);

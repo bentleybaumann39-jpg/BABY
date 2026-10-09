@@ -430,7 +430,7 @@
     },
     {
       "file": "build/art/poppy/poppy_scare_final.png",
-      "description": "JUMP SCARE 3 - the last image of the tape (11j, 1.0 s, after the false ending; the face fills ~90% of the frame) and, colour-inverted, subliminal S7. The closest, most realistic, most broken Poppy. Composition: face ~560 px tall in the 800x600 canvas, so the forehead top and the chin are cut by the frame edges; head tilted 35 degrees clockwise with the eyes kept LEVEL; face stretched 18% vertically; the left face half 6% larger than the right. LIGHT: a dim warm underlight bouncing off the playroom floor (key 50 degrees below), hard on the teeth and the eyes, soft elsewhere. NOT a red frame: red only as a 1-2 px rim on the few visible petals and a faint warm cast; under 6% of the frame saturated red. VALUE BUDGET: 60-70% of pixels <= 8% luma, 5-10% above 60%. EYES: wet, open 140% with white visible all round, BLOWN pupils filling 90% of the iris (only a thin grey-green iris ring and its limbal edge remain - not human), symmetric sharp window catchlights dead centre into the lens, shining lower-lid waterlines, 8 branching grey-pink capillaries each, her right eye (screen left) 5% of head height higher; brows raised high; lower lids flat. MOUTH: jaw dropped 1.6x in a silent scream that runs 15% of head width past the face outline on both sides and below the chin line; 38 REAL ivory teeth in two rows (front lit, uneven, translucent edges; back row half-lit), scalloped wet pink gums top and bottom, a black throat. Human details: two real nostrils; the seed-pod button nose cracked (hairline crack with a 1 px highlight); real skin showing through worn felt at the right temple seam (pores, faint blue veins at 15%); fine creases at the eye corners. Felt everywhere else: pilling, grime, running stitches. Shadows hatched (400-600 strokes at 2-3 angles), the contour a tremor line overdrawn 3 times. Background: the black of the dark playroom. Human teeth, never fangs. No blood, no gore, no wounds.",
+      "description": "JUMP SCARE 3 - the last image of the tape (11j, 1.0 s, after the false ending) and, colour-inverted, subliminal S7. NOT another grin (the tooth grin is spent by now): an EXTREME CLOSE-UP of the eyes. The two eyes and the bridge of the seed-pod nose fill ~70% of the frame width; the mouth is below the frame edge (only the black top of an open jaw shows at the bottom). Head cocked ~16 degrees clockwise, the screen-left half 9% larger (one eye bigger than the other). LIGHT: only a dim warm bounce from the floor below, so the lower lids and the cheeks catch it, the forehead is black and the nose throws its shadow up between the eyes. EYES: real, wet, bloodshot (16 branching capillaries), BLOWN pupils (86% of the iris), white visible all round, seen through slits cut in the felt: no lid-skin ring, the frayed felt itself is the lid. In this frame they are still SEARCHING (gaze off to screen left). Human details: two real nostrils, a cracked seed-pod nose, skin showing through worn felt under the left eye (pores, faint veins), one running-stitch seam down the bridge. Felt everywhere else: pilling, grime, long low-contrast form-following hatching. No blood, no gore, no wounds.",
       "transparent": false,
       "size": [
         800,
@@ -498,6 +498,34 @@
     {
       "file": "build/art/poppy/poppy_scare_final_b.png",
       "description": "BOIL frame for scare 3: identical to poppy_scare_final except the re-seeded hatching and re-jittered contour, as poppy_scare_costume_b. Mean luminance within 2% of the original.",
+      "transparent": false,
+      "size": [
+        800,
+        600
+      ],
+      "used_in": [
+        "11j"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/art/poppy/poppy_scare_final_c.png",
+      "description": "Scare 3, from frame 10 on: identical registration and light to poppy_scare_final, but the eyes have FOUND you: the gaze snaps dead into the lens and the felt slits are pulled wide (open 178%), white all round the blown pupils.",
+      "transparent": false,
+      "size": [
+        800,
+        600
+      ],
+      "used_in": [
+        "11j"
+      ],
+      "scare_pass": true,
+      "scare_pass_status": "new"
+    },
+    {
+      "file": "build/art/poppy/poppy_scare_final_d.png",
+      "description": "BOIL frame of poppy_scare_final_c (re-seeded hatching and fray).",
       "transparent": false,
       "size": [
         800,

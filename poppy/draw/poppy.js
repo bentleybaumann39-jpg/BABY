@@ -1412,6 +1412,11 @@ function drawTorso(ctx, B, P, o) {
     paint: g => { const q = new Path2D(); q.roundRect(193 + tx, 401, 34, 26, [2, 2, 7, 7]); stitches(g, q, 'rgba(150,100,20,0.7)', 1.1, 3, 2.5); },
   });
   const pcx = 210 + tx, pcy = 413;
+  if (o && o.patchButton) {           // scare pass: a plain cream button where the flower patch was (no red spot on the torso)
+    part(ctx, circle(pcx, pcy, 7.5), { fill: '#D8CCB0', tex: 0.15, shade: 0.35, ao: 0.2, hi: 0.2, outline: '#8C8478', outlineW: 1, cast: { alpha: 0.3, blur: 2, dist: 1.5 } });
+    for (const [dx, dy] of [[-2.2, -2.2], [2.2, -2.2], [-2.2, 2.2], [2.2, 2.2]]) part(ctx, circle(pcx + dx, pcy + dy, 1.1), { fill: '#5A5244', tex: 0, shade: 0, ao: 0, hi: 0 });
+    return;
+  }
   const petals = [];
   for (let k = 0; k < 5; k++) { const a = k / 5 * TAU - Math.PI / 2; petals.push(ellipse(pcx + Math.cos(a) * 6.5, pcy + Math.sin(a) * 6.5, 7, 6, a)); }
   part(ctx, petals, { fill: P.petal, tex: 0.3, shade: 0.3, ao: 0.2, hi: 0.1, outline: P.petalLine, outlineW: 0.9, cast: { alpha: 0.25, blur: 2, dist: 1.5 } });

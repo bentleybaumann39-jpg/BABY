@@ -306,23 +306,17 @@ POPPY = [
         "felt edge) - not an opening, not red. Shadows hatched (300-500 one-pixel strokes), contour a tremor line (0.6-1.5 px "
         "jitter, 2-3 passes). Black closet interior around. Human teeth, never fangs. No blood, no gore.")),
     dict(name="poppy_scare_final", size=SCARE, transparent=False, sp="changed", description=(
-        "JUMP SCARE 3 - the last image of the tape (11j, 1.0 s, after the false ending; the face fills ~90% of the frame) and, "
-        "colour-inverted, subliminal S7. The closest, most realistic, most broken Poppy. Composition: face ~560 px tall in the "
-        "800x600 canvas, so the forehead top and the chin are cut by the frame edges; head tilted 35 degrees clockwise with the "
-        "eyes kept LEVEL; face stretched 18% vertically; the left face half 6% larger than the right. LIGHT: a dim warm underlight "
-        "bouncing off the playroom floor (key 50 degrees below), hard on the teeth and the eyes, soft elsewhere. NOT a red frame: "
-        "red only as a 1-2 px rim on the few visible petals and a faint warm cast; under 6% of the frame saturated red. VALUE "
-        "BUDGET: 60-70% of pixels <= 8% luma, 5-10% above 60%. EYES: wet, open 140% with white visible all round, BLOWN pupils "
-        "filling 90% of the iris (only a thin grey-green iris ring and its limbal edge remain - not human), symmetric sharp window "
-        "catchlights dead centre into the lens, shining lower-lid waterlines, 8 branching grey-pink capillaries each, her right "
-        "eye (screen left) 5% of head height higher; brows raised high; lower lids flat. MOUTH: jaw dropped 1.6x in a silent "
-        "scream that runs 15% of head width past the face outline on both sides and below the chin line; 38 REAL ivory teeth in "
-        "two rows (front lit, uneven, translucent edges; back row half-lit), scalloped wet pink gums top and bottom, a black "
-        "throat. Human details: two real nostrils; the seed-pod button nose cracked (hairline crack with a 1 px highlight); real "
-        "skin showing through worn felt at the right temple seam (pores, faint blue veins at 15%); fine creases at the eye "
-        "corners. Felt everywhere else: pilling, grime, running stitches. Shadows hatched (400-600 strokes at 2-3 angles), the "
-        "contour a tremor line overdrawn 3 times. Background: the black of the dark playroom. Human teeth, never fangs. No blood, "
-        "no gore, no wounds.")),
+        "JUMP SCARE 3 - the last image of the tape (11j, 1.0 s, after the false ending) and, colour-inverted, subliminal S7. "
+        "NOT another grin (the tooth grin is spent by now): an EXTREME CLOSE-UP of the eyes. The two eyes and the bridge of the "
+        "seed-pod nose fill ~70% of the frame width; the mouth is below the frame edge (only the black top of an open jaw shows "
+        "at the bottom). Head cocked ~16 degrees clockwise, the screen-left half 9% larger (one eye bigger than the other). "
+        "LIGHT: only a dim warm bounce from the floor below, so the lower lids and the cheeks catch it, the forehead is black "
+        "and the nose throws its shadow up between the eyes. EYES: real, wet, bloodshot (16 branching capillaries), BLOWN "
+        "pupils (86% of the iris), white visible all round, seen through slits cut in the felt: no lid-skin ring, the frayed "
+        "felt itself is the lid. In this frame they are still SEARCHING (gaze off to screen left). Human details: two real "
+        "nostrils, a cracked seed-pod nose, skin showing through worn felt under the left eye (pores, faint veins), one "
+        "running-stitch seam down the bridge. Felt everywhere else: pilling, grime, long low-contrast form-following hatching. "
+        "No blood, no gore, no wounds.")),
     dict(name="poppy_final_close", size=[640, 480], transparent=False, description=(
         "The last image of the tape. Ordinary friendly Poppy (Stage 1 face, button eyes WITH catchlights again, opaque white felt eye whites, gentle closed smile) impossibly close to the lens: the face overfills the frame (forehead and chin cut off, the red petal bonnet visible in all four corners), slight wide-angle bulge, looking just past the lens like Stage 1, soft warm bedside-lamp light from the left, the dark bedroom (moonlit window, bed edge) faintly visible and blurred at the edges. Calm and still: dread, not a scare.")),
     dict(name="poppy_final_close_look", size=[640, 480], transparent=False, description=(
@@ -339,6 +333,11 @@ POPPY = [
     dict(name="poppy_scare_final_b", size=SCARE, transparent=False, sp="new", description=(
         "BOIL frame for scare 3: identical to poppy_scare_final except the re-seeded hatching and re-jittered contour, as "
         "poppy_scare_costume_b. Mean luminance within 2% of the original.")),
+    dict(name="poppy_scare_final_c", size=SCARE, transparent=False, sp="new", description=(
+        "Scare 3, from frame 10 on: identical registration and light to poppy_scare_final, but the eyes have FOUND you: the "
+        "gaze snaps dead into the lens and the felt slits are pulled wide (open 178%), white all round the blown pupils.")),
+    dict(name="poppy_scare_final_d", size=SCARE, transparent=False, sp="new", description=(
+        "BOIL frame of poppy_scare_final_c (re-seeded hatching and fray).")),
     dict(name="poppy_address", size=CLOSE, transparent=True, sp="new", description=(
         "DIRECT ADDRESS close-up (11e, 12 s): Poppy talks straight to the viewer. Close-up registration (640x480, head centre "
         "(320, 210)), head and shoulders, felt face ~320 px wide. Unlike every other shot she is perfectly LEVEL (0 degrees tilt) "
@@ -1485,18 +1484,18 @@ vhs("V3.")
 au(VO("vo_hs_3", 0.3, "reused, full band."))
 SP("Was 10e (one hungry face) -> five hungry faces.")
 
-sh("11i", 1.3, "(Four never comes)")
-pic(f"{R('playroom_dark')} wide, empty (window panes still black, doorway empty).")
+sh("11i", 3.2, "(Four never comes)")
+pic(f"{R('playroom_dark')} wide, empty and held: the doorway, the black panes, the negative space (window panes still black, doorway empty).")
 cam("Static.")
 vhs("V3.")
-au("On the first frame cut the cluster, the sub-bass and the drone DEAD: room tone and hiss only. The viewer expects 'Four' at +0.3 s; it never comes.",
-   SFX("sfx_breath_close", 0.4, "only its 3.4-4.6 s inhale, -20 dBFS, 20% LEFT: a single breath drawn in right beside you. The ONE sound before the hit."))
-note("Cut 0.7 s early against the 2.0 s rhythm of 11f-11h. No creak this time (scares 1 and 2 used a side noise): the misdirection is the breath and the broken rhythm.")
-SP("Was 10f. The creak is replaced by a single close inhale.")
+au("On the first frame cut the cluster, the sub-bass and the drone DEAD: room tone (-46 dBFS) and hiss only. The viewer expects 'Four' at +0.3 s; it never comes.",
+   SFX("sfx_breath_close", 1.5, "only its 3.4-4.6 s inhale (0.8 s), -23 dBFS, LEFT: a single breath drawn in right beside you. The ONE sound before the hit; then 0.9 s of held breath (room tone only)."))
+note("The longest hold of the tape (3.2 s) before its biggest scare: the count's rhythm breaks, nothing comes, then the breath, then nothing again.")
+SP("Was 10f. The creak is replaced by a single close inhale; held 1.3 -> 3.2 s.")
 
 sh("11j", 1.0, "SCARE 3")
-pic(f"{P('poppy_scare_final')} alternating with {P('poppy_scare_final_b')} every 4 frames, scaled so the face fills ~90% of the frame height. NOT a red frame.")
-cam("Zoom 1.00 -> 1.06, shake +-6 px.")
+pic(f"Frames 0-9: {P('poppy_scare_final')} alternating with {P('poppy_scare_final_b')} every 4 frames (the eyes still searching); from frame 10: {P('poppy_scare_final_c')} / {P('poppy_scare_final_d')} (the gaze snaps into the lens, the slits pulled wide). Extreme close-up: the eyes fill ~70% of the frame width. NOT a red frame.")
+cam("Loom: zoom 0.62x -> 1.0x over the first 3 frames (ease-out, zoom blur), then 1.00 -> 1.06; a 2-frame 10-degree head-snap at ~55%; shake +-6 px.")
 vhs("V0 CLEAN.")
 au(SFX("sfx_stinger_3", 0.0, "peak -1 dBFS, attack < 5 ms (rebuilt)."),
    SFX("sfx_scream", 0.02, "-3 dBFS: Poppy's own voice, torn (rebuilt)."))
