@@ -1,0 +1,1773 @@
+{
+ "rooms": [
+  {
+   "file": "build/rooms/turnaround_wide.png",
+   "description": "The Turnaround Room, wide master shot of the show. THE TURNAROUND ROOM (one Blender scene, reused by every turnaround_* render). A bright pastel kids'-show playroom, about 7 m wide x 5 m deep x 3.2 m high, built PERFECTLY mirror-symmetric left/right about its centre line. Left half = SET A (BIM's side), right half = SET B (MIB's side). On the centre line, 1.4 m in front of the back wall, stands THE FRAME: a big ornate gilded picture frame (2.0 m tall x 1.5 m wide outside, 18 cm carved moulding with acanthus scrolls and beading, warm burnished gold with darker gold in the recesses), upright on two small gold claw feet, facing the camera, EMPTY: no glass, no canvas, no backing, so the room simply continues through it. The back wall is papered in two colours that meet in a hard vertical seam exactly on the centre line, seen through the frame opening: Set A pale Easter yellow (#F6E7A4), Set B pale sky blue (#C2E2F2), both with a small repeating white five-point-star pattern; a chunky white skirting board; pastel wainscot on the lower 0.9 m in the OTHER side's colour (Set A blue, Set B yellow). Floor: big cream and pale pink checkerboard lino tiles, symmetric. Each half holds the same props, mirrored: (1) an open DOORWAY in the back wall near the side wall (no door leaf, a rounded-top arch with a white wooden surround, opening onto a short black corridor so the opening reads as a pure black shape); (2) a round kids' WALL CLOCK high on the back wall above the doorway, white face, red rim, big numerals 1-12 (Set B's numerals are MIRROR-WRITTEN and run anticlockwise, it is a mirror copy), rendered WITH NO HANDS (the compositor draws the hands); (3) a pastel TOY CHEST against the back wall between the doorway and the frame (Set A mint with a yellow lid, Set B mint with a blue lid), lid closed; (4) a small 1980s CRT TELEVISION (13-inch, wood-grain cabinet, two knobs) on a little chrome-legged stand against the side wall near the front, switched OFF, its dark curved glass facing three-quarters toward the camera; (5) a wooden EASEL with a small green CHALKBOARD (60 x 45 cm) standing in the front corner, the board turned toward the camera, BLANK (cards are composited onto it). The mirror symmetry must be exact: build Set A, then duplicate it with scale x = -1. Two asymmetries only: the Set A CHAIR and Set A's PORTRAIT NAIL (see below). THE CHAIR FOR YOU: a small wooden child's chair painted white with a red heart cut out of the backrest, in Set A, front-left of the frame, about 1.6 m from the camera, turned 30 degrees toward the frame, with a KNITTED BLANKET (chunky cream wool with a red zig-zag band, folded over the backrest and seat). MR. TURNABOUT'S NAIL: on Set A's back wall, between the toy chest and the frame at eye height, a single brass picture nail with nothing on it (the portrait is composited); at the mirrored spot on Set B's wall, a faintly paler rectangle of wallpaper where a picture used to hang, and no nail. Grime: almost none (a clean studio set), but visible seams between set flats and slightly scuffed floor tiles. Everything chunky, rounded, saturated pastel, a little cheap.",
+   "camera": "Centred exactly on the symmetry plane, eye height 1.15 m (puppet head height), 5.2 m from the frame, ~30 mm lens, level horizon, no tilt, so the composition is perfectly symmetric left/right (only the chair, the nail and the pale rectangle break it). Save this camera in the .blend: turnaround_wide_late and turnaround_night must match it pixel for pixel.",
+   "lighting": "Flat, bright 1990s kids'-TV studio light: two big soft keys front-left and front-right at equal power, soft top light, almost no shadows, slightly warm white (~4800 K). Equal brightness on both halves (the compositor, not the render, drains Set B's saturation later in the tape). No clipped whites.",
+   "notes": "Rendered 1280x960 for 2x crops. Reference layout in 640x480 terms: frame outer x 262-378, y 118-392, opening x 278-362, y 134-376; BIM foot anchor (205, 440) and MIB foot anchor (435, 440), twins ~215 px tall, so keep x 150-262 and 378-490 free of tall props in front of y 225-440; Chair For You centred near (150, 400); the mirrored empty spot on Set B near (490, 400) must be clear floor; doorways about x 58-118 and x 522-582, y 160-330 (pure black inside); clocks centred near (88, 104) and (552, 104), radius ~24 px; CRT screens near x 8-60, y 300-345 and x 580-632; easel boards near x 20-100, y 255-315 and x 540-620. Write every one of these into build/rooms/rooms_meta.json in 1280x960 pixels: frame_outer, frame_opening, foot_bim, foot_mib, chair_a, chair_b_spot, door_a, door_b, clock_a, clock_b (centre + radius), crt_a, crt_b (screen quads), board_a, board_b (board quads), chest_a_lid, chest_b_lid (lid-top centres), nail_a.",
+   "size": [
+    1280,
+    960
+   ],
+   "used_in": [
+    "3a",
+    "3b",
+    "3c",
+    "3f",
+    "3g",
+    "3h",
+    "4a",
+    "4b",
+    "4f",
+    "4g",
+    "5c",
+    "5d",
+    "5e",
+    "5f",
+    "8a"
+   ]
+  },
+  {
+   "file": "build/rooms/turnaround_wide_late.png",
+   "description": "Identical to turnaround_wide in every pixel except the chairs: the Chair For You on Set A no longer has its blanket (bare white chair, heart cut-out visible), and an IDENTICAL second child's chair now stands at the mirrored spot on Set B, turned 30 degrees toward the frame, with the knitted blanket folded over it exactly as it used to be on Set A's chair (mirrored drape). This is the 'it moved between cuts' change of segment 9: nobody mentions it.",
+   "camera": "Exactly the turnaround_wide camera.",
+   "lighting": "Exactly turnaround_wide.",
+   "notes": "Re-render the turnaround_wide .blend with only the chairs/blanket changed. Same rooms_meta anchors; add chair_b.",
+   "size": [
+    1280,
+    960
+   ],
+   "used_in": [
+    "5f",
+    "9a",
+    "11c",
+    "11d",
+    "11e"
+   ]
+  },
+  {
+   "file": "build/rooms/turnaround_frame.png",
+   "description": "Medium two-shot framing of the same set, centred on THE FRAME: the gold frame fills the middle third (outer x 215-425, y 40-480, cropped at the feet), the yellow/blue wallpaper seam visible through its opening; Set A's easel chalkboard at far left and Set B's at far right, each board facing the camera about 130 px wide so composited rule cards are readable; slices of the toy chests behind. Space for a twin on each side of the frame, seen from the waist up.",
+   "camera": "Centred on the symmetry plane, eye height 1.0 m, 2.6 m from the frame, ~40 mm, level. Same symmetric composition.",
+   "lighting": "Same flat bright studio light as turnaround_wide. Save the camera and light rig: turnaround_frame_dim must match it.",
+   "notes": "Twin anchors (waist-up, compositor scales the full-body art and crops at the bottom edge): BIM side head centre about (150, 170), MIB side about (490, 170); keep x 80-215 and 425-560 clear of props above y 120. Board quads about x 10-140 and x 500-630, y 150-250 (record exact corners as board_a/board_b in rooms_meta.json, plus frame_opening).",
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "3e",
+    "4d",
+    "4e",
+    "5b",
+    "8b",
+    "8c",
+    "8d",
+    "8e",
+    "8f",
+    "8g",
+    "9b",
+    "9c",
+    "9d"
+   ]
+  },
+  {
+   "file": "build/rooms/turnaround_frame_dim.png",
+   "description": "The turnaround_frame shot with the studio lights switched OFF one by one: only a single hard top spot remains, aimed down at the gold frame, so the frame glows and the floor around it holds a small pool of light; the wallpaper falls off to deep shadow within 1 m of the pool; the easels and boards are near-black silhouettes; the seam through the frame is barely visible.",
+   "camera": "Exactly the turnaround_frame camera.",
+   "lighting": "One narrow, hard spot from directly above the frame (warm 3200 K), everything else off; a whisper of cold blue bounce (5% of the old fill) so blacks are not dead. Dark but readable on a TV.",
+   "notes": "The compositor cross-fades turnaround_frame -> turnaround_frame_dim in steps (0.25 / 0.5 / 0.75 / 1.0) for the 'You're safe' rhythm (8e-8h), so both renders must align exactly. Same anchors as turnaround_frame.",
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "8e",
+    "8f",
+    "8g",
+    "8h"
+   ]
+  },
+  {
+   "file": "build/rooms/turnaround_portrait.png",
+   "description": "Medium shot of Set A's back wall: yellow star wallpaper, the brass picture nail centred at about (320, 150) with nothing on it (Mr. Turnabout is composited hanging from it), the Set A wall clock (no hands) at about (520, 90) radius 40 px, the top of the mint toy chest with its yellow lid across the bottom (y 380-480), the edge of the gold frame's carved moulding at the far right edge (x 600-640).",
+   "camera": "Eye height 1.45 m, 2.0 m from the wall, ~45 mm, square to the wall.",
+   "lighting": "Flat bright studio light as turnaround_wide; the nail casts a tiny soft shadow down-right.",
+   "notes": "Leave a clear 220 x 260 px area around the nail (x 210-430, y 120-380) for the framed portrait, which rotates on the nail. Record nail point and clock (centre + radius) in rooms_meta.json.",
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "6b",
+    "6c",
+    "6d"
+   ]
+  },
+  {
+   "file": "build/rooms/turnaround_night.png",
+   "description": "The Turnaround Room at night, seen by a stage manager's camcorder from the show camera's position: every studio light off; a theatre GHOST LIGHT (a bare bulb in a wire cage on a 1.6 m pole stand with a round base) stands on the centre line 1 m in front of the frame and is the only light, so the frame glows dull gold, the chair and its blanket on Set A catch a warm edge, and the room falls off to black toward the walls. Both doorways are pure black. Pastels read as dim browns and greys. Chair For You with its blanket, exactly as in turnaround_wide; Set B spot empty.",
+   "camera": "The turnaround_wide camera position but 0.35 m higher (a handheld camcorder at 1.5 m) and tilted 3 degrees down; ~32 mm.",
+   "lighting": "Ghost light: warm 2700 K point light, bulb visible and slightly blooming; quadratic falloff; no other lights. The black doorways must stay pure black so a composited figure can sit 4-8% above them.",
+   "notes": "Rendered 960x720 for handheld crops and the NEG hold (the compositor inverts it to colour negative in 7d). Record chair_a, door_a, door_b, frame_opening in rooms_meta.json. Keep the ghost light stand off the chair and doorways.",
+   "size": [
+    960,
+    720
+   ],
+   "used_in": [
+    "7b",
+    "7c",
+    "7d",
+    "7e"
+   ]
+  },
+  {
+   "file": "build/rooms/behind_set.png",
+   "description": "Behind Set B, at night: the raw backs of the set flats (unpainted plywood, 2x4 braces, stage weights and sandbags, C-clamps, gaffer-taped cable runs) form a narrow 1 m wide passage running away from the camera; stencilled on the plywood only 'B-3' and 'B-4' in black paint (flat numbers, nothing else readable); at the far end the passage turns right around the corner of a flat, and from round that corner comes a faint cold grey light. Dusty concrete floor.",
+   "camera": "Camcorder at 1.5 m, looking down the passage, ~28 mm, 2 degrees of roll.",
+   "lighting": "Almost dark: the cold spill from round the far corner (6500 K, low) and a faint warm bounce from the ghost light somewhere behind the camera on the near flats. 55-65% of the frame near black.",
+   "notes": "The compositor walks into it (push 1.00 -> 1.18) while the footage seems to drift backward, so keep the far end readable around (330, 230).",
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "10b"
+   ]
+  },
+  {
+   "file": "build/rooms/mirror_studio.png",
+   "description": "What is behind Set B: through a gap between two flats (plywood edges dark in the foreground left and right, x 0-170 and x 790-960), a SECOND Turnaround Room, complete and dark, a mirror image of the real one (Set A and Set B swapped: blue half on the LEFT, yellow half on the right, the clocks' numerals reversed), with its own gold frame, and TWO child chairs, both with knitted blankets, one each side. No ghost light: it is lit only by a faint cold wash as if from a dead TV screen. Dust in the air.",
+   "camera": "Camcorder at 1.5 m peering through the gap, ~30 mm, the far set's frame roughly centred, 4 degrees of roll.",
+   "lighting": "Very low cold light (6500 K, a soft area light low and to the right, 3% power); the gold frame reads as a dim rim; doorways pure black.",
+   "notes": "Duplicate the turnaround set with scale x = -1, move it behind the flats, add the second chair+blanket. Hidden figure H5 is composited standing just left of the far frame: keep that spot (about x 380-430, y 300-450 in 960x720) clear and dark. Record far_frame_opening and h5_foot in rooms_meta.json.",
+   "size": [
+    960,
+    720
+   ],
+   "used_in": [
+    "10c"
+   ]
+  },
+  {
+   "file": "build/rooms/frame_mirror_night.png",
+   "description": "Close on THE FRAME at night: the carved gold frame fills about 80% of the image, and tonight its opening holds a real MIRROR (silvered glass, slightly old, faint foxing at the corners). The mirror reflects the dark studio behind the camera: the black studio floor, the ghost light glowing small at reflected frame right (about (470, 250)), dim cable loops. The space where the camera operator should appear in the reflection (centre, about x 250-390, y 140-400) is plain dark studio (the compositor puts the reflection's figure there).",
+   "camera": "Camcorder at 1.5 m, 1.6 m in front of the frame, square to it, ~32 mm, 2 degrees of roll.",
+   "lighting": "Ghost light behind and right of the camera (2700 K) gilding the frame's carving from the right; the mirror shows its reflection. Use a true mirror material (Glossy, roughness 0.02) in Cycles; hide the camera from reflections.",
+   "notes": "Record mirror_quad (the opening) and refl_figure_foot (about (320, 400)) and refl_lamp (the ghost light reflection) in rooms_meta.json. The compositor's figure must look reflected: slightly darker, faint green-grey mirror tint.",
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "10e",
+    "10f"
+   ]
+  },
+  {
+   "file": "build/rooms/crt_set_b.png",
+   "description": "Close shot of Set B's little CRT television on its chrome stand in the BRIGHT show set: wood-grain cabinet, two knobs, a small speaker grille, the dark curved glass of the screen facing the camera almost square-on and filling the central 40% of the image (screen about x 190-450, y 120-330 in 640x480 terms). Behind it the sky-blue star wallpaper and the yellow wainscot. The screen glass itself is near-black with only the faint reflection of bright studio lights in its upper-left corner (the compositor adds the living-room reflection into the screen).",
+   "camera": "Eye height 0.8 m, 1.1 m from the screen, ~50 mm, square to the screen.",
+   "lighting": "Same flat bright studio light as turnaround_wide. The screen must stay dark (no lit tube).",
+   "notes": "Rendered 1280x960 because the compositor pushes in 1.0 -> 1.7x on the screen. Record crt_screen_quad in rooms_meta.json (1280x960 pixels).",
+   "size": [
+    1280,
+    960
+   ],
+   "used_in": [
+    "11f",
+    "11g",
+    "11h"
+   ]
+  },
+  {
+   "file": "build/rooms/turnaround_reverse.png",
+   "description": "THE REVERSE ANGLE, never seen before the ending: the camera now stands on Set B (MIB's side), close behind the gold frame and to its right, looking back left THROUGH the frame's opening at Set A. The frame's carved moulding is big in the foreground (opening about x 140-500, y 30-470) and the shot of Set A is seen through it: the Chair For You, bare, with NO blanket (its red heart cut-out showing), Set A's easel and chalkboard (blank), Set A's toy chest, the yellow star wallpaper, Set A's black doorway and its handless clock. Set A's easel has been turned so its blank board faces THIS camera. In the bottom-right foreground, OUTSIDE the frame on our side, the top of the backrest of a second child's chair, out of focus, with the knitted blanket draped over it (we are sitting in it). In the near-left foreground, also on our side, Set B's easel with its blank chalkboard square to the camera and sharp enough to read a composited card (board about x 10-150, y 250-360).",
+   "camera": "Camera on Set B at 0.75 m (the eye height of a seated child), 1.0 m behind the frame plane, aimed back through the opening at the Set A chair, ~28 mm, depth of field: foreground chair and frame slightly soft, Set A sharp.",
+   "lighting": "The same flat bright studio light, but 15% dimmer and a little colder than turnaround_wide, so it looks like the same place in a different hour.",
+   "notes": "Record board_a quad (Set A's board seen through the frame), board_b_near quad, chair_a, door_a, clock_a in rooms_meta.json for this view.",
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "12c",
+    "12d"
+   ]
+  },
+  {
+   "file": "build/rooms/livingroom.png",
+   "description": "A dim 1990s family living room at night, seen from where the television sits (it is what a dark TV screen would reflect): a brown corduroy three-seat couch facing the camera across the middle of the frame (seat top about y 300), a crocheted throw over its back, an end table with a switched-off lamp at right, wood-panelled walls, a window with half-closed blinds behind the couch at left letting in thin bars of blue streetlight, a beige carpet. Ordinary, homely, empty.",
+   "camera": "Eye height 0.9 m (TV height), 3.2 m from the couch, ~28 mm, level.",
+   "lighting": "Night: blue streetlight through the blinds (low), a very faint warm spill from a hallway off screen right; the room is dark but its shapes read.",
+   "notes": "Used only as a REFLECTION: the compositor mirrors it horizontally, darkens it to 6-15% luma, barrels it and lays it inside a dark CRT screen (tiny in Set A's TV in 4a, full in Set B's TV in 11c-11e). Record couch_left_seat (where bim_couch_back kneels, left cushion) in rooms_meta.json.",
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "4a",
+    "9f",
+    "11f",
+    "11g",
+    "11h"
+   ]
+  }
+ ],
+ "char_art": [
+  {
+   "file": "build/art/char/bim_idle.png",
+   "description": "BIM: a full-body felt puppet boy (Muppet-style, about 1.1 m tall), Easter-yellow felt skin (#F4CF4A, visible fibre texture: noise fill plus hundreds of 1-3 px fibre strokes, blur(0.6px)), head 12% too big for the body, a brown felt BOWL HAIRCUT (#6B4226) with its parting on HIS left (screen right), round glossy black BUTTON EYES with a catchlight at the same pixel in both, a small round orange felt nose, rosy cheek circles, a SEWN-ON SMILE (a running-stitch curve in dark red thread #6E1020, corners turned up, each corner finished with a small upward 'tuck' stitch like a dimple), a red-and-white horizontally striped shirt (#D9473B / #FFF4E2), a pink felt HEART PATCH on HIS left chest (screen right), royal-blue felt shorts, white socks, red sneakers, four-fingered yellow hands with fingers 1.3x too long, and a felt POINTER (a yellow dowel with a red felt star tip) in his RIGHT hand (screen left). Pose: standing facing the viewer, turned 15 degrees toward screen right (toward the frame), pointer held upright at chest height, mouth closed. Friendly at a glance. REGISTRATION for every full-body twin frame: canvas 360x600, feet bottom centre at (180, 588), identical pixels except the parts that change.",
+   "transparent": true,
+   "size": [
+    360,
+    600
+   ],
+   "used_in": [
+    "3b",
+    "3c",
+    "3e",
+    "3h",
+    "4a",
+    "4e",
+    "4f",
+    "4g",
+    "5e",
+    "5f",
+    "8a"
+   ]
+  },
+  {
+   "file": "build/art/char/bim_talk.png",
+   "description": "BIM, identical to bim_idle except the mouth is open: the stitched smile opens into a rounded D, dark maroon inside, a pink felt tongue, NO teeth. Lip-flap partner of bim_idle.",
+   "transparent": true,
+   "size": [
+    360,
+    600
+   ],
+   "used_in": [
+    "3e",
+    "3h",
+    "4a",
+    "4e",
+    "4f",
+    "4g",
+    "5e",
+    "8a"
+   ]
+  },
+  {
+   "file": "build/art/char/bim_point.png",
+   "description": "BIM, same registration, pointer arm stretched out and down toward screen LEFT (toward the Chair For You / his easel), head turned to the viewer, mouth closed, free hand on hip.",
+   "transparent": true,
+   "size": [
+    360,
+    600
+   ],
+   "used_in": [
+    "3f",
+    "4a",
+    "4b",
+    "4d",
+    "4f",
+    "5b",
+    "8a",
+    "8b"
+   ]
+  },
+  {
+   "file": "build/art/char/bim_point_talk.png",
+   "description": "bim_point with the open D mouth. Lip-flap partner of bim_point.",
+   "transparent": true,
+   "size": [
+    360,
+    600
+   ],
+   "used_in": [
+    "4b",
+    "4d",
+    "5b",
+    "8b"
+   ]
+  },
+  {
+   "file": "build/art/char/bim_walk_a.png",
+   "description": "BIM mid Backwards Walk, frame A: leaning back slightly, left heel lifted BEHIND him (he steps backwards, toe last), arms swinging, big closed smile. Same registration (feet near (180, 588)).",
+   "transparent": true,
+   "size": [
+    360,
+    600
+   ],
+   "used_in": [
+    "5c",
+    "5d"
+   ]
+  },
+  {
+   "file": "build/art/char/bim_walk_b.png",
+   "description": "BIM mid Backwards Walk, frame B: the opposite leg and arms. The compositor alternates A/B at 7 fps and plays the travel in reverse; MIB's walk is these two frames mirrored by the compositor (his mouth difference is invisible at that size).",
+   "transparent": true,
+   "size": [
+    360,
+    600
+   ],
+   "used_in": [
+    "5c",
+    "5d"
+   ]
+  },
+  {
+   "file": "build/art/char/mib_idle.png",
+   "description": "MIB: BIM's exact mirror twin. Draw him by running BIM's drawing function mirrored left/right (the parting on HIS right = screen left, the heart patch on HIS right chest = screen left, the pointer in his LEFT hand = screen right), with ONE deliberate difference: his MOUTH is BIM's FROWN (see bim_close_frown) flipped upside down. So it curves up like a smile, but everything that belongs below a frown is above it: the little puckered-chin stitch (a small '^' of thread that sits under the centre of BIM's frown) sits ABOVE the centre of MIB's mouth, between mouth and nose, and the corner tuck stitches point down-and-in instead of up-and-out. At a glance it is a smile; once you have seen BIM frown it is a frown turned over. His button eyes have the catchlight at the same pixel as BIM's (mirrored). Pose: the exact mirror of bim_idle (turned 15 degrees toward screen LEFT), mouth closed in his flipped-frown smile. Same registration as BIM.",
+   "transparent": true,
+   "size": [
+    360,
+    600
+   ],
+   "used_in": [
+    "3c",
+    "3e",
+    "3h",
+    "4a",
+    "4e",
+    "4f",
+    "4g",
+    "5e",
+    "5f",
+    "8a",
+    "8b",
+    "8e",
+    "8f",
+    "8g",
+    "8h",
+    "9a",
+    "9b",
+    "9c",
+    "11c",
+    "11d"
+   ]
+  },
+  {
+   "file": "build/art/char/mib_talk.png",
+   "description": "MIB, identical to mib_idle except the mouth is open: the flipped-frown opens into an upside-down D (flat edge at the BOTTOM, round edge on top), maroon inside, no teeth. Used for his silent mirrored lip-flap in Act 1 and for his 'speaking with BIM's voice' after the swap.",
+   "transparent": true,
+   "size": [
+    360,
+    600
+   ],
+   "used_in": [
+    "3e",
+    "4a",
+    "4e",
+    "4f",
+    "5e",
+    "8a",
+    "8e",
+    "8f",
+    "8g",
+    "9a",
+    "9b",
+    "9c"
+   ]
+  },
+  {
+   "file": "build/art/char/mib_point.png",
+   "description": "MIB, the mirror of bim_point: pointer arm stretched out and down toward screen RIGHT, mouth closed.",
+   "transparent": true,
+   "size": [
+    360,
+    600
+   ],
+   "used_in": [
+    "4a",
+    "4d",
+    "4f",
+    "5b",
+    "8a"
+   ]
+  },
+  {
+   "file": "build/art/char/mib_wave.png",
+   "description": "MIB waving goodbye: pointer tucked under the arm, the free hand raised beside his head, fingers spread (four, too long), mouth closed. Alternates with mib_idle at 6 fps for the wave.",
+   "transparent": true,
+   "size": [
+    360,
+    600
+   ],
+   "used_in": [
+    "3h",
+    "11d"
+   ]
+  },
+  {
+   "file": "build/art/char/bim_close.png",
+   "description": "BIM head-and-shoulders close-up, facing the viewer, the stitched smile, button eyes with matching catchlights looking 5 degrees past the lens (one pupil offset outward by 0.08 eye width). Friendly. REGISTRATION for all close-ups: canvas 640x480, head centre (320, 220), head ~300 px wide.",
+   "transparent": true,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "3g"
+   ]
+  },
+  {
+   "file": "build/art/char/bim_close_frown.png",
+   "description": "BIM close-up, the FIRST and only time he frowns: the same head, but the stitched mouth is a down-turned curve, a small puckered-chin stitch ('^' of thread) under its centre, the corner tuck stitches pointing down and out; brows (two felt slivers) slanted sadly; button eyes looking straight into the lens. This exact mouth drawing, flipped vertically, IS MIB's smile: draw it once and reuse it.",
+   "transparent": true,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "8c"
+   ]
+  },
+  {
+   "file": "build/art/char/mib_close_smile.png",
+   "description": "MIB close-up, the mirror of bim_close with his flipped-frown smile: the identical curve of bim_close_frown turned upside down (pucker stitch ABOVE the mouth, tucks pointing down and in). Eyes dead into the lens, catchlights symmetric. Must read as a smile on its own and as BIM's frown turned over when cut right after bim_close_frown.",
+   "transparent": true,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "8d",
+    "9d",
+    "11e"
+   ]
+  },
+  {
+   "file": "build/art/char/mib_close_talk.png",
+   "description": "mib_close_smile with the upside-down-D open mouth. Lip-flap partner of mib_close_smile.",
+   "transparent": true,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "9d",
+    "11e"
+   ]
+  },
+  {
+   "file": "build/art/char/mib_chair_sit.png",
+   "description": "MIB sitting perfectly upright in a child's chair, hands flat on his knees, pointer across his lap, facing the viewer, feet not touching the floor, the flipped-frown smile, eyes dead ahead. ONLY the puppet (no chair). Seat contact at about (180, 380). Used only inside the colour-negative hold (7d), where his yellow felt turns BLUE.",
+   "transparent": true,
+   "size": [
+    360,
+    520
+   ],
+   "used_in": [
+    "7d"
+   ]
+  },
+  {
+   "file": "build/art/char/mib_camcorder.png",
+   "description": "MIB standing and holding a chunky 1990s shoulder camcorder up to his face with both hands, its small lamp ON (a hard white disc with a bloom), lens pointed straight at the viewer; his felt face half hidden behind the camcorder, one button eye and the flipped-frown smile visible beside it; perfectly still posture. Seen only as a mirror reflection (10e-10f), small, dark, lit by his own lamp. No brand names on the camcorder.",
+   "transparent": true,
+   "size": [
+    360,
+    600
+   ],
+   "used_in": [
+    "10e",
+    "10f"
+   ]
+  },
+  {
+   "file": "build/art/char/hidden_twin_stand.png",
+   "description": "HIDDEN FIGURE: a near-black child-height silhouette standing perfectly straight, arms hanging, fingers to the knees, with the unmistakable bowl-haircut puppet head of the twins tilted 15 degrees; no features except two pinpoint glints where the button eyes would be. Soft edge, 4-10% luma over pure black. Feet at (120, 588). Used in Set B's doorway (H1-H3), in Set A's doorway in the negative hold (H4, where it inverts to a white figure-shaped hole), and in the mirror studio (H5).",
+   "transparent": true,
+   "size": [
+    240,
+    600
+   ],
+   "used_in": [
+    "5c",
+    "5d",
+    "5e",
+    "7d",
+    "10c"
+   ]
+  },
+  {
+   "file": "build/art/char/bim_couch_back.png",
+   "description": "A small figure kneeling on a couch cushion with its BACK to the viewer, facing away (toward the window behind the couch): the brown bowl haircut seen from behind, yellow felt neck, red-and-white striped shirt, arms at its sides, perfectly still. Drawn dim and flat (it will sit at ~6% luma inside a CRT reflection). Knee/cushion contact at (120, 300).",
+   "transparent": true,
+   "size": [
+    240,
+    320
+   ],
+   "used_in": [
+    "9f",
+    "11f",
+    "11g",
+    "11h"
+   ]
+  },
+  {
+   "file": "build/art/char/turnabout_scare.png",
+   "description": "SCARE 1 - MR. TURNABOUT RIGHT WAY UP (Thatcher reveal), fills 60% of the frame. The gouache portrait of the jolly bald grandfather (see turnabout_upside) turned right way up, close: the face is upright but its eyes and mouth are UPSIDE DOWN within it. Eyes: two realistic WET eyes (horror.js wetEye) inverted, the heavy upper lid at the bottom and the lower lid's waterline on top, irises with 40-60 fibres and a dark limbal ring, PINPOINT pupils, 4-6 grey-pink capillaries, staring dead into the lens. Mouth: the painted smile inverted into a deep down-turned grimace that is open, showing REAL ivory teeth (#E8DFC8) with the scalloped wet gum line (#C98C8C) BELOW the teeth, because they are upside down. No wounds, no blood. Underlit: key 45 degrees below, forehead 60% darker than the chin, hard terminator, 55-70% of pixels at or below 8% luma; the gouache brush texture stays visible everywhere except the eyes and teeth. The sharpest image in the tape so far.",
+   "transparent": false,
+   "size": [
+    800,
+    600
+   ],
+   "used_in": [
+    "6e",
+    "8i"
+   ]
+  },
+  {
+   "file": "build/art/char/turnabout_scare_b.png",
+   "description": "Boil partner of turnabout_scare: identical except the shadow hatching (200-600 one-pixel strokes) and tremor contours are re-seeded. Mean luminance within 2% of turnabout_scare.",
+   "transparent": false,
+   "size": [
+    800,
+    600
+   ],
+   "used_in": [
+    "8i"
+   ]
+  },
+  {
+   "file": "build/art/char/mib_scare.png",
+   "description": "SCARE 2 - MIB AT THE LENS, fills 75% of the frame, inches from the camera. His felt face, slightly fish-eyed by the closeness; the bowl haircut a black mass at the top; the felt pilled and frayed. His LEFT eye (screen right) is still a button, now with a hairline crack; his RIGHT eye (screen left) is a realistic WET human eye set in the felt, sclera showing all round the iris, pinpoint pupil, 6-8 grey-pink capillaries from the corners, a shining lower waterline. The flipped-frown grin has been RE-SEWN WIDER: running stitches continue 10-15% of head width past the old corners, and through the parted stitches a sliver of real ivory teeth shows. The puckered '^' stitch sits above the mouth. Underlit by the camcorder lamp from below-right: hard terminator, the far side of the head dissolving into black.",
+   "transparent": false,
+   "size": [
+    800,
+    600
+   ],
+   "used_in": [
+    "10g",
+    "12a"
+   ]
+  },
+  {
+   "file": "build/art/char/mib_scare_b.png",
+   "description": "Boil partner of mib_scare (re-seeded hatching and tremor lines, mean luminance within 2%).",
+   "transparent": false,
+   "size": [
+    800,
+    600
+   ],
+   "used_in": [
+    "10g"
+   ]
+  },
+  {
+   "file": "build/art/char/bim_scare_turn.png",
+   "description": "SCARE 3, first frames: BIM's face UPSIDE DOWN and filling 90% of the frame, the eyes and mouth painted so that, upside down, they read the right way up: a sweet, normal, smiling face (the Thatcher illusion hides everything). Realistic wet eyes with pinpoint pupils, a closed smile. Underlit (light from what is the top of the frame, i.e. below his upside-down chin). It is exactly bim_scare rotated 180 degrees: draw bim_scare and rotate it.",
+   "transparent": false,
+   "size": [
+    800,
+    600
+   ],
+   "used_in": [
+    "11i"
+   ]
+  },
+  {
+   "file": "build/art/char/bim_scare.png",
+   "description": "SCARE 3 - BIM THATCHERED, fills 90% of the frame, the biggest and loudest image of the tape. BIM's friendly felt face right way up, but its eyes and mouth upside down inside it: two realistic WET eyes inverted (waterline on top, heavy lid at the bottom), PINPOINT pupils dead into the lens, veined grey-pink whites; his friendly sewn smile inverted into a frown, its stitches torn open into a grimace of REAL ivory teeth with the wet scalloped gums BELOW them. Felt everywhere else (fibres, pilling, the bowl cut). Underlit 45 degrees from below, hard terminator, 55-70% of pixels black, one cheek and the eyes and teeth lit. No wounds, no blood.",
+   "transparent": false,
+   "size": [
+    800,
+    600
+   ],
+   "used_in": [
+    "11i"
+   ]
+  },
+  {
+   "file": "build/art/char/bim_scare_b.png",
+   "description": "Boil partner of bim_scare (re-seeded hatching and tremor lines, mean luminance within 2%).",
+   "transparent": false,
+   "size": [
+    800,
+    600
+   ],
+   "used_in": [
+    "11i"
+   ]
+  }
+ ],
+ "misc_art": [
+  {
+   "file": "build/art/misc/ident_bg.png",
+   "description": "Two-Way Kids ident background, early-90s airbrush: a soft pastel gradient (lemon at the bottom to sky blue at the top) with faint white stars and a subtle radial glow at the centre where the logo lands. No text.",
+   "text": "",
+   "transparent": false,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "2a"
+   ]
+  },
+  {
+   "file": "build/art/misc/twoway_logo.png",
+   "description": "The Two-Way Kids Home Video logo (original): two fat cartoon arrows, one red pointing left and one blue pointing right, chasing each other round a circle (their tails meet their heads), with the rounded bubble wordmark 'TWO-WAY KIDS' across the middle (white letters, purple outline, drop shadow) and 'HOME VIDEO' in small letter-spaced caps beneath. Centre of the circle at (200, 140). The compositor spins it, lands it MIRRORED for 12 frames, then snaps it correct.",
+   "text": "TWO-WAY KIDS / HOME VIDEO",
+   "transparent": true,
+   "size": [
+    400,
+    300
+   ],
+   "used_in": [
+    "2a",
+    "9e"
+   ]
+  },
+  {
+   "file": "build/art/misc/title_card.png",
+   "description": "Title card: pale yellow left half and pale blue right half split by a vertical seam (the room's colours), 'OPPOSITE DAY!' in huge bouncy felt letters across the middle, every second letter printed upside down as a joke (O, P, S, T, A and the '!' right way up; P, O, I, E, D and Y upside down), 'A Learn-Along Game Tape' in a rounded font beneath, small felt heads of BIM (left) and MIB (right) peeking up from the bottom corners, '(c) 1994 TWO-WAY KIDS HOME VIDEO' in small type at the bottom.",
+   "text": "OPPOSITE DAY! / A Learn-Along Game Tape / (c) 1994 TWO-WAY KIDS HOME VIDEO",
+   "transparent": false,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "2b"
+   ]
+  },
+  {
+   "file": "build/art/misc/bumper_bg.png",
+   "description": "Segment-bumper background: a felt panel split yellow/blue down the middle with a scalloped white felt border and little felt stars; the centre left clear for compositor text (and for the twoway_logo in 9e).",
+   "text": "",
+   "transparent": false,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "3d",
+    "4c",
+    "5a",
+    "6a",
+    "9e"
+   ]
+  },
+  {
+   "file": "build/art/misc/card_rule1.png",
+   "description": "A rule card: a cream felt card (480x360) with a red felt border and rounded corners, the text in chunky hand-cut felt letters (alternating red, blue and green, slightly uneven baselines), a small two-arrow Two-Way Kids logo bottom-right. READABLE (not mirrored): the compositor mirrors it for the board on the far side. Exact text: 'RULE 1: YES MEANS NO'",
+   "text": "RULE 1: YES MEANS NO",
+   "transparent": false,
+   "size": [
+    480,
+    360
+   ],
+   "used_in": [
+    "4d",
+    "12c",
+    "12d"
+   ]
+  },
+  {
+   "file": "build/art/misc/card_rule2.png",
+   "description": "A rule card: a cream felt card (480x360) with a red felt border and rounded corners, the text in chunky hand-cut felt letters (alternating red, blue and green, slightly uneven baselines), a small two-arrow Two-Way Kids logo bottom-right. READABLE (not mirrored): the compositor mirrors it for the board on the far side. Exact text: 'RULE 2: FORWARD IS BACKWARD'",
+   "text": "RULE 2: FORWARD IS BACKWARD",
+   "transparent": false,
+   "size": [
+    480,
+    360
+   ],
+   "used_in": [
+    "5b"
+   ]
+  },
+  {
+   "file": "build/art/misc/card_rule3.png",
+   "description": "A rule card: a cream felt card (480x360) with a red felt border and rounded corners, the text in chunky hand-cut felt letters (alternating red, blue and green, slightly uneven baselines), a small two-arrow Two-Way Kids logo bottom-right. READABLE (not mirrored): the compositor mirrors it for the board on the far side. Exact text: 'RULE 3: SAFE MEANS NOT SAFE'",
+   "text": "RULE 3: SAFE MEANS NOT SAFE",
+   "transparent": false,
+   "size": [
+    480,
+    360
+   ],
+   "used_in": [
+    "8b"
+   ]
+  },
+  {
+   "file": "build/art/misc/card_rule4.png",
+   "description": "A rule card: a cream felt card (480x360) with a red felt border and rounded corners, the text in chunky hand-cut felt letters (alternating red, blue and green, slightly uneven baselines), a small two-arrow Two-Way Kids logo bottom-right. READABLE (not mirrored): the compositor mirrors it for the board on the far side. Exact text: 'RULE 4: TO STOP, SAY IT'S NOT OPPOSITE DAY!' (three lines).",
+   "text": "RULE 4: / TO STOP, SAY / IT'S NOT OPPOSITE DAY!",
+   "transparent": false,
+   "size": [
+    480,
+    360
+   ],
+   "used_in": [
+    "9b"
+   ]
+  },
+  {
+   "file": "build/art/misc/card_see_you.png",
+   "description": "A rule card: a cream felt card (480x360) with a red felt border and rounded corners, the text in chunky hand-cut felt letters (alternating red, blue and green, slightly uneven baselines), a small two-arrow Two-Way Kids logo bottom-right. READABLE (not mirrored): the compositor mirrors it for the board on the far side. Exact text: 'SEE YOU YESTERDAY! STAY ON YOUR SIDE.' (two lines). Shown READABLE in the ending, which is the reveal: MIB's side's cards are only readable from MIB's side.",
+   "text": "SEE YOU YESTERDAY! / STAY ON YOUR SIDE.",
+   "transparent": false,
+   "size": [
+    480,
+    360
+   ],
+   "used_in": [
+    "12c",
+    "12d"
+   ]
+  },
+  {
+   "file": "build/art/misc/turnabout_upside.png",
+   "description": "MR. TURNABOUT as he hangs on the wall: a small portrait (oval gilt frame with a brass hanging ring) in thick gouache of a smiling, rosy, bald grandfatherly man with white side whiskers and a blue bow tie, hung UPSIDE DOWN (his chin and bow tie at the top, his bald crown at the bottom). His eyes and mouth are painted the RIGHT way up relative to the viewer (the Thatcher illusion), so upside down he still reads as a jolly, twinkling, smiling old man. Painted button-bright eyes, no realism here. Hanging ring at (120, 8) (the compositor rotates the portrait about it).",
+   "text": "",
+   "transparent": true,
+   "size": [
+    240,
+    300
+   ],
+   "used_in": [
+    "6b",
+    "6c",
+    "6d"
+   ]
+  },
+  {
+   "file": "build/art/misc/toy_duck.png",
+   "description": "A wooden pull-toy duck (yellow body, orange beak, red wheels, a string loop), facing screen right, sitting on its wheels. Composited on Set A's toy chest lid, then on Set B's (the 5f continuity swap).",
+   "text": "",
+   "transparent": true,
+   "size": [
+    120,
+    100
+   ],
+   "used_in": [
+    "3a",
+    "4a",
+    "5f",
+    "8a",
+    "11c"
+   ]
+  },
+  {
+   "file": "build/art/misc/memo_setb.png",
+   "description": "Production memo photographed by a camcorder: a typed memo on yellowing paper taped to a set flat with brown tape, typewriter mono, ~90 px side margins, a coffee ring at top right. Header 'TWO-WAY KIDS - OPPOSITE DAY! - STAGE MANAGEMENT' and 'MARCH 17, 1994'. Lines: '1. Turnaround Room is struck nightly to the A side only.' / '2. SET B IS NOT TO BE LIT.' / '3. Performers are not to work the left-hand puppet.' / '4. If the left-hand puppet is in a different place in the morning, leave it there and tell nobody.' Then in blue ballpoint below: 'Nobody has worked it since the pilot. - D.' All text above y 380 (clear of the camcorder date band).",
+   "text": "TWO-WAY KIDS - OPPOSITE DAY! - STAGE MANAGEMENT / MARCH 17, 1994 / 1. Turnaround Room is struck nightly to the A side only. / 2. SET B IS NOT TO BE LIT. / 3. Performers are not to work the left-hand puppet. / 4. If the left-hand puppet is in a different place in the morning, leave it there and tell nobody. / (handwritten) Nobody has worked it since the pilot. - D.",
+   "transparent": false,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "7f"
+   ]
+  },
+  {
+   "file": "build/art/misc/memo_cutlist.png",
+   "description": "A strike list on a clipboard hanging from a nail on the back of a flat, photographed by the camcorder: typed 'STRIKE LIST - 3/22/94' and a short list: 'GOLD FRAME (1)' / 'TOY CHEST (2)' / 'WALL CLOCK (2)' / 'CHILD CHAIR (1)'. The '(1)' after CHILD CHAIR has been crossed out in pencil and '(2)' written beside it, and under the list in pencil: 'There is only one chair. Who is the other one for?' Text above y 380.",
+   "text": "STRIKE LIST - 3/22/94 / GOLD FRAME (1) / TOY CHEST (2) / WALL CLOCK (2) / CHILD CHAIR (1 -> 2) / (pencil) There is only one chair. Who is the other one for?",
+   "transparent": false,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "10d"
+   ]
+  },
+  {
+   "file": "build/art/misc/card_correction_1.png",
+   "description": "A plain inserted video card in the style of a 1994 home-video dub: flat royal-blue background, white chunky mono capitals centred, a thin white rule above and below the text, the small two-arrow logo bottom-centre. No real station, network or agency styling, no warning-screen look.",
+   "text": "CORRECTION: / TODAY IS NOT OPPOSITE DAY.",
+   "transparent": false,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "11a"
+   ]
+  },
+  {
+   "file": "build/art/misc/card_correction_2.png",
+   "description": "Same style as card_correction_1.",
+   "text": "THE PREVIOUS CORRECTION / WAS ALSO OPPOSITE.",
+   "transparent": false,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "11b"
+   ]
+  },
+  {
+   "file": "build/art/misc/end_card_blue.png",
+   "description": "The last card: flat VCR blue (R 0.08, G 0.08, B 0.75), white text centred in the same chunky rounded font as the title card, no logo.",
+   "text": "TODAY IS NOT OPPOSITE DAY",
+   "transparent": false,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "12f"
+   ]
+  },
+  {
+   "file": "build/art/misc/crt_glass.png",
+   "description": "Overlay for a dark CRT screen seen head-on (copy poppy/build/art/misc/crt_glass.png if it fits): a soft curved specular band from upper left (white at 6-10% alpha), dust specks and one smudge at 3-5% alpha, a faint convex vignette, the rounded tube edge darkening to opaque black in the corners. Transparent elsewhere.",
+   "text": "",
+   "transparent": true,
+   "size": [
+    640,
+    480
+   ],
+   "used_in": [
+    "11f",
+    "11g",
+    "11h"
+   ]
+  }
+ ],
+ "audio": [
+  {
+   "file": "build/audio/mus_ident_palindrome.wav",
+   "kind": "music",
+   "description": "Two-Way Kids ident jingle, 4.0 s: toy piano + glockenspiel play the PALINDROME motif C5 E5 G5 A5 G5 E5 C5 (seven notes, 0.32 s apart, symmetric dynamics p-mf-f-ff-f-mf-p) over a soft major pad, then the C major chord rings out. Melody and rhythm read the same forwards and backwards; in 9e the compositor plays it forwards then reversed, and the tune is identical. Clean. Peak -1 dBFS.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 4.0,
+   "used_in": [
+    "2a",
+    "9e"
+   ]
+  },
+  {
+   "file": "build/audio/mus_theme.wav",
+   "kind": "music",
+   "description": "OPPOSITE DAY! theme song, full mix with vocals, exactly 22.0 s. Original tune in C major built on the palindrome C-E-G-A-G-E-C (every 2-bar phrase is a palindrome), toy piano (sine + partials x2, x3, 0.3-0.6 s decays), bass, handclaps, glockenspiel counter-line, 160 bpm (1 bar = 1.5 s). Structure: 2.0 s intro; six sung lines at 2.0, 5.0, 8.0, 11.0, 14.0, 17.0 s ('sung' voice); outro 20.0-22.0 s with the spoken 'Hi, kids!' ('bim' preset) at 20.3 s and a button ending. The ONLY wrongness: the fifth line is SUNG as 'Come and sit on the other side,' while the on-screen caption reads 'Come and sit here by my side,' (keep both in the manifest). Write 'lyrics': [[start, caption text], ...] into build/audio/manifest.json. Peak -1 dBFS.",
+   "text": "Turn around and turn around, / up is down and down is up! / Yes is no and no is yes, / BIM and MIB, who's who? Guess! / (sung) Come and sit on the other side, [caption: Come and sit here by my side,] / Opposite Day is here for you! / (spoken) Hi, kids!",
+   "voice": "sung",
+   "target_seconds": 22.0,
+   "voice_recipe": "'bim' preset, one espeak render per syllable with -p chosen to follow the melody note, placed on the beat.",
+   "used_in": [
+    "3a"
+   ]
+  },
+  {
+   "file": "build/audio/mus_bumper.wav",
+   "kind": "music",
+   "description": "Rule bumper sting, 1.5 s: a glockenspiel arpeggio C-E-G-E-C (a palindrome again), a slide whistle up then down, a 'ta-da' chord. Clean. Peak -1 dBFS.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 1.5,
+   "used_in": [
+    "4c",
+    "5a",
+    "6a"
+   ]
+  },
+  {
+   "file": "build/audio/mus_show_bed.wav",
+   "kind": "music",
+   "description": "Background bed for the show, 30.0 s seamless loop: toy piano and glockenspiel noodling on the palindrome motif in C major, soft bass, 100 bpm, +-12 cent detune. Loops without a click. Peak -6 dBFS (mixed about -24 dBFS under dialogue).",
+   "text": "",
+   "voice": "",
+   "target_seconds": 30.0,
+   "used_in": [
+    "4a",
+    "8a",
+    "9a"
+   ]
+  },
+  {
+   "file": "build/audio/mus_theme_wrong.wav",
+   "kind": "music",
+   "description": "Goodbye reprise, 14.0 s: the theme melody (instrumental) on a music box (sine + inharmonic partials x2.76, x5.40, mechanism clicks) slowed to 80%, pulled 70 cents flat, doubled 50 cents off so it beats, noise-driven wow 1.5%, the last phrase ending on a tritone (F#) that never resolves, then the mechanism keeps clicking with no notes to the end. Peak -6 dBFS.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 14.0,
+   "used_in": [
+    "11d"
+   ]
+  },
+  {
+   "file": "build/audio/amb_room_tone.wav",
+   "kind": "ambience",
+   "description": "Studio room tone, 20 s loop: brown noise low-passed at 500 Hz, faint HVAC. Mixed at -42 dBFS RMS.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 20.0,
+   "used_in": [
+    "6d",
+    "11a",
+    "11f",
+    "12c"
+   ]
+  },
+  {
+   "file": "build/audio/amb_studio_night.wav",
+   "kind": "ambience",
+   "description": "The empty studio at night, 20 s loop: HVAC rumble, the ghost light's faint 120 Hz filament buzz, a distant tick of cooling lamps. Mixed -38 dBFS.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 20.0,
+   "used_in": [
+    "7b"
+   ]
+  },
+  {
+   "file": "build/audio/amb_drone.wav",
+   "kind": "ambience",
+   "description": "Dread drone, 20 s: two sines at 41 and 42 Hz (1 Hz beating) plus a quiet 83 Hz partial. Mixed -34 to -28 dBFS, always cut dead.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 20.0,
+   "used_in": [
+    "11b"
+   ]
+  },
+  {
+   "file": "build/audio/amb_cluster.wav",
+   "kind": "ambience",
+   "description": "Tone cluster, 20 s: five sines a semitone apart around 330-440 Hz, each with its own 0.1-0.3 Hz vibrato (micropolyphony), slowly swelling over the whole file. Cut dead.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 20.0,
+   "used_in": [
+    "11f"
+   ]
+  },
+  {
+   "file": "build/audio/amb_sub_breath.wav",
+   "kind": "ambience",
+   "description": "Sub-bass breathing, 20 s loop: 30-45 Hz rumble amplitude-modulated at 0.3 Hz like slow breathing. Mixed -30 to -24 dBFS under long holds.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 20.0,
+   "used_in": [
+    "7d",
+    "11g"
+   ]
+  },
+  {
+   "file": "build/audio/amb_shepard_down.wav",
+   "kind": "ambience",
+   "description": "DESCENDING Shepard tone, 16.0 s (a riser turned upside down, sinking forever): 8 octave-spaced sines from 55 Hz under a sin^2 loudness window, falling 0.10 octave/s, +-6 cent drift. Starts at -40 dBFS and climbs +12 dB over the file. Always cut dead (no fade, zero crossing).",
+   "text": "",
+   "voice": "",
+   "target_seconds": 16.0,
+   "used_in": [
+    "10b"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_vcr_insert.wav",
+   "kind": "sfx",
+   "description": "Cassette pushed in: mechanism clunk and motor whirr, 1.2 s.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 1.2,
+   "used_in": [
+    "1a"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_bars_tone_rev.wav",
+   "kind": "sfx",
+   "description": "The colour-bars tone played BACKWARDS, 4.2 s: a 1 kHz sine that fades IN from silence over 3.9 s along a reversed release curve, then stops dead on the last sample (no tail). Not a broadcast alert tone; just a test tone run backwards.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 4.2,
+   "used_in": [
+    "1d"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_static_burst.wav",
+   "kind": "sfx",
+   "description": "Static burst, 1.5 s: white noise through a 300-6000 Hz band with crackle. Trimmed by the compositor.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 1.5,
+   "used_in": [
+    "1c",
+    "6e",
+    "10h"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_tracking_garble.wav",
+   "kind": "sfx",
+   "description": "Tracking garble, 0.6 s: warbling pitch-smeared noise with a 0.1 s pop at the start.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 0.6,
+   "used_in": [
+    "1c",
+    "1e",
+    "5f",
+    "6e",
+    "7g",
+    "9f"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_boing.wav",
+   "kind": "sfx",
+   "description": "Cartoon boing (felt spring), 0.5 s, for the logo snapping the right way round.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 0.5,
+   "used_in": [
+    "2a"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_pop.wav",
+   "kind": "sfx",
+   "description": "Soft felt 'pop' with a tiny slide-whistle blip, 0.3 s, for the twins popping into frame.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 0.3,
+   "used_in": [
+    "3b",
+    "11c"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_laugh.wav",
+   "kind": "sfx",
+   "description": "Laugh track, 3.0 s: a bleacher of children giggling and laughing (built from 'kids' preset 'ha ha ha' and 'hee hee' renders, 10-12 voices, staggered), swelling then settling.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 3.0,
+   "used_in": [
+    "4a",
+    "4e",
+    "4f",
+    "5f",
+    "8b"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_laugh_rev.wav",
+   "kind": "sfx",
+   "description": "sfx_laugh reversed, 3.0 s: the giggles become long sucking inhales that end abruptly. Re-render whenever sfx_laugh changes.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 3.0,
+   "used_in": [
+    "9a"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_kids_yay.wav",
+   "kind": "sfx",
+   "description": "Children cheering 'Yaaay!' with claps, 2.0 s ('kids' preset).",
+   "text": "",
+   "voice": "",
+   "target_seconds": 2.0,
+   "used_in": [
+    "4b",
+    "6c"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_clock_rev.wav",
+   "kind": "sfx",
+   "description": "Reversed wall clock, 10.0 s seamless loop: one tick per second, each tick reversed so it swells into a click ('tock-tick').",
+   "text": "",
+   "voice": "",
+   "target_seconds": 10.0,
+   "used_in": [
+    "8c",
+    "11c"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_steps_rev.wav",
+   "kind": "sfx",
+   "description": "Reversed felt-puppet footsteps, 6.0 s: soft padded thumps at 1.6 per second, each REVERSED (a swelling attack that stops dead), plus faint reversed squeaks.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 6.0,
+   "used_in": [
+    "5c",
+    "5d",
+    "10b"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_ratchet.wav",
+   "kind": "sfx",
+   "description": "The portrait turning one step on its nail: a dry wooden creak and a click, 0.8 s.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 0.8,
+   "used_in": [
+    "6d"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_cam_beep.wav",
+   "kind": "sfx",
+   "description": "Camcorder record-start beep and tape-transport whirr, 0.4 s.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 0.4,
+   "used_in": [
+    "7a",
+    "10a"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_neg_click.wav",
+   "kind": "sfx",
+   "description": "Camcorder effect-button click and a tiny relay tick, 0.3 s (NEG on / NEG off).",
+   "text": "",
+   "voice": "",
+   "target_seconds": 0.3,
+   "used_in": [
+    "7c",
+    "7e"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_light_step.wav",
+   "kind": "sfx",
+   "description": "A big studio light switched off: a heavy contactor clunk, a filament tick, the lamp's hum dying away, 1.2 s.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 1.2,
+   "used_in": [
+    "8e",
+    "8f",
+    "8g"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_preverb_safe.wav",
+   "kind": "sfx",
+   "description": "Reverse-reverb pre-echo of 'You're safe', 0.8 s: take the first 0.6 s of vo_safe_1, reverse it, put a 2.5 s reverb on it (100% wet), reverse again and keep the 0.8 s swell that leads INTO the word; the file ends where the word would start. Re-render whenever vo_safe_1 changes.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 0.8,
+   "used_in": [
+    "8e",
+    "8f",
+    "8g",
+    "8h"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_stinger_1.wav",
+   "kind": "sfx",
+   "description": "Scare 1 stinger, 1.0 s: attack under 5 ms; a 0.3 s noise burst, a 45 Hz decaying thump, a dry felt-thump transient and 3 detuned saws 800-2500 Hz gliding down with 10 Hz vibrato, a 90 ms slap delay, 50 Hz roughness AM at 40%, tanh. The smallest of the three.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 1.0,
+   "used_in": [
+    "8i"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_stinger_2.wav",
+   "kind": "sfx",
+   "description": "Scare 2 stinger, 1.0 s: as stinger 1 but 4 saws, a pitch jump up a minor ninth at 0.25 s, 60 Hz roughness AM at 50%, an octave-down subharmonic at -10 dB, denser.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 1.0,
+   "used_in": [
+    "10g"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_scream_rev.wav",
+   "kind": "sfx",
+   "description": "Reversed scream, 0.8 s: the brief's synthetic scream (espeak 'aaa' -p 99 ring-modulated at 55 Hz, formant noise at 800/1200/2500 Hz with 7 Hz vibrato, a x0.5 growl copy) REVERSED, so it swells and cuts off dead at the end. Layered under sfx_stinger_2 from the hit.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 0.8,
+   "used_in": [
+    "10g"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_stinger_3.wav",
+   "kind": "sfx",
+   "description": "Scare 3 stinger, 1.4 s, the loudest and densest: 5 saws 700-3000 Hz with abrupt pitch jumps, a 40 Hz thump, a reversed-cymbal layer underneath the attack (not before it), 65 Hz roughness AM at 60%, subharmonic at -8 dB, tanh. Attack under 5 ms.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 1.4,
+   "used_in": [
+    "11i"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_breath_rev.wav",
+   "kind": "sfx",
+   "description": "The operator's breathing played REVERSED, 6.0 s: close-mic, dry, inhale-swells that end abruptly, a cycle every 3 s, mouth clicks, +5 dB at 150-250 Hz.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 6.0,
+   "used_in": [
+    "10e"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_inhale_rev.wav",
+   "kind": "sfx",
+   "description": "A single reversed inhale, 1.3 s: swells from nothing to a rough peak and stops dead on the last sample. The one sound before scare 2.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 1.3,
+   "used_in": [
+    "10f"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_couch_creak.wav",
+   "kind": "sfx",
+   "description": "A couch spring and cushion creaking under a small weight, dry and close, 0.9 s. The one sound before scare 3.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 0.9,
+   "used_in": [
+    "11h"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_rewind.wav",
+   "kind": "sfx",
+   "description": "VCR rewinding by itself, 2.2 s: the motor whine rising in pitch, tape hiss, a soft clunk at the end, and PLAY engaging.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 2.2,
+   "used_in": [
+    "12a"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_knocks.wav",
+   "kind": "sfx",
+   "description": "Two soft knocks on glass, a knuckle on a TV screen, 0.6 s apart, close-miked and dry, 1.6 s.",
+   "text": "",
+   "voice": "",
+   "target_seconds": 1.6,
+   "used_in": [
+    "12d"
+   ]
+  },
+  {
+   "file": "build/audio/sfx_vcr_stop.wav",
+   "kind": "sfx",
+   "description": "VCR stop mechanism clunk, 0.6 s (the compositor does the pitch dive on the mix).",
+   "text": "",
+   "voice": "",
+   "target_seconds": 0.6,
+   "used_in": [
+    "12d"
+   ]
+  },
+  {
+   "file": "build/audio/vo_narr_ident.wav",
+   "kind": "voice",
+   "description": "NARRATOR - Two-Way Kids announcer: warm, calm, corporate. Preset 'narrator' (STORYBOARD.md section 6).",
+   "text": "Two-Way Kids Home Video presents...",
+   "voice": "narrator",
+   "target_seconds": 2.6,
+   "voice_recipe": "espeak-ng -v en-us+m3 -s 160 -p 40 -g 4; band-pass 180-3600 Hz; tanh(2.0x); slight low-shelf warmth; -3 dBFS.",
+   "used_in": [
+    "2a"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_hi.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "Hi, kids! I'm BIM!",
+   "voice": "bim",
+   "target_seconds": 1.8,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "4a"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_twin.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "And this is my twin brother, MIB! He does everything just like me!",
+   "voice": "bim",
+   "target_seconds": 4.2,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "4a"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_spot.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "And this is your spot, right here on my side!",
+   "voice": "bim",
+   "target_seconds": 3.0,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "4b"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_rule1.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "Rule number one! On Opposite Day, yes means no!",
+   "voice": "bim",
+   "target_seconds": 3.2,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "4d"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_wrongside.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6). Giggly; a tiny pause before 'wrong side'.",
+   "text": "Hee hee! MIB's cards are backwards. If you can read them, you're on the wrong side!",
+   "voice": "bim",
+   "target_seconds": 4.6,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "4e"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_sky.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "Is the sky green?",
+   "voice": "bim",
+   "target_seconds": 1.3,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "4f"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_icecream.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "Is ice cream yucky?",
+   "voice": "bim",
+   "target_seconds": 1.4,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "4f"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_everybody.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "Is everybody here?",
+   "voice": "bim",
+   "target_seconds": 1.4,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "4g"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_great.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6). Bright, as if nothing was heard.",
+   "text": "Great job, kids!",
+   "voice": "bim",
+   "target_seconds": 1.3,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "4g"
+   ]
+  },
+  {
+   "file": "build/audio/vo_kids_yes.wav",
+   "kind": "voice",
+   "description": "THE TURNAROUND KIDS (laugh-track children) - a studio audience of excited children shouting together. Preset 'kids' (STORYBOARD.md section 6).",
+   "text": "YES!",
+   "voice": "kids",
+   "target_seconds": 0.8,
+   "voice_recipe": "8 espeak-ng renders of the line with different voices (en-us+f1..f5, +m1, +m3, +klatt) at -p 80-99 and -s 150-190, each pitched up 2-5 semitones, randomly offset 0-70 ms and panned across the stereo field by the builder's mono sum (keep it mono), summed, band-passed 250-5000 Hz, room reverb 0.6 s at 25% wet (a studio bleacher); -3 dBFS.",
+   "used_in": [
+    "4f",
+    "6b"
+   ]
+  },
+  {
+   "file": "build/audio/vo_kids_no.wav",
+   "kind": "voice",
+   "description": "THE TURNAROUND KIDS (laugh-track children) - a studio audience of excited children shouting together. Preset 'kids' (STORYBOARD.md section 6).",
+   "text": "NO!",
+   "voice": "kids",
+   "target_seconds": 0.8,
+   "voice_recipe": "8 espeak-ng renders of the line with different voices (en-us+f1..f5, +m1, +m3, +klatt) at -p 80-99 and -s 150-190, each pitched up 2-5 semitones, randomly offset 0-70 ms and panned across the stereo field by the builder's mono sum (keep it mono), summed, band-passed 250-5000 Hz, room reverb 0.6 s at 25% wet (a studio bleacher); -3 dBFS.",
+   "used_in": [
+    "4g"
+   ]
+  },
+  {
+   "file": "build/audio/vo_child_no_rev.wav",
+   "kind": "voice",
+   "description": "ONE CHILD (reversed) - a single laugh-track child, played backwards. Preset 'child_rev' (STORYBOARD.md section 6). Played one beat after the chorus, panned 70% RIGHT (from MIB's side). One voice too many.",
+   "text": "NO!",
+   "voice": "child_rev",
+   "target_seconds": 0.9,
+   "voice_recipe": "espeak-ng -v en-us+f4 -s 160 -p 95, pitched up 3 semitones, band-pass 250-5000 Hz, the same bleacher reverb as 'kids'; then REVERSED with a reverse-reverb swell so it sucks inward and stops dead; -3 dBFS.",
+   "used_in": [
+    "4g"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_rule2.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "Rule number two! Forward is backward! Let's do the Backwards Walk!",
+   "voice": "bim",
+   "target_seconds": 3.8,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "5b"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_walk_rev.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6). Rendered forwards, then REVERSED: plays as gibberish ('!yllippah klaw'); the compositor subtitles it 'WALK HAPPILY!'.",
+   "text": "Walk happily!",
+   "voice": "bim",
+   "target_seconds": 1.2,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "5d"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_goodbye.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "And goodbye means hello! Goodbye, kids!",
+   "voice": "bim",
+   "target_seconds": 2.8,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "5e"
+   ]
+  },
+  {
+   "file": "build/audio/vo_kids_goodbye.wav",
+   "kind": "voice",
+   "description": "THE TURNAROUND KIDS (laugh-track children) - a studio audience of excited children shouting together. Preset 'kids' (STORYBOARD.md section 6).",
+   "text": "GOODBYE!",
+   "voice": "kids",
+   "target_seconds": 1.0,
+   "voice_recipe": "8 espeak-ng renders of the line with different voices (en-us+f1..f5, +m1, +m3, +klatt) at -p 80-99 and -s 150-190, each pitched up 2-5 semitones, randomly offset 0-70 ms and panned across the stereo field by the builder's mono sum (keep it mono), summed, band-passed 250-5000 Hz, room reverb 0.6 s at 25% wet (a studio bleacher); -3 dBFS.",
+   "used_in": [
+    "5e",
+    "11d"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_turnabout.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "This is Mister Turnabout! He's upside down today.",
+   "voice": "bim",
+   "target_seconds": 3.0,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "6b"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_happy.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "Is he happy, kids?",
+   "voice": "bim",
+   "target_seconds": 1.3,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "6b"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_turn.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6).",
+   "text": "Let's turn him right side up!",
+   "voice": "bim",
+   "target_seconds": 1.8,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "6c"
+   ]
+  },
+  {
+   "file": "build/audio/vo_crew_1.wav",
+   "kind": "voice",
+   "description": "STAGE MANAGER (camcorder operator) - nervous whisper close to a cheap camcorder mic. Preset 'crew' (STORYBOARD.md section 6).",
+   "text": "Eleven forty. Set B. They said leave it dark.",
+   "voice": "crew",
+   "target_seconds": 3.4,
+   "voice_recipe": "espeak-ng -v en-us+whisperf -s 155 -p 40; band-pass 300-3400 Hz (camcorder mic); -6 dBFS.",
+   "used_in": [
+    "7b"
+   ]
+  },
+  {
+   "file": "build/audio/vo_crew_2.wav",
+   "kind": "voice",
+   "description": "STAGE MANAGER (camcorder operator) - nervous whisper close to a cheap camcorder mic. Preset 'crew' (STORYBOARD.md section 6).",
+   "text": "The camera does negative. Watch.",
+   "voice": "crew",
+   "target_seconds": 2.2,
+   "voice_recipe": "espeak-ng -v en-us+whisperf -s 155 -p 40; band-pass 300-3400 Hz (camcorder mic); -6 dBFS.",
+   "used_in": [
+    "7c"
+   ]
+  },
+  {
+   "file": "build/audio/vo_crew_3.wav",
+   "kind": "voice",
+   "description": "STAGE MANAGER (camcorder operator) - nervous whisper close to a cheap camcorder mic. Preset 'crew' (STORYBOARD.md section 6). Called out a little louder, into the dark.",
+   "text": "Hello?",
+   "voice": "crew",
+   "target_seconds": 0.8,
+   "voice_recipe": "espeak-ng -v en-us+whisperf -s 155 -p 40; band-pass 300-3400 Hz (camcorder mic); -6 dBFS.",
+   "used_in": [
+    "7e"
+   ]
+  },
+  {
+   "file": "build/audio/vo_whisper_rev.wav",
+   "kind": "voice",
+   "description": "WHISPER - a child-sized whisper right at the microphone. Preset 'whisper' (STORYBOARD.md section 6). Rendered forwards then REVERSED with a reverse-reverb pre-echo swelling 0.6 s ahead of it: unintelligible until 12a, where vo_whisper_fwd plays the same take forwards. The compositor pans it hard LEFT then hard RIGHT (one half each) with a 22 ms Haas double on the opposite side at -8 dB.",
+   "text": "Your turn to be the reflection.",
+   "voice": "whisper",
+   "target_seconds": 2.4,
+   "voice_recipe": "espeak-ng -v en-us+whisperf -s 120 -p 55; dry, high-passed at 300 Hz, attack under 5 ms; -1 dBFS.",
+   "used_in": [
+    "7d",
+    "11g"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_welcome_low.wav",
+   "kind": "voice",
+   "description": "BIM (with MIB's voice) - the same bright delivery, but in MIB's lower voice. Preset 'bim_low' (STORYBOARD.md section 6).",
+   "text": "Welcome back, kids! Did you miss us?",
+   "voice": "bim_low",
+   "target_seconds": 2.6,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). raw pitched DOWN 4 semitones (the same interval the other way: this is MIB's voice, which MIB never used), same band-pass, tanh and reverb; -3 dBFS. Used only by BIM after the swap. Compositor pans it 30% LEFT although BIM now stands on the RIGHT (the voices crossed).",
+   "used_in": [
+    "8a"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_rule3_low.wav",
+   "kind": "voice",
+   "description": "BIM (with MIB's voice) - the same bright delivery, but in MIB's lower voice. Preset 'bim_low' (STORYBOARD.md section 6).",
+   "text": "Rule number three! Safe means not safe! Hee hee!",
+   "voice": "bim_low",
+   "target_seconds": 3.2,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). raw pitched DOWN 4 semitones (the same interval the other way: this is MIB's voice, which MIB never used), same band-pass, tanh and reverb; -3 dBFS. Used only by BIM after the swap. Compositor pans it 30% LEFT although BIM now stands on the RIGHT (the voices crossed).",
+   "used_in": [
+    "8b"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_aww_low.wav",
+   "kind": "voice",
+   "description": "BIM (with MIB's voice) - the same bright delivery, but in MIB's lower voice. Preset 'bim_low' (STORYBOARD.md section 6). Flat and sad, the only time the voice is not cheerful.",
+   "text": "Aww.",
+   "voice": "bim_low",
+   "target_seconds": 0.8,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). raw pitched DOWN 4 semitones (the same interval the other way: this is MIB's voice, which MIB never used), same band-pass, tanh and reverb; -3 dBFS. Used only by BIM after the swap. Compositor pans it 30% LEFT although BIM now stands on the RIGHT (the voices crossed).",
+   "used_in": [
+    "8c"
+   ]
+  },
+  {
+   "file": "build/audio/vo_safe_1.wav",
+   "kind": "voice",
+   "description": "MIB (with BIM's voice, flat) - BIM's voice gone flat, slow and much too close. Preset 'mib_flat' (STORYBOARD.md section 6).",
+   "text": "You're safe.",
+   "voice": "mib_flat",
+   "target_seconds": 1.1,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 135 -g 2, -p 55 fixed, no melody, rendered once per line ('raw'). pitched UP 4 semitones like 'bim'; band-pass 200-5000 Hz; reverb 3% wet; +4 dB proximity bump at 150-250 Hz; 45 Hz amplitude modulation at 20% depth (roughness); -3 dBFS. Panned dead centre.",
+   "used_in": [
+    "8e"
+   ]
+  },
+  {
+   "file": "build/audio/vo_safe_2.wav",
+   "kind": "voice",
+   "description": "MIB (with BIM's voice, flat) - BIM's voice gone flat, slow and much too close. Preset 'mib_flat' (STORYBOARD.md section 6). A different take: a little lower and closer than vo_safe_1.",
+   "text": "You're safe.",
+   "voice": "mib_flat",
+   "target_seconds": 1.1,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 135 -g 2, -p 55 fixed, no melody, rendered once per line ('raw'). pitched UP 4 semitones like 'bim'; band-pass 200-5000 Hz; reverb 3% wet; +4 dB proximity bump at 150-250 Hz; 45 Hz amplitude modulation at 20% depth (roughness); -3 dBFS. Panned dead centre.",
+   "used_in": [
+    "8f"
+   ]
+  },
+  {
+   "file": "build/audio/vo_safe_3.wav",
+   "kind": "voice",
+   "description": "MIB (with BIM's voice, flat) - BIM's voice gone flat, slow and much too close. Preset 'mib_flat' (STORYBOARD.md section 6). Slowest and closest of the three.",
+   "text": "You're so safe.",
+   "voice": "mib_flat",
+   "target_seconds": 1.2,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 135 -g 2, -p 55 fixed, no melody, rendered once per line ('raw'). pitched UP 4 semitones like 'bim'; band-pass 200-5000 Hz; reverb 3% wet; +4 dB proximity bump at 150-250 Hz; 45 Hz amplitude modulation at 20% depth (roughness); -3 dBFS. Panned dead centre.",
+   "used_in": [
+    "8g"
+   ]
+  },
+  {
+   "file": "build/audio/vo_mib_here.wav",
+   "kind": "voice",
+   "description": "MIB (with BIM's voice) - BIM's exact bright host voice coming out of MIB's mouth. Preset 'mib_as_bim' (STORYBOARD.md section 6).",
+   "text": "Hi, kids! BIM is right here!",
+   "voice": "mib_as_bim",
+   "target_seconds": 2.0,
+   "voice_recipe": "Identical recipe to 'bim' (same pitch-up, EQ, reverb), a different render per line. Compositor pans it 30% RIGHT although MIB now stands on the LEFT.",
+   "used_in": [
+    "9a"
+   ]
+  },
+  {
+   "file": "build/audio/vo_mib_rule4.wav",
+   "kind": "voice",
+   "description": "MIB (with BIM's voice) - BIM's exact bright host voice coming out of MIB's mouth. Preset 'mib_as_bim' (STORYBOARD.md section 6).",
+   "text": "Rule number four! To stop Opposite Day, just say: It's NOT Opposite Day! Ready?",
+   "voice": "mib_as_bim",
+   "target_seconds": 5.0,
+   "voice_recipe": "Identical recipe to 'bim' (same pitch-up, EQ, reverb), a different render per line. Compositor pans it 30% RIGHT although MIB now stands on the LEFT.",
+   "used_in": [
+    "9b"
+   ]
+  },
+  {
+   "file": "build/audio/vo_kids_chant.wav",
+   "kind": "voice",
+   "description": "THE TURNAROUND KIDS (laugh-track children) - a studio audience of excited children shouting together. Preset 'kids' (STORYBOARD.md section 6). Three chants starting at 0.0, 2.0 and 4.0 s (write 'phrases' into manifest.json), each 2 dB louder; in the third chant ONE extra child voice is reversed (the same line backwards, mixed at -6 dB).",
+   "text": "It's NOT Opposite Day! It's NOT Opposite Day! It's NOT Opposite Day!",
+   "voice": "kids",
+   "target_seconds": 6.0,
+   "voice_recipe": "8 espeak-ng renders of the line with different voices (en-us+f1..f5, +m1, +m3, +klatt) at -p 80-99 and -s 150-190, each pitched up 2-5 semitones, randomly offset 0-70 ms and panned across the stereo field by the builder's mono sum (keep it mono), summed, band-passed 250-5000 Hz, room reverb 0.6 s at 25% wet (a studio bleacher); -3 dBFS.",
+   "used_in": [
+    "9c"
+   ]
+  },
+  {
+   "file": "build/audio/vo_mib_means.wav",
+   "kind": "voice",
+   "description": "MIB (with BIM's voice) - BIM's exact bright host voice coming out of MIB's mouth. Preset 'mib_as_bim' (STORYBOARD.md section 6). Slows down on 'that means'; the line simply stops there.",
+   "text": "Good! And on Opposite Day... that means...",
+   "voice": "mib_as_bim",
+   "target_seconds": 3.2,
+   "voice_recipe": "Identical recipe to 'bim' (same pitch-up, EQ, reverb), a different render per line. Compositor pans it 30% RIGHT although MIB now stands on the LEFT.",
+   "used_in": [
+    "9d"
+   ]
+  },
+  {
+   "file": "build/audio/vo_crew_4.wav",
+   "kind": "voice",
+   "description": "STAGE MANAGER (camcorder operator) - nervous whisper close to a cheap camcorder mic. Preset 'crew' (STORYBOARD.md section 6).",
+   "text": "Okay. Behind B.",
+   "voice": "crew",
+   "target_seconds": 1.3,
+   "voice_recipe": "espeak-ng -v en-us+whisperf -s 155 -p 40; band-pass 300-3400 Hz (camcorder mic); -6 dBFS.",
+   "used_in": [
+    "10b"
+   ]
+  },
+  {
+   "file": "build/audio/vo_crew_5.wav",
+   "kind": "voice",
+   "description": "STAGE MANAGER (camcorder operator) - nervous whisper close to a cheap camcorder mic. Preset 'crew' (STORYBOARD.md section 6).",
+   "text": "There's another one. Why is there another one?",
+   "voice": "crew",
+   "target_seconds": 2.8,
+   "voice_recipe": "espeak-ng -v en-us+whisperf -s 155 -p 40; band-pass 300-3400 Hz (camcorder mic); -6 dBFS.",
+   "used_in": [
+    "10c"
+   ]
+  },
+  {
+   "file": "build/audio/vo_mib_bye.wav",
+   "kind": "voice",
+   "description": "MIB (with BIM's voice) - BIM's exact bright host voice coming out of MIB's mouth. Preset 'mib_as_bim' (STORYBOARD.md section 6).",
+   "text": "That's all for Opposite Day! Remember, goodbye means hello. Goodbye, kids!",
+   "voice": "mib_as_bim",
+   "target_seconds": 4.6,
+   "voice_recipe": "Identical recipe to 'bim' (same pitch-up, EQ, reverb), a different render per line. Compositor pans it 30% RIGHT although MIB now stands on the LEFT.",
+   "used_in": [
+    "11d"
+   ]
+  },
+  {
+   "file": "build/audio/vo_mib_notwith.wav",
+   "kind": "voice",
+   "description": "MIB (with BIM's voice, flat) - BIM's voice gone flat, slow and much too close. Preset 'mib_flat' (STORYBOARD.md section 6). Leave a 0.5 s gap between the sentences; the last one slower.",
+   "text": "Don't worry. BIM isn't with you. He isn't right behind you.",
+   "voice": "mib_flat",
+   "target_seconds": 4.4,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 135 -g 2, -p 55 fixed, no melody, rendered once per line ('raw'). pitched UP 4 semitones like 'bim'; band-pass 200-5000 Hz; reverb 3% wet; +4 dB proximity bump at 150-250 Hz; 45 Hz amplitude modulation at 20% depth (roughness); -3 dBFS. Panned dead centre.",
+   "used_in": [
+    "11e"
+   ]
+  },
+  {
+   "file": "build/audio/vo_whisper_fwd.wav",
+   "kind": "voice",
+   "description": "WHISPER - a child-sized whisper right at the microphone. Preset 'whisper' (STORYBOARD.md section 6). The SAME take as vo_whisper_rev played forwards (no reverse reverb), clear and close; heard inside the self-rewind.",
+   "text": "Your turn to be the reflection.",
+   "voice": "whisper",
+   "target_seconds": 2.0,
+   "voice_recipe": "espeak-ng -v en-us+whisperf -s 120 -p 55; dry, high-passed at 300 Hz, attack under 5 ms; -1 dBFS.",
+   "used_in": [
+    "12a"
+   ]
+  },
+  {
+   "file": "build/audio/vo_bim_bye.wav",
+   "kind": "voice",
+   "description": "BIM - bright, bouncy kids'-show host, a little too eager. Preset 'bim' (STORYBOARD.md section 6). Bright and cheerful, completely dry (no reverb), as if right beside you.",
+   "text": "Bye!",
+   "voice": "bim",
+   "target_seconds": 0.7,
+   "voice_recipe": "ONE shared twin voice: espeak-ng -v en-us+m3 -s 170 -g 2, -p varied 60-85 between phrases (sing-song), rendered once per line ('raw'). BIM = raw pitched UP 4 semitones with the granular shifter (duration kept); band-pass 250-4000 Hz (TV speaker); tanh(1.5x); room reverb 0.3 s at 10% wet; -3 dBFS. Compositor pans it 30% LEFT while BIM stands on the left.",
+   "used_in": [
+    "12c"
+   ]
+  },
+  {
+   "file": "build/audio/vo_whisper_hello.wav",
+   "kind": "voice",
+   "description": "WHISPER - a child-sized whisper right at the microphone. Preset 'whisper' (STORYBOARD.md section 6).",
+   "text": "I mean hello.",
+   "voice": "whisper",
+   "target_seconds": 1.2,
+   "voice_recipe": "espeak-ng -v en-us+whisperf -s 120 -p 55; dry, high-passed at 300 Hz, attack under 5 ms; -1 dBFS.",
+   "used_in": [
+    "12c"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,6 @@
+__pycache__/
+build/chunks/
+build/preview/
+build/sheets/
+build/video_concat.mp4
+build/mix*.wav
