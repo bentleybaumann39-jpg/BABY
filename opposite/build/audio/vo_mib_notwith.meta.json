@@ -1,0 +1,10 @@
+{
+ "text": "Don't worry. BIM isn't with you. He isn't right behind you.",
+ "voice": "mib_flat",
+ "espeak_text": "Don't worry. Bim isn't with you. He isn't right behind you.",
+ "espeak_speed": 161,
+ "pause_limit": 0.16,
+ "max_seconds": 4.4,
+ "fits": true,
+ "recipe": "od-1"
+}

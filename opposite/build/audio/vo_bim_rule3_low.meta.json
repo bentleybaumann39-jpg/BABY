@@ -1,0 +1,11 @@
+{
+ "text": "Rule number three! Safe means not safe! Hee hee!",
+ "voice": "bim_low",
+ "espeak_text": "Rule number three! Safe means not safe! Hee hee!",
+ "espeak_speed": 181,
+ "pause_limit": 0.16,
+ "max_seconds": 3.2,
+ "fits": true,
+ "twin_shift_semitones": -4.0,
+ "recipe": "od-1"
+}

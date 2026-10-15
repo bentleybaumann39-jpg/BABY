@@ -1,0 +1,11 @@
+{
+ "text": "Hee hee! MIB's cards are backwards. If you can read them, you're on the wrong side!",
+ "voice": "bim",
+ "espeak_text": "Hee hee! Mib's cards are backwards. If you can read them, you're on the wrong side!",
+ "espeak_speed": 213,
+ "pause_limit": 0.16,
+ "max_seconds": 4.6,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

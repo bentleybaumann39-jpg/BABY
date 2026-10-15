@@ -1,0 +1,1597 @@
+{
+ "build/audio/mus_ident_palindrome.wav": {
+  "duration": 4.0,
+  "peak": 0.8912,
+  "rms": 0.13136,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -17.63,
+  "kind": "music",
+  "target_seconds": 4.0,
+  "used_in": [
+   "2a",
+   "9e"
+  ],
+  "notes": [
+   [
+    0.04,
+    "C5"
+   ],
+   [
+    0.36,
+    "E5"
+   ],
+   [
+    0.68,
+    "G5"
+   ],
+   [
+    1.0,
+    "A5"
+   ],
+   [
+    1.32,
+    "G5"
+   ],
+   [
+    1.64,
+    "E5"
+   ],
+   [
+    1.96,
+    "C5"
+   ]
+  ],
+  "palindrome_window": [
+   0.0,
+   2.0
+  ],
+  "chord_at": 2.28,
+  "dynamics": "p-mf-f-ff-f-mf-p"
+ },
+ "build/audio/mus_theme.wav": {
+  "duration": 22.0,
+  "peak": 0.8912,
+  "rms": 0.22902,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -12.8,
+  "kind": "music",
+  "target_seconds": 22.0,
+  "used_in": [
+   "3a"
+  ],
+  "lyrics": [
+   [
+    1.96,
+    "Turn around and turn around,"
+   ],
+   [
+    4.99,
+    "up is down and down is up!"
+   ],
+   [
+    7.93,
+    "Yes is no and no is yes,"
+   ],
+   [
+    10.97,
+    "BIM and MIB, who's who? Guess!"
+   ],
+   [
+    13.96,
+    "Come and sit here by my side,"
+   ],
+   [
+    16.99,
+    "Opposite Day is here for you!"
+   ],
+   [
+    20.3,
+    "Hi, kids!"
+   ]
+  ],
+  "sung": [
+   [
+    1.96,
+    "Turn around and turn around,"
+   ],
+   [
+    4.99,
+    "up is down and down is up!"
+   ],
+   [
+    7.93,
+    "Yes is no and no is yes,"
+   ],
+   [
+    10.97,
+    "BIM and MIB, who's who? Guess!"
+   ],
+   [
+    13.96,
+    "Come and sit on the other side,"
+   ],
+   [
+    16.99,
+    "Opposite Day is here for you!"
+   ],
+   [
+    20.3,
+    "Hi, kids!"
+   ]
+  ],
+  "caption_differs": [
+   4
+  ],
+  "caption_note": "line 5 is SUNG 'Come and sit on the other side,' but CAPTIONED 'Come and sit here by my side,'",
+  "bpm": 160,
+  "line_starts": [
+   2.0,
+   5.0,
+   8.0,
+   11.0,
+   14.0,
+   17.0
+  ],
+  "palindrome": [
+   "C5",
+   "E5",
+   "G5",
+   "A5",
+   "G5",
+   "E5",
+   "C5"
+  ],
+  "env": "build/audio/mus_theme.env.json"
+ },
+ "build/audio/mus_bumper.wav": {
+  "duration": 1.5,
+  "peak": 0.8912,
+  "rms": 0.18746,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -14.54,
+  "kind": "music",
+  "target_seconds": 1.5,
+  "used_in": [
+   "4c",
+   "5a",
+   "6a"
+  ],
+  "palindrome": [
+   "C6",
+   "E6",
+   "G6",
+   "E6",
+   "C6"
+  ]
+ },
+ "build/audio/mus_show_bed.wav": {
+  "duration": 30.0,
+  "peak": 0.5012,
+  "rms": 0.10377,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -19.68,
+  "kind": "music",
+  "target_seconds": 30.0,
+  "used_in": [
+   "4a",
+   "8a",
+   "9a"
+  ],
+  "bpm": 100,
+  "loop": true,
+  "detune_cents": 12
+ },
+ "build/audio/mus_theme_wrong.wav": {
+  "duration": 14.0,
+  "peak": 0.5012,
+  "rms": 0.09931,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -20.06,
+  "kind": "music",
+  "target_seconds": 14.0,
+  "used_in": [
+   "11d"
+  ],
+  "tempo": 0.8,
+  "flat_cents": -70,
+  "double_cents": -50,
+  "wow": 0.015,
+  "last_note": "F#5 (tritone, unresolved)",
+  "last_note_at": 10.144,
+  "clicks_only_from": 11.94,
+  "cut_dead": true
+ },
+ "build/audio/amb_room_tone.wav": {
+  "duration": 20.0,
+  "peak": 0.4252,
+  "rms": 0.1,
+  "peak_dbfs": -7.43,
+  "rms_dbfs": -20.0,
+  "kind": "ambience",
+  "target_seconds": 20.0,
+  "used_in": [
+   "6d",
+   "11a",
+   "11f",
+   "12c"
+  ],
+  "loop": true,
+  "level": "-20 dBFS RMS (mix it at -42)"
+ },
+ "build/audio/amb_studio_night.wav": {
+  "duration": 20.0,
+  "peak": 0.5012,
+  "rms": 0.11638,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -18.68,
+  "kind": "ambience",
+  "target_seconds": 20.0,
+  "used_in": [
+   "7b"
+  ],
+  "loop": true
+ },
+ "build/audio/amb_drone.wav": {
+  "duration": 20.0,
+  "peak": 0.5012,
+  "rms": 0.30046,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -10.44,
+  "kind": "ambience",
+  "target_seconds": 20.0,
+  "used_in": [
+   "11b"
+  ],
+  "loop": true,
+  "cut_dead": true
+ },
+ "build/audio/amb_cluster.wav": {
+  "duration": 20.0,
+  "peak": 0.5012,
+  "rms": 0.10406,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -19.65,
+  "kind": "ambience",
+  "target_seconds": 20.0,
+  "used_in": [
+   "11f"
+  ],
+  "tones": [
+   "E4",
+   "F4",
+   "F#4",
+   "G4",
+   "G#4"
+  ],
+  "swell_db": 14,
+  "ends_at_full_level": true,
+  "cut_dead": true
+ },
+ "build/audio/amb_sub_breath.wav": {
+  "duration": 20.0,
+  "peak": 0.5012,
+  "rms": 0.19664,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -14.13,
+  "kind": "ambience",
+  "target_seconds": 20.0,
+  "used_in": [
+   "7d",
+   "11g"
+  ],
+  "loop": true,
+  "breath_hz": 0.3,
+  "cut_dead": true
+ },
+ "build/audio/amb_shepard_down.wav": {
+  "duration": 25.999,
+  "peak": 0.8912,
+  "rms": 0.12794,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -17.86,
+  "kind": "ambience",
+  "target_seconds": 16.0,
+  "used_in": [
+   "10b"
+  ],
+  "glide_oct_per_s": -0.1,
+  "rise_db": 12,
+  "ends_at_full_level": true,
+  "covers": "10b +0.0 to 10f +2.8 (25.8 s); assets.json target was 16.0 s",
+  "cut_dead": true
+ },
+ "build/audio/sfx_vcr_insert.wav": {
+  "duration": 1.2,
+  "peak": 0.8912,
+  "rms": 0.06361,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -23.93,
+  "kind": "sfx",
+  "target_seconds": 1.2,
+  "used_in": [
+   "1a"
+  ]
+ },
+ "build/audio/sfx_bars_tone_rev.wav": {
+  "duration": 4.2,
+  "peak": 0.8912,
+  "rms": 0.30403,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -10.34,
+  "kind": "sfx",
+  "target_seconds": 4.2,
+  "used_in": [
+   "1d"
+  ],
+  "fade_in_s": 3.9,
+  "stops_dead": true
+ },
+ "build/audio/sfx_static_burst.wav": {
+  "duration": 1.5,
+  "peak": 0.8912,
+  "rms": 0.24594,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -12.18,
+  "kind": "sfx",
+  "target_seconds": 1.5,
+  "used_in": [
+   "1c",
+   "6e",
+   "10h"
+  ]
+ },
+ "build/audio/sfx_tracking_garble.wav": {
+  "duration": 0.6,
+  "peak": 0.8912,
+  "rms": 0.20513,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -13.76,
+  "kind": "sfx",
+  "target_seconds": 0.6,
+  "used_in": [
+   "1c",
+   "1e",
+   "5f",
+   "6e",
+   "7g",
+   "9f"
+  ],
+  "pop_s": 0.1
+ },
+ "build/audio/sfx_boing.wav": {
+  "duration": 0.5,
+  "peak": 0.8912,
+  "rms": 0.25051,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -12.02,
+  "kind": "sfx",
+  "target_seconds": 0.5,
+  "used_in": [
+   "2a"
+  ]
+ },
+ "build/audio/sfx_pop.wav": {
+  "duration": 0.3,
+  "peak": 0.8912,
+  "rms": 0.16027,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -15.9,
+  "kind": "sfx",
+  "target_seconds": 0.3,
+  "used_in": [
+   "3b",
+   "11c"
+  ]
+ },
+ "build/audio/sfx_laugh.wav": {
+  "duration": 3.0,
+  "peak": 0.8912,
+  "rms": 0.13464,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -17.42,
+  "kind": "sfx",
+  "target_seconds": 3.0,
+  "used_in": [
+   "4a",
+   "4e",
+   "4f",
+   "5f",
+   "8b"
+  ],
+  "voices": 11
+ },
+ "build/audio/sfx_laugh_rev.wav": {
+  "duration": 3.0,
+  "peak": 0.8912,
+  "rms": 0.13464,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -17.42,
+  "kind": "sfx",
+  "target_seconds": 3.0,
+  "used_in": [
+   "9a"
+  ],
+  "source": "build/audio/sfx_laugh.wav",
+  "source_crc": 805087599
+ },
+ "build/audio/sfx_kids_yay.wav": {
+  "duration": 2.0,
+  "peak": 0.8912,
+  "rms": 0.16752,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -15.52,
+  "kind": "sfx",
+  "target_seconds": 2.0,
+  "used_in": [
+   "4b",
+   "6c"
+  ]
+ },
+ "build/audio/sfx_clock_rev.wav": {
+  "duration": 10.0,
+  "peak": 0.8912,
+  "rms": 0.06335,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -23.97,
+  "kind": "sfx",
+  "target_seconds": 10.0,
+  "used_in": [
+   "8c",
+   "11c"
+  ],
+  "loop": true,
+  "clicks_at": [
+   0.5,
+   1.5,
+   2.5,
+   3.5,
+   4.5,
+   5.5,
+   6.5,
+   7.5,
+   8.5,
+   9.5
+  ]
+ },
+ "build/audio/sfx_steps_rev.wav": {
+  "duration": 7.5,
+  "peak": 0.8912,
+  "rms": 0.06863,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -23.27,
+  "kind": "sfx",
+  "target_seconds": 6.0,
+  "used_in": [
+   "5c",
+   "5d",
+   "10b"
+  ],
+  "loop": true,
+  "steps_per_s": 1.6,
+  "dead_stops_at": [
+   0.287,
+   0.937,
+   1.558,
+   2.191,
+   2.792,
+   3.414,
+   4.062,
+   4.691,
+   5.286,
+   5.934,
+   6.57,
+   7.187
+  ],
+  "note": "7.5 s (assets.json target 6.0) so 10b's 7.0 s needs no loop"
+ },
+ "build/audio/sfx_ratchet.wav": {
+  "duration": 0.8,
+  "peak": 0.8912,
+  "rms": 0.07609,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -22.37,
+  "kind": "sfx",
+  "target_seconds": 0.8,
+  "used_in": [
+   "6d"
+  ],
+  "click_at": 0.44
+ },
+ "build/audio/sfx_cam_beep.wav": {
+  "duration": 0.4,
+  "peak": 0.8912,
+  "rms": 0.3603,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -8.87,
+  "kind": "sfx",
+  "target_seconds": 0.4,
+  "used_in": [
+   "7a",
+   "10a"
+  ]
+ },
+ "build/audio/sfx_neg_click.wav": {
+  "duration": 0.3,
+  "peak": 0.8912,
+  "rms": 0.04285,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -27.36,
+  "kind": "sfx",
+  "target_seconds": 0.3,
+  "used_in": [
+   "7c",
+   "7e"
+  ]
+ },
+ "build/audio/sfx_light_step.wav": {
+  "duration": 1.2,
+  "peak": 0.8912,
+  "rms": 0.05457,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -25.26,
+  "kind": "sfx",
+  "target_seconds": 1.2,
+  "used_in": [
+   "8e",
+   "8f",
+   "8g"
+  ]
+ },
+ "build/audio/sfx_preverb_safe.wav": {
+  "duration": 0.8,
+  "peak": 0.8912,
+  "rms": 0.11285,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -18.95,
+  "kind": "sfx",
+  "target_seconds": 0.8,
+  "used_in": [
+   "8e",
+   "8f",
+   "8g",
+   "8h"
+  ],
+  "source": "build/audio/vo_safe_1.wav",
+  "source_crc": 4039498426,
+  "ends_at_line_onset": true,
+  "lead_s": 0.8
+ },
+ "build/audio/sfx_stinger_1.wav": {
+  "duration": 1.0,
+  "peak": 0.8912,
+  "rms": 0.39281,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -8.12,
+  "kind": "sfx",
+  "target_seconds": 1.0,
+  "used_in": [
+   "8i"
+  ],
+  "rms_400ms_dbfs": -5.43
+ },
+ "build/audio/sfx_stinger_2.wav": {
+  "duration": 1.0,
+  "peak": 0.8912,
+  "rms": 0.53821,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -5.38,
+  "kind": "sfx",
+  "target_seconds": 1.0,
+  "used_in": [
+   "10g"
+  ],
+  "rms_400ms_dbfs": -3.3
+ },
+ "build/audio/sfx_scream_rev.wav": {
+  "duration": 0.8,
+  "peak": 0.8912,
+  "rms": 0.18782,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -14.52,
+  "kind": "sfx",
+  "target_seconds": 0.8,
+  "used_in": [
+   "10g"
+  ],
+  "reversed": true,
+  "stops_dead": true,
+  "voice": "twin +4 st, -p 99"
+ },
+ "build/audio/sfx_stinger_3.wav": {
+  "duration": 1.4,
+  "peak": 0.8912,
+  "rms": 0.48749,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -6.24,
+  "kind": "sfx",
+  "target_seconds": 1.4,
+  "used_in": [
+   "11i"
+  ],
+  "rms_400ms_dbfs": -4.18,
+  "scream": "BIM's voice ('bye', -p 99, +4 st) torn into a scream"
+ },
+ "build/audio/sfx_breath_rev.wav": {
+  "duration": 6.0,
+  "peak": 0.7079,
+  "rms": 0.09266,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -20.66,
+  "kind": "sfx",
+  "target_seconds": 6.0,
+  "used_in": [
+   "10e"
+  ],
+  "pan": -0.2,
+  "dry": true,
+  "reversed": true,
+  "cycle_s": 3.0
+ },
+ "build/audio/sfx_inhale_rev.wav": {
+  "duration": 1.3,
+  "peak": 0.8912,
+  "rms": 0.10636,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -19.46,
+  "kind": "sfx",
+  "target_seconds": 1.3,
+  "used_in": [
+   "10f"
+  ],
+  "pan": -0.2,
+  "dry": true,
+  "stops_dead": true
+ },
+ "build/audio/sfx_couch_creak.wav": {
+  "duration": 0.9,
+  "peak": 0.8912,
+  "rms": 0.0916,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -20.76,
+  "kind": "sfx",
+  "target_seconds": 0.9,
+  "used_in": [
+   "11h"
+  ],
+  "dry": true
+ },
+ "build/audio/sfx_rewind.wav": {
+  "duration": 2.2,
+  "peak": 0.8912,
+  "rms": 0.07323,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -22.71,
+  "kind": "sfx",
+  "target_seconds": 2.2,
+  "used_in": [
+   "12a"
+  ],
+  "stop_clunk_at": 1.78,
+  "play_at": 1.98
+ },
+ "build/audio/sfx_knocks.wav": {
+  "duration": 1.6,
+  "peak": 0.8912,
+  "rms": 0.05083,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -25.88,
+  "kind": "sfx",
+  "target_seconds": 1.6,
+  "used_in": [
+   "12d"
+  ],
+  "knocks_at": [
+   0.05,
+   0.65
+  ],
+  "dry": true
+ },
+ "build/audio/sfx_vcr_stop.wav": {
+  "duration": 0.6,
+  "peak": 0.8912,
+  "rms": 0.05871,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -24.63,
+  "kind": "sfx",
+  "target_seconds": 0.6,
+  "used_in": [
+   "12d"
+  ]
+ },
+ "build/audio/vo_narr_ident.wav": {
+  "duration": 2.458,
+  "peak": 0.7079,
+  "rms": 0.16523,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -15.64,
+  "kind": "voice",
+  "target_seconds": 2.6,
+  "used_in": [
+   "2a"
+  ],
+  "text": "Two-Way Kids Home Video presents...",
+  "voice": "narrator",
+  "espeak_text": "Two-Way Kids Home Video presents...",
+  "espeak_speed": 160,
+  "pause_limit": null,
+  "max_seconds": 2.6,
+  "fits": true,
+  "env": "build/audio/vo_narr_ident.env.json"
+ },
+ "build/audio/vo_bim_hi.wav": {
+  "duration": 1.8,
+  "peak": 0.7079,
+  "rms": 0.139,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.14,
+  "kind": "voice",
+  "target_seconds": 1.8,
+  "used_in": [
+   "4a"
+  ],
+  "text": "Hi, kids! I'm BIM!",
+  "voice": "bim",
+  "espeak_text": "Hi, kids! I'm Bim!",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 1.8,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_hi.env.json"
+ },
+ "build/audio/vo_bim_twin.wav": {
+  "duration": 4.19,
+  "peak": 0.7079,
+  "rms": 0.1339,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.46,
+  "kind": "voice",
+  "target_seconds": 4.2,
+  "used_in": [
+   "4a"
+  ],
+  "text": "And this is my twin brother, MIB! He does everything just like me!",
+  "voice": "bim",
+  "espeak_text": "And this is my twin brother, Mib! He does everything just like me!",
+  "espeak_speed": 175,
+  "pause_limit": 0.16,
+  "max_seconds": 4.2,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_twin.env.json"
+ },
+ "build/audio/vo_bim_spot.wav": {
+  "duration": 2.919,
+  "peak": 0.7079,
+  "rms": 0.14633,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -16.69,
+  "kind": "voice",
+  "target_seconds": 3.0,
+  "used_in": [
+   "4b"
+  ],
+  "text": "And this is your spot, right here on my side!",
+  "voice": "bim",
+  "espeak_text": "And this is your spot, right here on my side!",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 3.0,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_spot.env.json"
+ },
+ "build/audio/vo_bim_rule1.wav": {
+  "duration": 3.2,
+  "peak": 0.7079,
+  "rms": 0.15003,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -16.48,
+  "kind": "voice",
+  "target_seconds": 3.2,
+  "used_in": [
+   "4d"
+  ],
+  "text": "Rule number one! On Opposite Day, yes means no!",
+  "voice": "bim",
+  "espeak_text": "Rule number one! On Opposite Day, yes means no!",
+  "espeak_speed": 185,
+  "pause_limit": 0.16,
+  "max_seconds": 3.2,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_rule1.env.json"
+ },
+ "build/audio/vo_bim_wrongside.wav": {
+  "duration": 4.6,
+  "peak": 0.7079,
+  "rms": 0.12922,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.77,
+  "kind": "voice",
+  "target_seconds": 4.6,
+  "used_in": [
+   "4e"
+  ],
+  "text": "Hee hee! MIB's cards are backwards. If you can read them, you're on the wrong side!",
+  "voice": "bim",
+  "espeak_text": "Hee hee! Mib's cards are backwards. If you can read them, you're on the wrong side!",
+  "espeak_speed": 213,
+  "pause_limit": 0.16,
+  "max_seconds": 4.6,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_wrongside.env.json"
+ },
+ "build/audio/vo_bim_sky.wav": {
+  "duration": 1.152,
+  "peak": 0.7079,
+  "rms": 0.14632,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -16.69,
+  "kind": "voice",
+  "target_seconds": 1.3,
+  "used_in": [
+   "4f"
+  ],
+  "text": "Is the sky green?",
+  "voice": "bim",
+  "espeak_text": "Is the sky green?",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 1.3,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_sky.env.json"
+ },
+ "build/audio/vo_bim_icecream.wav": {
+  "duration": 1.36,
+  "peak": 0.7079,
+  "rms": 0.13193,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.59,
+  "kind": "voice",
+  "target_seconds": 1.4,
+  "used_in": [
+   "4f"
+  ],
+  "text": "Is ice cream yucky?",
+  "voice": "bim",
+  "espeak_text": "Is ice cream yucky?",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 1.4,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_icecream.env.json"
+ },
+ "build/audio/vo_bim_everybody.wav": {
+  "duration": 1.318,
+  "peak": 0.7079,
+  "rms": 0.16565,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -15.62,
+  "kind": "voice",
+  "target_seconds": 1.4,
+  "used_in": [
+   "4g"
+  ],
+  "text": "Is everybody here?",
+  "voice": "bim",
+  "espeak_text": "Is everybody here?",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 1.4,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_everybody.env.json"
+ },
+ "build/audio/vo_bim_great.wav": {
+  "duration": 1.268,
+  "peak": 0.7079,
+  "rms": 0.16367,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -15.72,
+  "kind": "voice",
+  "target_seconds": 1.3,
+  "used_in": [
+   "4g"
+  ],
+  "text": "Great job, kids!",
+  "voice": "bim",
+  "espeak_text": "Great job, kids!",
+  "espeak_speed": 170,
+  "pause_limit": 0.16,
+  "max_seconds": 1.3,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_great.env.json"
+ },
+ "build/audio/vo_kids_yes.wav": {
+  "duration": 0.78,
+  "peak": 0.7079,
+  "rms": 0.13215,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.58,
+  "kind": "voice",
+  "target_seconds": 0.8,
+  "used_in": [
+   "4f",
+   "6b"
+  ],
+  "text": "YES!",
+  "voice": "kids",
+  "espeak_text": "Yes!",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 0.8,
+  "fits": true,
+  "env": "build/audio/vo_kids_yes.env.json"
+ },
+ "build/audio/vo_kids_no.wav": {
+  "duration": 0.8,
+  "peak": 0.7079,
+  "rms": 0.1606,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -15.89,
+  "kind": "voice",
+  "target_seconds": 0.8,
+  "used_in": [
+   "4g"
+  ],
+  "text": "NO!",
+  "voice": "kids",
+  "espeak_text": "No!",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 0.8,
+  "fits": true,
+  "env": "build/audio/vo_kids_no.env.json"
+ },
+ "build/audio/vo_child_no_rev.wav": {
+  "duration": 0.834,
+  "peak": 0.7079,
+  "rms": 0.13128,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.64,
+  "kind": "voice",
+  "target_seconds": 0.9,
+  "used_in": [
+   "4g"
+  ],
+  "text": "NO!",
+  "voice": "child_rev",
+  "espeak_text": "No!",
+  "espeak_speed": 160,
+  "pause_limit": null,
+  "max_seconds": 0.9,
+  "fits": true,
+  "env": "build/audio/vo_child_no_rev.env.json"
+ },
+ "build/audio/vo_bim_rule2.wav": {
+  "duration": 3.8,
+  "peak": 0.7079,
+  "rms": 0.14136,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -16.99,
+  "kind": "voice",
+  "target_seconds": 3.8,
+  "used_in": [
+   "5b"
+  ],
+  "text": "Rule number two! Forward is backward! Let's do the Backwards Walk!",
+  "voice": "bim",
+  "espeak_text": "Rule number two! Forward is backward! Let's do the Backwards Walk!",
+  "espeak_speed": 197,
+  "pause_limit": 0.16,
+  "max_seconds": 3.8,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_rule2.env.json"
+ },
+ "build/audio/vo_bim_walk_rev.wav": {
+  "duration": 0.96,
+  "peak": 0.7079,
+  "rms": 0.16706,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -15.54,
+  "kind": "voice",
+  "target_seconds": 1.2,
+  "used_in": [
+   "5d"
+  ],
+  "text": "Walk happily!",
+  "voice": "bim",
+  "espeak_text": "Walk happily!",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 1.2,
+  "fits": true,
+  "reversed": true,
+  "subtitle": "WALK HAPPILY!",
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_walk_rev.env.json"
+ },
+ "build/audio/vo_bim_goodbye.wav": {
+  "duration": 2.774,
+  "peak": 0.7079,
+  "rms": 0.1394,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.11,
+  "kind": "voice",
+  "target_seconds": 2.8,
+  "used_in": [
+   "5e"
+  ],
+  "text": "And goodbye means hello! Goodbye, kids!",
+  "voice": "bim",
+  "espeak_text": "And goodbye means hello! Goodbye, kids!",
+  "espeak_speed": 170,
+  "pause_limit": 0.16,
+  "max_seconds": 2.8,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_goodbye.env.json"
+ },
+ "build/audio/vo_kids_goodbye.wav": {
+  "duration": 0.986,
+  "peak": 0.7079,
+  "rms": 0.14008,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.07,
+  "kind": "voice",
+  "target_seconds": 1.0,
+  "used_in": [
+   "5e",
+   "11d"
+  ],
+  "text": "GOODBYE!",
+  "voice": "kids",
+  "espeak_text": "Goodbye!",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 1.0,
+  "fits": true,
+  "env": "build/audio/vo_kids_goodbye.env.json"
+ },
+ "build/audio/vo_bim_turnabout.wav": {
+  "duration": 3.0,
+  "peak": 0.7079,
+  "rms": 0.13909,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.13,
+  "kind": "voice",
+  "target_seconds": 3.0,
+  "used_in": [
+   "6b"
+  ],
+  "text": "This is Mister Turnabout! He's upside down today.",
+  "voice": "bim",
+  "espeak_text": "This is Mister Turnabout! He's upside down today.",
+  "espeak_speed": 182,
+  "pause_limit": 0.16,
+  "max_seconds": 3.0,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_turnabout.env.json"
+ },
+ "build/audio/vo_bim_happy.wav": {
+  "duration": 1.3,
+  "peak": 0.7079,
+  "rms": 0.16385,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -15.71,
+  "kind": "voice",
+  "target_seconds": 1.3,
+  "used_in": [
+   "6b"
+  ],
+  "text": "Is he happy, kids?",
+  "voice": "bim",
+  "espeak_text": "Is he happy, kids?",
+  "espeak_speed": 189,
+  "pause_limit": 0.16,
+  "max_seconds": 1.3,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_happy.env.json"
+ },
+ "build/audio/vo_bim_turn.wav": {
+  "duration": 1.785,
+  "peak": 0.7079,
+  "rms": 0.16652,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -15.57,
+  "kind": "voice",
+  "target_seconds": 1.8,
+  "used_in": [
+   "6c"
+  ],
+  "text": "Let's turn him right side up!",
+  "voice": "bim",
+  "espeak_text": "Let's turn him right side up!",
+  "espeak_speed": 185,
+  "pause_limit": 0.16,
+  "max_seconds": 1.8,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_turn.env.json"
+ },
+ "build/audio/vo_crew_1.wav": {
+  "duration": 3.363,
+  "peak": 0.5012,
+  "rms": 0.0673,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -23.44,
+  "kind": "voice",
+  "target_seconds": 3.4,
+  "used_in": [
+   "7b"
+  ],
+  "text": "Eleven forty. Set B. They said leave it dark.",
+  "voice": "crew",
+  "espeak_text": "Eleven forty. Set B. They said leave it dark.",
+  "espeak_speed": 155,
+  "pause_limit": null,
+  "max_seconds": 3.4,
+  "fits": true,
+  "env": "build/audio/vo_crew_1.env.json"
+ },
+ "build/audio/vo_crew_2.wav": {
+  "duration": 2.152,
+  "peak": 0.5012,
+  "rms": 0.07526,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -22.47,
+  "kind": "voice",
+  "target_seconds": 2.2,
+  "used_in": [
+   "7c"
+  ],
+  "text": "The camera does negative. Watch.",
+  "voice": "crew",
+  "espeak_text": "The camera does negative. Watch.",
+  "espeak_speed": 155,
+  "pause_limit": 0.22,
+  "max_seconds": 2.2,
+  "fits": true,
+  "env": "build/audio/vo_crew_2.env.json"
+ },
+ "build/audio/vo_crew_3.wav": {
+  "duration": 0.8,
+  "peak": 0.5012,
+  "rms": 0.08023,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -21.91,
+  "kind": "voice",
+  "target_seconds": 0.8,
+  "used_in": [
+   "7e"
+  ],
+  "text": "Hello?",
+  "voice": "crew",
+  "espeak_text": "Hello?",
+  "espeak_speed": 155,
+  "pause_limit": null,
+  "max_seconds": 0.8,
+  "fits": true,
+  "env": "build/audio/vo_crew_3.env.json"
+ },
+ "build/audio/vo_whisper_rev.wav": {
+  "duration": 2.4,
+  "peak": 0.8912,
+  "rms": 0.12701,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -17.92,
+  "kind": "voice",
+  "target_seconds": 2.4,
+  "used_in": [
+   "7d",
+   "11g"
+  ],
+  "text": "Your turn to be the reflection.",
+  "voice": "whisper",
+  "reversed": true,
+  "source": "build/audio/vo_whisper_fwd.wav",
+  "source_crc": 602291758,
+  "pre_echo_s": 0.6,
+  "pan": [
+   [
+    0.0,
+    -1.0
+   ],
+   [
+    1.652,
+    1.0
+   ]
+  ],
+  "pan_split_s": 1.652,
+  "haas_ms": 22,
+  "haas_db": -8,
+  "max_seconds": 2.4,
+  "fits": true,
+  "env": "build/audio/vo_whisper_rev.env.json"
+ },
+ "build/audio/vo_bim_welcome_low.wav": {
+  "duration": 2.6,
+  "peak": 0.7079,
+  "rms": 0.12243,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -18.24,
+  "kind": "voice",
+  "target_seconds": 2.6,
+  "used_in": [
+   "8a"
+  ],
+  "text": "Welcome back, kids! Did you miss us?",
+  "voice": "bim_low",
+  "espeak_text": "Welcome back, kids! Did you miss us?",
+  "espeak_speed": 170,
+  "pause_limit": 0.16,
+  "max_seconds": 2.6,
+  "fits": true,
+  "twin_shift_semitones": -4.0,
+  "env": "build/audio/vo_bim_welcome_low.env.json"
+ },
+ "build/audio/vo_bim_rule3_low.wav": {
+  "duration": 3.2,
+  "peak": 0.7079,
+  "rms": 0.1114,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -19.06,
+  "kind": "voice",
+  "target_seconds": 3.2,
+  "used_in": [
+   "8b"
+  ],
+  "text": "Rule number three! Safe means not safe! Hee hee!",
+  "voice": "bim_low",
+  "espeak_text": "Rule number three! Safe means not safe! Hee hee!",
+  "espeak_speed": 181,
+  "pause_limit": 0.16,
+  "max_seconds": 3.2,
+  "fits": true,
+  "twin_shift_semitones": -4.0,
+  "env": "build/audio/vo_bim_rule3_low.env.json"
+ },
+ "build/audio/vo_bim_aww_low.wav": {
+  "duration": 0.574,
+  "peak": 0.7079,
+  "rms": 0.17115,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -15.33,
+  "kind": "voice",
+  "target_seconds": 0.8,
+  "used_in": [
+   "8c"
+  ],
+  "text": "Aww.",
+  "voice": "bim_low",
+  "espeak_text": "Aww.",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 0.8,
+  "fits": true,
+  "twin_shift_semitones": -4.0,
+  "env": "build/audio/vo_bim_aww_low.env.json"
+ },
+ "build/audio/vo_safe_1.wav": {
+  "duration": 0.796,
+  "peak": 0.7079,
+  "rms": 0.13721,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.25,
+  "kind": "voice",
+  "target_seconds": 1.1,
+  "used_in": [
+   "8e"
+  ],
+  "text": "You're safe.",
+  "voice": "mib_flat",
+  "espeak_text": "You're safe.",
+  "espeak_speed": 135,
+  "pause_limit": null,
+  "max_seconds": 1.1,
+  "fits": true,
+  "env": "build/audio/vo_safe_1.env.json"
+ },
+ "build/audio/vo_safe_2.wav": {
+  "duration": 0.849,
+  "peak": 0.7079,
+  "rms": 0.13069,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.67,
+  "kind": "voice",
+  "target_seconds": 1.1,
+  "used_in": [
+   "8f"
+  ],
+  "text": "You're safe.",
+  "voice": "mib_flat",
+  "espeak_text": "You're safe.",
+  "espeak_speed": 128,
+  "pause_limit": null,
+  "max_seconds": 1.1,
+  "fits": true,
+  "env": "build/audio/vo_safe_2.env.json"
+ },
+ "build/audio/vo_safe_3.wav": {
+  "duration": 1.152,
+  "peak": 0.7079,
+  "rms": 0.13632,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.31,
+  "kind": "voice",
+  "target_seconds": 1.2,
+  "used_in": [
+   "8g"
+  ],
+  "text": "You're so safe.",
+  "voice": "mib_flat",
+  "espeak_text": "You're so safe.",
+  "espeak_speed": 114,
+  "pause_limit": null,
+  "max_seconds": 1.2,
+  "fits": true,
+  "env": "build/audio/vo_safe_3.env.json"
+ },
+ "build/audio/vo_mib_here.wav": {
+  "duration": 2.0,
+  "peak": 0.7079,
+  "rms": 0.15203,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -16.36,
+  "kind": "voice",
+  "target_seconds": 2.0,
+  "used_in": [
+   "9a"
+  ],
+  "text": "Hi, kids! BIM is right here!",
+  "voice": "mib_as_bim",
+  "espeak_text": "Hi, kids! Bim is right here!",
+  "espeak_speed": 200,
+  "pause_limit": 0.16,
+  "max_seconds": 2.0,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_mib_here.env.json"
+ },
+ "build/audio/vo_mib_rule4.wav": {
+  "duration": 4.935,
+  "peak": 0.7079,
+  "rms": 0.14121,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.0,
+  "kind": "voice",
+  "target_seconds": 5.0,
+  "used_in": [
+   "9b"
+  ],
+  "text": "Rule number four! To stop Opposite Day, just say: It's NOT Opposite Day! Ready?",
+  "voice": "mib_as_bim",
+  "espeak_text": "Rule number four! To stop Opposite Day, just say: It's not Opposite Day! Ready?",
+  "espeak_speed": 191,
+  "pause_limit": 0.16,
+  "max_seconds": 5.0,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_mib_rule4.env.json"
+ },
+ "build/audio/vo_kids_chant.wav": {
+  "duration": 6.0,
+  "peak": 0.7079,
+  "rms": 0.13964,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.1,
+  "kind": "voice",
+  "target_seconds": 6.0,
+  "used_in": [
+   "9c"
+  ],
+  "text": "It's NOT Opposite Day! It's NOT Opposite Day! It's NOT Opposite Day!",
+  "voice": "kids",
+  "phrases": [
+   [
+    0.0,
+    "It's NOT Opposite Day!"
+   ],
+   [
+    2.0,
+    "It's NOT Opposite Day!"
+   ],
+   [
+    4.0,
+    "It's NOT Opposite Day!"
+   ]
+  ],
+  "phrase_spans": [
+   [
+    0.0,
+    1.652
+   ],
+   [
+    2.0,
+    3.571
+   ],
+   [
+    4.0,
+    5.649
+   ]
+  ],
+  "reversed_extra_child": {
+   "chant": 3,
+   "level_db": -6
+  },
+  "chant_gain_db": [
+   0,
+   2,
+   4
+  ],
+  "max_seconds": 6.0,
+  "fits": true,
+  "env": "build/audio/vo_kids_chant.env.json"
+ },
+ "build/audio/vo_mib_means.wav": {
+  "duration": 3.194,
+  "peak": 0.7079,
+  "rms": 0.13271,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.54,
+  "kind": "voice",
+  "target_seconds": 3.2,
+  "used_in": [
+   "9d"
+  ],
+  "text": "Good! And on Opposite Day... that means...",
+  "voice": "mib_as_bim",
+  "espeak_text": "Good! And on Opposite Day... that means...",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 3.2,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_mib_means.env.json"
+ },
+ "build/audio/vo_crew_4.wav": {
+  "duration": 1.229,
+  "peak": 0.5012,
+  "rms": 0.08004,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -21.93,
+  "kind": "voice",
+  "target_seconds": 1.3,
+  "used_in": [
+   "10b"
+  ],
+  "text": "Okay. Behind B.",
+  "voice": "crew",
+  "espeak_text": "Okay. Behind B.",
+  "espeak_speed": 176,
+  "pause_limit": 0.16,
+  "max_seconds": 1.3,
+  "fits": true,
+  "env": "build/audio/vo_crew_4.env.json"
+ },
+ "build/audio/vo_crew_5.wav": {
+  "duration": 2.688,
+  "peak": 0.5012,
+  "rms": 0.07081,
+  "peak_dbfs": -6.0,
+  "rms_dbfs": -23.0,
+  "kind": "voice",
+  "target_seconds": 2.8,
+  "used_in": [
+   "10c"
+  ],
+  "text": "There's another one. Why is there another one?",
+  "voice": "crew",
+  "espeak_text": "There's another one. Why is there another one?",
+  "espeak_speed": 150,
+  "pause_limit": null,
+  "max_seconds": 2.8,
+  "fits": true,
+  "env": "build/audio/vo_crew_5.env.json"
+ },
+ "build/audio/vo_mib_bye.wav": {
+  "duration": 4.582,
+  "peak": 0.7079,
+  "rms": 0.134,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -17.46,
+  "kind": "voice",
+  "target_seconds": 4.6,
+  "used_in": [
+   "11d"
+  ],
+  "text": "That's all for Opposite Day! Remember, goodbye means hello. Goodbye, kids!",
+  "voice": "mib_as_bim",
+  "espeak_text": "That's all for Opposite Day! Remember, goodbye means hello. Goodbye, kids!",
+  "espeak_speed": 194,
+  "pause_limit": 0.16,
+  "max_seconds": 4.6,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_mib_bye.env.json"
+ },
+ "build/audio/vo_mib_notwith.wav": {
+  "duration": 4.4,
+  "peak": 0.7079,
+  "rms": 0.11877,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -18.51,
+  "kind": "voice",
+  "target_seconds": 4.4,
+  "used_in": [
+   "11e"
+  ],
+  "text": "Don't worry. BIM isn't with you. He isn't right behind you.",
+  "voice": "mib_flat",
+  "espeak_text": "Don't worry. Bim isn't with you. He isn't right behind you.",
+  "espeak_speed": 161,
+  "pause_limit": 0.16,
+  "max_seconds": 4.4,
+  "fits": true,
+  "env": "build/audio/vo_mib_notwith.env.json"
+ },
+ "build/audio/vo_whisper_fwd.wav": {
+  "duration": 1.8,
+  "peak": 0.8912,
+  "rms": 0.09833,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -20.15,
+  "kind": "voice",
+  "target_seconds": 2.0,
+  "used_in": [
+   "12a"
+  ],
+  "text": "Your turn to be the reflection.",
+  "voice": "whisper",
+  "espeak_text": "Your turn to be the reflection.",
+  "espeak_speed": 175,
+  "pause_limit": 0.16,
+  "max_seconds": 1.9,
+  "fits": true,
+  "env": "build/audio/vo_whisper_fwd.env.json"
+ },
+ "build/audio/vo_bim_bye.wav": {
+  "duration": 0.33,
+  "peak": 0.7079,
+  "rms": 0.23088,
+  "peak_dbfs": -3.0,
+  "rms_dbfs": -12.73,
+  "kind": "voice",
+  "target_seconds": 0.7,
+  "used_in": [
+   "12c"
+  ],
+  "text": "Bye!",
+  "voice": "bim",
+  "espeak_text": "Bye!",
+  "espeak_speed": 170,
+  "pause_limit": null,
+  "max_seconds": 0.7,
+  "fits": true,
+  "twin_shift_semitones": 4.0,
+  "env": "build/audio/vo_bim_bye.env.json"
+ },
+ "build/audio/vo_whisper_hello.wav": {
+  "duration": 1.2,
+  "peak": 0.8912,
+  "rms": 0.13906,
+  "peak_dbfs": -1.0,
+  "rms_dbfs": -17.14,
+  "kind": "voice",
+  "target_seconds": 1.2,
+  "used_in": [
+   "12c"
+  ],
+  "text": "I mean hello.",
+  "voice": "whisper",
+  "espeak_text": "I mean hello.",
+  "espeak_speed": 135,
+  "pause_limit": 0.16,
+  "max_seconds": 1.2,
+  "fits": true,
+  "env": "build/audio/vo_whisper_hello.env.json"
+ }
+}

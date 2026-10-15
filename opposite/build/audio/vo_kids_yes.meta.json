@@ -1,0 +1,10 @@
+{
+ "text": "YES!",
+ "voice": "kids",
+ "espeak_text": "Yes!",
+ "espeak_speed": 170,
+ "pause_limit": null,
+ "max_seconds": 0.8,
+ "fits": true,
+ "recipe": "od-1"
+}

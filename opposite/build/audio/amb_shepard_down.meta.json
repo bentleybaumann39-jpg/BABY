@@ -1,0 +1,8 @@
+{
+ "glide_oct_per_s": -0.1,
+ "rise_db": 12,
+ "ends_at_full_level": true,
+ "covers": "10b +0.0 to 10f +2.8 (25.8 s); assets.json target was 16.0 s",
+ "cut_dead": true,
+ "recipe": "od-1"
+}

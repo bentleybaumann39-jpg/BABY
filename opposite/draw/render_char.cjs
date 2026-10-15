@@ -14,7 +14,7 @@
  *
  * Libraries (in order): horror.js (realism toolkit, window.HZ), felt.js (felt
  * core, window.FELT), twins.js (BIM / MIB and the other puppets, window.OPP),
- * portrait.js (gouache Mr. Turnabout), faces.js (the scare faces).
+ * faces.js (the scare faces and the gouache Mr. Turnabout, window.OPP.FACES).
  * Each preset OPP.CHAR[name](canvas) draws the final-size image (it handles
  * its own supersampling). "transparent": true entries keep alpha; opaque ones
  * are flattened onto black. Each PNG is written atomically as soon as it is
@@ -27,7 +27,7 @@ const { chromium } = require('playwright');
 
 const HERE = __dirname;
 const ROOT = path.resolve(HERE, '..');                  // opposite/
-const SOURCES = ['horror.js', 'felt.js', 'twins.js', 'portrait.js', 'faces.js'];
+const SOURCES = ['horror.js', 'felt.js', 'twins.js', 'faces.js'];
 
 const args = process.argv.slice(2);
 let outDir = null, force = false, list = false;

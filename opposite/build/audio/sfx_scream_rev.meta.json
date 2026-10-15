@@ -1,0 +1,6 @@
+{
+ "reversed": true,
+ "stops_dead": true,
+ "voice": "twin +4 st, -p 99",
+ "recipe": "od-1"
+}

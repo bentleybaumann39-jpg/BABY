@@ -1,0 +1,24 @@
+{
+ "text": "Your turn to be the reflection.",
+ "voice": "whisper",
+ "reversed": true,
+ "source": "build/audio/vo_whisper_fwd.wav",
+ "source_crc": 602291758,
+ "pre_echo_s": 0.6,
+ "pan": [
+  [
+   0.0,
+   -1.0
+  ],
+  [
+   1.652,
+   1.0
+  ]
+ ],
+ "pan_split_s": 1.652,
+ "haas_ms": 22,
+ "haas_db": -8,
+ "max_seconds": 2.4,
+ "fits": true,
+ "recipe": "od-1"
+}

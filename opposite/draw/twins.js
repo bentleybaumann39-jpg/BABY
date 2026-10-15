@@ -263,7 +263,7 @@ function drawHead(f, H) {
   // brows (felt slivers peeking under the fringe)
   if (H.brows) {
     for (const sd of [-1, 1]) {
-      const bx = fx(H, sd * 0.34), by = -0.17, ang = H.brows === 'sad' ? -sd * 0.42 : sd * 0.08;
+      const bx = fx(H, sd * 0.34), by = -0.17, ang = H.brows === 'sad' ? sd * 0.42 : sd * 0.08;     // sad: the inner ends raised
       const bp = new Path2D(); bp.ellipse(bx, by + (H.brows === 'sad' ? -0.02 : 0), 0.14 * fk(H, sd * 0.34), 0.035, ang, 0, TAU);
       part(f, bp, { fill: P.brow, shade: 0.3, ao: 0.2, hi: 0.15, outline: '#2A1408', outlineW: 0.8, cast: { alpha: 0.35, blur: 3, dist: 2 } });
     }
@@ -696,10 +696,12 @@ function drawHidden(cv) {
   }
   // the head: bowl cut, tilted 15 degrees about the neck (logical units)
   const HT = new DOMMatrix().translate(120, 238).rotate(15).translate(-120, -238);
-  const hd = new Path2D(); hd.ellipse(120, 178, 60, 56, 0, 0, TAU); sil.addPath(hd, HT);
-  const hair = new Path2D(); hair.moveTo(54, 188); hair.bezierCurveTo(48, 98, 192, 98, 186, 188); hair.lineTo(180, 200); hair.lineTo(60, 200); hair.closePath(); sil.addPath(hair, HT);
-  for (const sd of [-1, 1]) { const ear = new Path2D(); ear.ellipse(120 + sd * 60, 196, 9, 11, 0, 0, TAU); sil.addPath(ear, HT); }
-  const eyesAt = [[99, 180], [141, 180]].map(([x, y]) => { const p = HT.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; });
+  // the twins' unmistakable mushroom silhouette: the bowl overhangs the face and is cut flat at ear level
+  const hd = new Path2D(); hd.ellipse(120, 196, 50, 43, 0, 0, TAU); sil.addPath(hd, HT);
+  const hair = new Path2D(); hair.moveTo(56, 206); hair.bezierCurveTo(46, 150, 66, 104, 120, 102); hair.bezierCurveTo(174, 104, 194, 150, 184, 206);
+  hair.lineTo(176, 203); hair.lineTo(168, 207); hair.lineTo(160, 202); hair.lineTo(80, 202); hair.lineTo(72, 207); hair.lineTo(64, 203); hair.closePath(); sil.addPath(hair, HT);
+  for (const sd of [-1, 1]) { const ear = new Path2D(); ear.ellipse(120 + sd * 51, 215, 7, 9, 0, 0, TAU); sil.addPath(ear, HT); }
+  const eyesAt = [[101, 186], [139, 186]].map(([x, y]) => { const p = HT.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; });
   // fill near-black with a faint felt mottling (4-10% luma), soften the edge
   const L = mk(BW, BH), lg = L.getContext('2d'); lg.setTransform(SS, 0, 0, SS, 0, 0);
   lg.fillStyle = 'rgb(16,15,17)'; lg.fill(sil);

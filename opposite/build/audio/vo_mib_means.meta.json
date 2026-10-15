@@ -1,0 +1,11 @@
+{
+ "text": "Good! And on Opposite Day... that means...",
+ "voice": "mib_as_bim",
+ "espeak_text": "Good! And on Opposite Day... that means...",
+ "espeak_speed": 170,
+ "pause_limit": null,
+ "max_seconds": 3.2,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

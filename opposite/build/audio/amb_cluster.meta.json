@@ -1,0 +1,13 @@
+{
+ "tones": [
+  "E4",
+  "F4",
+  "F#4",
+  "G4",
+  "G#4"
+ ],
+ "swell_db": 14,
+ "ends_at_full_level": true,
+ "cut_dead": true,
+ "recipe": "od-1"
+}

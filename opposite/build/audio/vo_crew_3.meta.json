@@ -1,0 +1,10 @@
+{
+ "text": "Hello?",
+ "voice": "crew",
+ "espeak_text": "Hello?",
+ "espeak_speed": 155,
+ "pause_limit": null,
+ "max_seconds": 0.8,
+ "fits": true,
+ "recipe": "od-1"
+}

@@ -1,0 +1,10 @@
+{
+ "text": "Eleven forty. Set B. They said leave it dark.",
+ "voice": "crew",
+ "espeak_text": "Eleven forty. Set B. They said leave it dark.",
+ "espeak_speed": 155,
+ "pause_limit": null,
+ "max_seconds": 3.4,
+ "fits": true,
+ "recipe": "od-1"
+}

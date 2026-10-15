@@ -1,0 +1,13 @@
+{
+ "text": "Walk happily!",
+ "voice": "bim",
+ "espeak_text": "Walk happily!",
+ "espeak_speed": 170,
+ "pause_limit": null,
+ "max_seconds": 1.2,
+ "fits": true,
+ "reversed": true,
+ "subtitle": "WALK HAPPILY!",
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

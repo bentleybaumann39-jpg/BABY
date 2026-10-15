@@ -1283,7 +1283,7 @@ function eyeLidRing(g, st, o, S, apL, s) {
       lg.beginPath(); lg.moveTo(x0, y0 + Math.sin(a) * w * 0.02); lg.quadraticCurveTo(x0 + S.side * Ln * 0.6, y0 + Math.sin(a) * Ln * 0.6 + h * 0.03, x0 + S.side * Ln, y0 + Math.sin(a) * Ln); lg.stroke();
     }
     lg.save(); lg.globalCompositeOperation = 'destination-out'; lg.fill(apL); lg.restore();
-  }, { vis: o.vis, mat: Object.assign({}, MAT.skin, { spec: 0.05, spec2: 0.03 }), height: rw * 0.6, round: rw * 0.25, z: o.z, seed: o.seed + 'lid', pores: 0.18, poreScale: 0.5, noise: [0.4, 3], lw: o.lw, feather: rw * 0.7,
+  }, { vis: o.vis, mat: Object.assign({}, MAT.skin, { spec: 0.05, spec2: 0.03 }), height: rw * 0.6, round: rw * 0.25, z: o.z, seed: o.seed + 'lid', pores: o.lidPores === undefined ? 0.18 : o.lidPores, poreScale: 0.5, noise: o.lidNoise || [0.4, 3], lw: o.lw, feather: rw * 0.7,
     hdraw: (hg) => {
       hg.fillStyle = 'rgb(70,70,70)'; hg.fill(region);
       hg.strokeStyle = 'rgb(255,255,255)'; hg.lineJoin = 'round'; hg.lineWidth = rw * 0.9; hg.stroke(polyPath(S.up, false));
@@ -1311,7 +1311,7 @@ function lidMargins(g, st, o, S, lw, h, w) {
   g.save();
   for (let i = 1; i < S.up.length; i++) {
     const u = i / (S.up.length - 1), a = S.up[i - 1], b = S.up[i];
-    g.strokeStyle = 'rgba(10,5,4,0.96)'; g.lineWidth = Math.max(lw * 1.2, h * lerp(0.035, 0.06, u));
+    g.strokeStyle = 'rgba(10,5,4,0.96)'; g.lineWidth = Math.max(lw * 1.2, h * lerp(0.035, 0.06, u)) * (o.lashLineW || 1);
     g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
   }
   g.restore();
@@ -1325,7 +1325,7 @@ function lidMargins(g, st, o, S, lw, h, w) {
     let a = -Math.PI / 2 + S.side * (0.15 + 0.9 * u) + (rl() - 0.5) * 0.5;
     if (o.press) a = lerp(a, -Math.PI / 2 + S.side * 1.45 + (rl() - 0.5) * 0.4, o.press);
     const bend = S.side * (0.3 + rl() * 0.4) * (o.press ? 1.4 : 1);
-    g.lineWidth = Math.max(lw * 0.5, w * 0.0055 * (0.7 + rl() * 0.7));
+    g.lineWidth = Math.max(lw * 0.5, w * 0.0055 * (0.7 + rl() * 0.7)) * (o.lashW || 1);
     g.beginPath(); g.moveTo(bx, by);
     g.quadraticCurveTo(bx + Math.cos(a) * Ln * 0.55, by + Math.sin(a) * Ln * 0.55, bx + Math.cos(a + bend) * Ln, by + Math.sin(a + bend) * Ln);
     g.stroke();

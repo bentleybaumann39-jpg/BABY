@@ -1,0 +1,44 @@
+{
+ "text": "It's NOT Opposite Day! It's NOT Opposite Day! It's NOT Opposite Day!",
+ "voice": "kids",
+ "phrases": [
+  [
+   0.0,
+   "It's NOT Opposite Day!"
+  ],
+  [
+   2.0,
+   "It's NOT Opposite Day!"
+  ],
+  [
+   4.0,
+   "It's NOT Opposite Day!"
+  ]
+ ],
+ "phrase_spans": [
+  [
+   0.0,
+   1.652
+  ],
+  [
+   2.0,
+   3.571
+  ],
+  [
+   4.0,
+   5.649
+  ]
+ ],
+ "reversed_extra_child": {
+  "chant": 3,
+  "level_db": -6
+ },
+ "chant_gain_db": [
+  0,
+  2,
+  4
+ ],
+ "max_seconds": 6.0,
+ "fits": true,
+ "recipe": "od-1"
+}

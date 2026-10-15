@@ -1,0 +1,8 @@
+{
+ "knocks_at": [
+  0.05,
+  0.65
+ ],
+ "dry": true,
+ "recipe": "od-1"
+}

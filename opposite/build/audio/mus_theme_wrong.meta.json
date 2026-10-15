@@ -1,0 +1,11 @@
+{
+ "tempo": 0.8,
+ "flat_cents": -70,
+ "double_cents": -50,
+ "wow": 0.015,
+ "last_note": "F#5 (tritone, unresolved)",
+ "last_note_at": 10.144,
+ "clicks_only_from": 11.94,
+ "cut_dead": true,
+ "recipe": "od-1"
+}

@@ -1,0 +1,5 @@
+{
+ "loop": true,
+ "level": "-20 dBFS RMS (mix it at -42)",
+ "recipe": "od-1"
+}

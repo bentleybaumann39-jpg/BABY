@@ -70,6 +70,8 @@ BPY=/tmp/claude-0/-home-user-BABY/21a6af28-3cff-5de5-ac10-48d3d6a27efc/scratchpa
 $BPY opposite/render_rooms.py [names...]                    # build/rooms/*.png + rooms_meta.json (Cycles CPU)
 NODE_PATH=$(npm root -g) node opposite/draw/render_char.cjs [names...]   # build/art/char/*.png
 NODE_PATH=$(npm root -g) node opposite/draw/misc/render_misc.cjs [names...]  # build/art/misc/*.png
+python3 opposite/draw/scare_check.py [--sheet OUT.png]     # scare-face value budget, boil-pair luma, Thatcher (rot180) sheet
+python3 opposite/draw/contact_sheet.py OUT.png --kind char|misc   # review sheet of the canvas art
 python3 opposite/make_audio.py [names...]                   # build/audio/*.wav, manifest.json, *.env.json
 python3 opposite/make_video.py                              # opposite/opposite_day.mp4 (chunked, restartable)
 python3 opposite/make_video.py --status | --still 2:51.5 | --sheets | --audio-report

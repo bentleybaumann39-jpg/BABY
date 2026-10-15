@@ -56,6 +56,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "build", "rooms")
 BLEND_DIR = os.path.join(OUT, "blend")
 SAMPLES = int(os.environ.get("OPP_SAMPLES", "48"))
+BRIGHT_SCALE = float(os.environ.get("OPP_BRIGHT_SCALE", "0.13"))   # studio light level (x the rig powers)
 PREVIEW = os.environ.get("OPP_PREVIEW", "") == "1"
 if PREVIEW:
     OUT_IMG = os.path.join(OUT, "preview")
@@ -507,6 +508,30 @@ def sphere(name, center, radius, mat, scale=(1, 1, 1), rot=(0, 0, 0), segs=32, r
     return _finish(name, bm, mat, center, rot, parent, smooth=True)
 
 
+def batch_spheres(name, centres, radius, mat, parent=None, u=10, v=6, scale=(1.0, 1.0, 1.0)):
+    """Many identical small spheres as ONE mesh (bmesh create_uvsphere into a growing bmesh is O(n^2))."""
+    tb = bmesh.new()
+    bmesh.ops.create_uvsphere(tb, u_segments=u, v_segments=v, radius=radius)
+    tb.verts.index_update()
+    tv = np.array([vv.co[:] for vv in tb.verts], np.float64) * np.array(scale)
+    tf = [[vv.index for vv in f.verts] for f in tb.faces]
+    tb.free()
+    n = len(tv)
+    c = np.asarray(centres, np.float64)
+    verts = (c[:, None, :] + tv[None]).reshape(-1, 3)
+    faces = [[i + k * n for i in f] for k in range(len(c)) for f in tf]
+    me = bpy.data.meshes.new(name)
+    me.from_pydata(verts.tolist(), [], faces)
+    me.update()
+    me.materials.append(mat)
+    for p in me.polygons:
+        p.use_smooth = True
+    obj = _link(bpy.data.objects.new(name, me))
+    if parent is not None:
+        obj.parent = parent
+    return obj
+
+
 def torus(name, center, major, minor, mat, rot=(0, 0, 0), seg=40, ring=14, parent=None):
     bm = bmesh.new()
     grid = []
@@ -694,6 +719,9 @@ def px_per_m_at(p):
 
 # ============================================================== render & meta
 def render(name):
+    if os.environ.get("OPP_PROBE"):          # layout probe: anchors only, no pixels
+        print(f"[probe] {name}: render skipped", flush=True)
+        return None
     os.makedirs(OUT_IMG, exist_ok=True)
     path = os.path.join(OUT_IMG, name + ".png")
     s = scene()
@@ -1210,17 +1238,18 @@ def clock_face_img(ppm=1400, r_m=0.26, mirror=False):
     R = np.hypot(X, Y)
     A = np.arctan2(Y, X)
     px = 1.3 / ppm
-    for k in range(60):
-        a = math.pi / 2 - 2 * math.pi * k / 60
-        big = k % 5 == 0
-        L0 = r_m * (0.84 if big else 0.88)
-        L1 = r_m * 0.93
-        wdt = 0.006 if big else 0.0022
-        along = X * math.cos(a) + Y * math.sin(a)
-        perp = -X * math.sin(a) + Y * math.cos(a)
-        d = np.maximum.reduce([L0 - along, along - L1, np.abs(perp) - wdt / 2])
-        c = np.clip(0.5 - d / px, 0, 1)[..., None]
-        img = img * (1 - c) + srgb01("#2B3A6E") * c
+    # nearest minute tick for every pixel (vectorised: one pass instead of 60)
+    k = np.round((math.pi / 2 - np.arctan2(Y, X)) / (2 * math.pi / 60)).astype(int) % 60
+    a = math.pi / 2 - 2 * math.pi * k / 60
+    big = (k % 5) == 0
+    L0 = np.where(big, r_m * 0.84, r_m * 0.88)
+    L1 = r_m * 0.93
+    wdt = np.where(big, 0.006, 0.0022)
+    along = X * np.cos(a) + Y * np.sin(a)
+    perp = -X * np.sin(a) + Y * np.cos(a)
+    d = np.maximum.reduce([L0 - along, along - L1, np.abs(perp) - wdt / 2])
+    c = np.clip(0.5 - d / px, 0, 1)[..., None]
+    img = img * (1 - c) + srgb01("#2B3A6E") * c
     ring = np.clip(0.5 - (np.abs(R - r_m * 0.955) - 0.0016) / px, 0, 1)[..., None]
     img = img * (1 - ring) + srgb01("#2B3A6E") * ring
     return np.clip(img, 0, 1)
@@ -1236,7 +1265,8 @@ WAIN = 0.9
 DOOR = (-3.18, -2.53, 1.70)          # x0, x1, spring height (round top: + half width)
 CLOCK = (-2.855, 2.56, 0.28)         # x, z, radius (on the back wall)
 CHEST = dict(x0=-2.40, x1=-1.80, d=0.42, h=0.50, lid=0.07)
-NAIL = (-2.10, 1.56)                 # Mr. Turnabout's nail (Set A only); Set B: the paler rectangle
+NAIL = (-1.30, 1.50)                 # Mr. Turnabout's nail (Set A only, between the chest and the frame);
+                                     # Set B: the paler rectangle at the mirrored spot
 PORTRAIT = (0.56, 0.66)              # the composited portrait's size (for the paler rectangle)
 EASEL = (-1.13, -2.15, 1.33)         # x, y, board centre height
 BOARD = (0.60, 0.45)
@@ -1246,19 +1276,30 @@ PENDANT = (-1.78, -1.05, 2.56)       # practical pendant lamp: x, y, shade botto
 TWIN_H = 1.10                        # puppet height (m) for scale anchors
 
 PAL = {
-    "A": dict(paper="#F6E7A4", wain="#C2E2F2", wain_dk="#9FC9E2", lid="#F6D45E", outline="#E4CF84",
+    "A": dict(paper="#F4DF92", wain="#B3D8EF", wain_dk="#8FC0E0", lid="#F4CF55", outline="#DDC273",
               shade="#F8DC74", flags=("#F59FB6", "#8FD9B6", "#B9A4E6", "#8CC4EC")),
-    "B": dict(paper="#C2E2F2", wain="#F6E7A4", wain_dk="#E6D27E", lid="#8CC4EC", outline="#A7CCE1",
+    "B": dict(paper="#B3D8EF", wain="#F4DF92", wain_dk="#E2C66C", lid="#86BFEA", outline="#94BFDB",
               shade="#A9D5F2", flags=("#F59FB6", "#8FD9B6", "#B9A4E6", "#F6D45E")),
 }
 CAM_WIDE = dict(loc=(0.0, -6.6, 1.15), lens=30.0, shift_y=-0.0375)
+
+
+def _wide_floor_point(px, py):
+    """Floor point under pixel (px, py) of the 640x480 layout for the wide camera (square, level, sensor 36 mm)."""
+    sx = (px / 640.0 - 0.5) * 36.0
+    sy = (0.5 - py / 480.0) * 27.0 + CAM_WIDE["shift_y"] * 36.0
+    t = -CAM_WIDE["loc"][2] / sy
+    return (round(t * sx, 4), round(CAM_WIDE["loc"][1] + t * CAM_WIDE["lens"], 4))
+
+
+WIDE_MARK = _wide_floor_point(205.0, 440.0)   # BIM's mark (Set A); MIB's is its mirror image
 
 
 class Turnaround:
     """chairs: {'A': 'blanket'|'bare'|None, 'B': ...}. night/dim only change lights (see light_*)."""
 
     def __init__(self, chairs=None, nail=True, pale=True, pendants_on=True, front_wall=False,
-                 easel_a=None, easel_b=None, show_easels=True, frame_mirror=False, tv_screen_glow=0.0):
+                 easel_a=None, easel_b=None, show_easels=False, frame_mirror=False, tv_screen_glow=0.0):
         self.chairs = chairs or {"A": "blanket", "B": None}
         self.nail = nail
         self.pale = pale
@@ -1284,7 +1325,7 @@ class Turnaround:
             fu = b.math("FLOOR", u)
             fv = b.math("FLOOR", v)
             par = b.math("MODULO", b.math("ABSOLUTE", b.math("ADD", fu, fv)), 2.0)
-            col = b.mix(b.rgb(hexc("#F3E9D6")), b.rgb(hexc("#F1C6CC")), par)
+            col = b.mix(b.rgb(hexc("#F2E6CF")), b.rgb(hexc("#EDB6C0")), par)
             # tile joints: distance to the nearest edge, in metres
             du = b.math("MULTIPLY", b.math("ABSOLUTE", b.math("SUBTRACT", b.math("FRACT", u), 0.5)), 0.30)
             dv = b.math("MULTIPLY", b.math("ABSOLUTE", b.math("SUBTRACT", b.math("FRACT", v), 0.5)), 0.30)
@@ -1428,9 +1469,10 @@ class Turnaround:
             return b.mix(b.rgb(hexc("#0D0C0B")), b.rgb(hexc("#6E6A62")), s)
 
         H["grille"] = make_mat(f"Grille{side}", rough=0.6, var=0.0, space=root, base=grille, metallic=0.3)
-        H["glass"] = make_mat(f"CRTGlass{side}", hexc("#060807"), 0.10, var=0.0, coat=1.0, spec=0.55,
-                              space=root)
-        H["glass"].node_tree.nodes["Principled BSDF"].inputs["Coat Roughness"].default_value = 0.03
+        # a switched-off tube: dark grey-green phosphor behind slightly hazy curved glass
+        H["glass"] = make_mat(f"CRTGlass{side}", hexc("#161a18"), 0.22, var=0.04, var_scale=30.0, coat=0.35,
+                              spec=0.45, space=root)
+        H["glass"].node_tree.nodes["Principled BSDF"].inputs["Coat Roughness"].default_value = 0.06
         if self.tv_screen_glow:
             bs = H["glass"].node_tree.nodes["Principled BSDF"]
             bs.inputs["Emission Color"].default_value = (0.32, 0.42, 0.55, 1)
@@ -1514,11 +1556,11 @@ class Turnaround:
             p.use_smooth = True
         self.objs["frame"] = mo
         # bead-and-reel row on both faces + corner ornaments + crest
-        bm = bmesh.new()
         ub, db, rb = 0.1435, 0.066, 0.0072
         a, bb = W / 2 - ub, Hh / 2 - ub
         per_in = 2 * (2 * a + 2 * bb)
         nbead = int(per_in / 0.02)
+        centres = []
         for face_sign in (1, -1):
             for k in range(nbead):
                 s = per_in * k / nbead
@@ -1530,9 +1572,8 @@ class Turnaround:
                     x, z = a - (s - 2 * a - 2 * bb), bb
                 else:
                     x, z = -a, bb - (s - 4 * a - 2 * bb)
-                mat = (Matrix.Translation((x, -face_sign * (db + rb * 0.4), zc + z)))
-                bmesh.ops.create_uvsphere(bm, u_segments=10, v_segments=6, radius=rb, matrix=mat)
-        beads = _finish("FrameBeads", bm, M["gold_plain"], (0, 0, 0), (0, 0, 0), root, smooth=True)
+                centres.append((x, -face_sign * (db + rb * 0.4), zc + z))
+        beads = batch_spheres("FrameBeads", centres, rb, M["gold_plain"], parent=root)
         self.objs["beads"] = beads
         # corner bosses with acanthus leaves, a shell crest top-centre and a smaller one bottom-centre
         gp = M["gold_plain"]
@@ -1694,6 +1735,15 @@ class Turnaround:
                   make_mat(f"Rope{side}", hexc("#D9C9A3"), 0.9, var=0.05, space=root), rot=(0, 90, 0), parent=ch)
         o["chest"] = ch
         o["chest_lid_top"] = (ccx, -c["d"] / 2 - 0.035, c["h"] + c["lid"] - 0.01)
+        if not front_only:
+            # spike mark: a 'T' of coloured gaffer tape on the floor where the twin stands for the wide
+            mx, my = WIDE_MARK
+            tape = make_mat(f"Tape{side}", hexc(PAL[side]["lid"]), 0.55, var=0.06, var_scale=30.0, space=root,
+                            grime=0.15, grime_scale=20.0)
+            box(P("SpikeH"), (mx, my - 0.03, 0.0008), (0.17, 0.026, 0.0016), tape, rot=(0, 0, 3.0), parent=root)
+            box(P("SpikeV"), (mx + 0.004, my + 0.035, 0.0009), (0.026, 0.11, 0.0016), tape, rot=(0, 0, 3.0),
+                parent=root)
+            o["mark"] = (mx, my, 0.0)
         if front_only:
             self.objs[f"half_{side}_front"] = o
             return o
@@ -1729,11 +1779,11 @@ class Turnaround:
         cyl(P("PendCap"), (px_, py_, pz_ + 0.115), 0.04, 0.04, H["shade"], verts=20, parent=root)
         if self.pendants_on:
             bulb = sphere(P("PendBulb"), (px_, py_, pz_ + 0.03), 0.045,
-                          emit_mat(P("BulbGlow"), (*kelvin(2900), 1.0), 9.0), parent=root)
-            lt = light(P("PendLight"), "POINT", (px_, py_, pz_ + 0.02), 22.0, kelvin(2900), size=0.04)
+                          emit_mat(P("BulbGlow"), (*kelvin(2900), 1.0), 4.0), parent=root)
+            lt = light(P("PendLight"), "POINT", (px_, py_, pz_ + 0.02), 5.0, kelvin(2900), size=0.04)
             lt.parent = root
             # warm glow inside the shade
-            lt2 = light(P("PendIn"), "POINT", (px_, py_, pz_ + 0.06), 3.0, kelvin(2900), size=0.03)
+            lt2 = light(P("PendIn"), "POINT", (px_, py_, pz_ + 0.06), 1.2, kelvin(2900), size=0.03)
             lt2.parent = root
         else:
             sphere(P("PendBulb"), (px_, py_, pz_ + 0.03), 0.045,
@@ -1806,7 +1856,7 @@ class Turnaround:
 
         # wooden easel with a green chalkboard, board facing the show camera
         over = self.easel_over.get(side)
-        if self.show_easels and over != "hide":
+        if over != "hide" and (self.show_easels or over):
             ex_, ey_, eyaw, ebz = EASEL[0], EASEL[1], 0.0, EASEL[2]
             if over:
                 ex_, ey_, eyaw = over[:3]
@@ -1834,9 +1884,8 @@ class Turnaround:
         return o
 
     # ------------------------------------------------------------ easel + chalkboard
-    def build_easel(self, name, H, parent, ex_, ey_, eyaw, ebz):
+    def build_easel(self, name, H, parent, ex_, ey_, eyaw, ebz, lean=8.0, rear=True):
         ez_ = empty(name, (ex_, ey_, 0.0), (0, 0, eyaw), parent=parent)
-        lean = 8.0
         tilt = empty(name + "Tilt", (0, 0, 0), (-lean, 0, 0), parent=ez_)
         bw, bh = BOARD
         fr = 0.04
@@ -1864,8 +1913,13 @@ class Turnaround:
         rear_ang = 22.0
         rl = top / math.cos(math.radians(rear_ang))
         top_y = 0.02 + top * math.sin(math.radians(lean))
-        box(name + "Rear", (0, top_y + rl / 2 * math.sin(math.radians(rear_ang)), top / 2), (0.045, 0.03, rl),
-            H["pine"], rot=(-rear_ang, 0, 0), bevel=0.006, parent=ez_)
+        if rear:
+            box(name + "Rear", (0, top_y + rl / 2 * math.sin(math.radians(rear_ang)), top / 2), (0.045, 0.03, rl),
+                H["pine"], rot=(-rear_ang, 0, 0), bevel=0.006, parent=ez_)
+        else:                                   # a flat-footed classroom easel (two splayed feet, no rear leg)
+            for sx in (-1, 1):
+                box(f"{name}Foot{sx}", (sx * (bw / 2 + fr + 0.03), 0.06, 0.02), (0.05, 0.34, 0.04), H["pine_x"],
+                    bevel=0.006, parent=ez_)
         return {"board": (board, bw, bh), "easel": ez_}
 
     # ------------------------------------------------------------ the Chair For You
@@ -2022,6 +2076,7 @@ class Turnaround:
 
     # ------------------------------------------------------------ light rigs
     def light_bright(self, scale=1.0, k=4800, top=True):
+        scale *= BRIGHT_SCALE
         """Flat 1990s kids'-TV light: two big soft keys (equal, mirrored), a soft top light."""
         warm = kelvin(k)
         s = scene()
@@ -2080,6 +2135,16 @@ def proj_pts(pts):
     return [proj(tuple(p)) for p in pts]
 
 
+def order_quad(q):
+    """Four image points -> [tl, tr, br, bl] by image geometry (robust to mirrored roots and turned objects)."""
+    q = [list(p) for p in q]
+    tl = min(q, key=lambda p: p[0] + p[1])
+    br = max(q, key=lambda p: p[0] + p[1])
+    tr = max(q, key=lambda p: p[0] - p[1])
+    bl = min(q, key=lambda p: p[0] - p[1])
+    return [tl, tr, br, bl]
+
+
 def rect_of(pts):
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
@@ -2093,7 +2158,7 @@ def frame_quads():
     a = FR_W / 2 - FR_M
     yi = FR_Y - 0.034
     inner = [(-a, yi, zc1 - FR_M), (a, yi, zc1 - FR_M), (a, yi, zc0 + FR_M), (-a, yi, zc0 + FR_M)]
-    return proj_pts(outer), proj_pts(inner)
+    return order_quad(proj_pts(outer)), order_quad(proj_pts(inner))
 
 
 def board_quad(t, side):
@@ -2104,20 +2169,15 @@ def board_quad(t, side):
     bpy.context.view_layer.update()
     mw = ob.matrix_world
     pts = [mw @ Vector((sx * bw / 2, -0.0095, sz * bh / 2)) for sx, sz in ((-1, 1), (1, 1), (1, -1), (-1, -1))]
-    q = proj_pts(pts)
-    if side == "B":                       # x = -1 root: keep the quad clockwise from the image top-left
-        q = [q[1], q[0], q[3], q[2]]
-    return q
+    return order_quad(proj_pts(pts))
 
 
 def screen_quad(t, side):
     ob, w, h = t.objs[f"half_{side}"]["tv_screen"]
     bpy.context.view_layer.update()
     mw = ob.matrix_world
-    q = proj_pts([mw @ Vector((sx * w / 2, 0.0, sz * h / 2)) for sx, sz in ((-1, 1), (1, 1), (1, -1), (-1, -1))])
-    if side == "B":
-        q = [q[1], q[0], q[3], q[2]]
-    return q
+    return order_quad(proj_pts([mw @ Vector((sx * w / 2, 0.0, sz * h / 2))
+                                for sx, sz in ((-1, 1), (1, 1), (1, -1), (-1, -1))]))
 
 
 def door_anchor(t, side):
@@ -2172,12 +2232,13 @@ def setup_color(look="AgX - Base Contrast", exposure=0.0, transform="AgX"):
 
 
 BRIGHT_EXPOSURE = float(os.environ.get("OPP_BRIGHT_EXPOSURE", "0.0"))
+BRIGHT_LOOK = os.environ.get("OPP_BRIGHT_LOOK", "AgX - Punchy")
 
 
 def render_wide(variant="wide"):
     late = variant == "wide_late"
     reset(1280, 960, samples=48)
-    setup_color("AgX - Base Contrast", BRIGHT_EXPOSURE)
+    setup_color(BRIGHT_LOOK, BRIGHT_EXPOSURE)
     chairs = {"A": "bare", "B": "blanket"} if late else {"A": "blanket", "B": None}
     t = Turnaround(chairs=chairs).build()
     t.light_bright()
@@ -2234,11 +2295,13 @@ def post_late():
         return
     meta = json.load(open(META_PATH))
     m = meta.get("turnaround_wide_late", {})
+    k = a.shape[1] / float(m.get("size", [a.shape[1]])[0])      # meta is in full-res pixels (preview = half)
     mask = np.zeros(a.shape[:2], np.float32)
     for key in ("chair_a_rect", "chair_b_rect"):
         r = m.get(key)
         if r:
-            x0, y0, x1, y1 = int(r[0]) - 40, int(r[1]) - 40, int(r[2]) + 40, int(r[3]) + 60
+            x0, y0, x1, y1 = (int(r[0] * k) - int(40 * k), int(r[1] * k) - int(40 * k), int(r[2] * k) + int(40 * k),
+                              int(r[3] * k) + int(60 * k))
             mask[max(0, y0):y1, max(0, x0):x1] = 1.0
     diff = (np.abs(a - b).max(axis=2) > (5.0 / 255.0)).astype(np.float32)
     keep = np.clip(blur_np(diff[..., None], 4)[..., 0] * 3.0, 0, 1) * mask
@@ -2258,8 +2321,8 @@ def frame_camera():
 
 def render_frame(dim=False):
     reset(640, 480, samples=64 if not dim else 96)
-    setup_color("AgX - Base Contrast", BRIGHT_EXPOSURE)
-    t = Turnaround(chairs={"A": "blanket", "B": None}, pendants_on=not dim).build()
+    setup_color(BRIGHT_LOOK, BRIGHT_EXPOSURE)
+    t = Turnaround(chairs={"A": "blanket", "B": None}, pendants_on=not dim, show_easels=True).build()
     if dim:
         light_dim_rig()
     else:
@@ -2282,36 +2345,71 @@ def light_dim_rig():
     cold bounce so the blacks are not dead."""
     s = scene()
     s.world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.03, 0.04, 0.06, 1)
-    s.world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.012
-    light("FrameSpot", "SPOT", (0.0, FR_Y - 0.75, RH - 0.08), 950.0, kelvin(3200), target=(0.0, FR_Y - 0.1, 0.55),
-          size=0.025, spot=30.0, blend=0.12)
-    light("ColdBounce", "AREA", (0.0, -8.6, 2.2), 60.0, (0.55, 0.68, 1.0), target=(0.0, -2.0, 1.0), size=4.0,
-          size_y=2.0)
+    s.world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.002
+    light("FrameSpot", "SPOT", (0.0, FR_Y - 0.75, RH - 0.08), float(os.environ.get("OPP_DIM_SPOT", "800")),
+          kelvin(3200), target=(0.0, FR_Y - 0.1, 0.55), size=0.025, spot=30.0, blend=0.12)
+    # a whisper of cold bounce (~5% of the old fill) so the blacks are not dead
+    light("ColdBounce", "AREA", (0.0, -8.6, 2.2), float(os.environ.get("OPP_DIM_COLD", "7")), (0.55, 0.68, 1.0),
+          target=(0.0, -2.0, 1.0), size=4.0, size_y=2.0)
+
+
+PORTRAIT_CAM = dict(dist=float(os.environ.get("OPP_PORT_DIST", "2.45")), z=float(os.environ.get("OPP_PORT_Z", "1.22")),
+                    lens=float(os.environ.get("OPP_PORT_LENS", "40")), edge_px=float(os.environ.get("OPP_PORT_EDGE", "608")))
+
+
+def solve_shift(cam, world_pt, target_px, iters=8):
+    """Move the camera's lens shift (camera stays square) until world_pt lands on target_px."""
+    for _ in range(iters):
+        p = proj(world_pt)
+        ex, ey = target_px[0] - p[0], target_px[1] - p[1]
+        if abs(ex) < 0.2 and abs(ey) < 0.2:
+            break
+        w = scene().render.resolution_x          # shift is in units of the image width (sensor fit horizontal)
+        cam.data.shift_x -= ex / w
+        cam.data.shift_y += ey / w
+    return proj(world_pt)
 
 
 def render_portrait():
+    """Medium shot of Set A's back wall, square to it: the empty brass nail at (320, 150) with a clear area for
+    the composited portrait, the mint chest's yellow lid along the bottom, the gold frame's carved edge at the right."""
     reset(640, 480, samples=64)
-    setup_color("AgX - Base Contrast", BRIGHT_EXPOSURE)
+    setup_color(BRIGHT_LOOK, BRIGHT_EXPOSURE)
     t = Turnaround(chairs={"A": "blanket", "B": None}).build()
     t.light_bright()
     nx, nz = NAIL
-    dist = 2.55
-    cam = camera((nx, -dist, 1.45), rot=(90.0, 0.0, 0.0), lens=45.0, name="CamPortrait")
-    # shift so the nail sits at (320, 150) while the camera stays square to the wall at eye height 1.45
-    F = 45.0 / 36.0 * 640.0
-    dy = (nz - 1.45) * F / dist
-    cam.data.shift_y = -(240.0 - 150.0 - dy) / 640.0
-    render("turnaround_portrait")
     root = t.roots["A"]
-    meta = dict(nail_a=proj(tuple(wpt(root, (nx, -0.025, nz)))),
+    nail_w = tuple(wpt(root, (nx, -0.025, nz)))
+    edge_w = (-FR_W / 2, FR_Y - 0.10, FR_Z0 + FR_H * 0.5)        # the frame's outer left edge, front face
+    pc = PORTRAIT_CAM
+    cam = camera((nx, -pc["dist"], pc["z"]), rot=(90.0, 0.0, 0.0), lens=pc["lens"], name="CamPortrait")
+    lo, hi = nx - 0.2, nx + 1.4
+    for _ in range(30):                     # bisection on the camera's x: frame edge -> edge_px
+        cam.location.x = (lo + hi) / 2
+        solve_shift(cam, nail_w, (320.0, 150.0))
+        ex = proj(edge_w)[0]
+        if ex > pc["edge_px"]:
+            lo = cam.location.x
+        else:
+            hi = cam.location.x
+    solve_shift(cam, nail_w, (320.0, 150.0))
+    render("turnaround_portrait")
+    F = pc["lens"] / 36.0 * 640.0
+    clk = clock_anchor(t, "A")
+    in_view = 0 <= clk["centre"][0] <= 640 and 0 <= clk["centre"][1] <= 480
+    meta = dict(nail_a=proj(nail_w),
                 portrait_clear=[210, 120, 430, 380],
                 chest_a_lid=chest_lid(t, "A"),
                 door_a=door_anchor(t, "A")[0], door_a_poly=door_anchor(t, "A")[1],
-                px_per_m_wall=round(F / dist, 1),
-                portrait_size_px=[round(PORTRAIT[0] * F / dist, 1), round(PORTRAIT[1] * F / dist, 1)],
-                clock_a=None,
-                note="Set A's clock hangs above the doorway, out of this frame (clock_a is null: no hands to draw). "
-                     "The black arch at the left is Set A's doorway. The portrait hangs from nail_a by its ring.")
+                frame_edge_x=proj(edge_w)[0],
+                px_per_m_wall=round(F / pc["dist"], 1),
+                portrait_size_px=[round(PORTRAIT[0] * F / pc["dist"], 1), round(PORTRAIT[1] * F / pc["dist"], 1)],
+                clock_a=clk if in_view else None,
+                camera=dict(loc=[round(v, 3) for v in cam.location], lens=pc["lens"],
+                            shift=[round(cam.data.shift_x, 4), round(cam.data.shift_y, 4)]),
+                note="Square to Set A's back wall. The portrait hangs from nail_a by its ring (portrait_size_px is the "
+                     "size of a 0.56 x 0.66 m picture on this wall). clock_a is null when Set A's clock (above the "
+                     "doorway) is out of frame.")
     save_blend("turnaround_portrait")
     write_meta("turnaround_portrait", meta)
 
@@ -2326,7 +2424,7 @@ def bloom_post(path, thresh=0.82, radius=10, amount=0.55):
 
 def render_night():
     reset(960, 720, samples=96)
-    setup_color("AgX - Base Contrast", float(os.environ.get("OPP_NIGHT_EXPOSURE", "0.0")))
+    setup_color("AgX - Base Contrast", float(os.environ.get("OPP_NIGHT_EXPOSURE", "0.45")))
     t = Turnaround(chairs={"A": "blanket", "B": None}, pendants_on=False).build()
     bulb = t.light_ghost((0.0, -2.4), height=1.6, power=float(os.environ.get("OPP_GHOST_W", "180")))
     loc = (CAM_WIDE["loc"][0], CAM_WIDE["loc"][1], CAM_WIDE["loc"][2] + 0.35)
@@ -2347,7 +2445,7 @@ def render_night():
 
 def render_crt_b():
     reset(1280, 960, samples=64)
-    setup_color("AgX - Base Contrast", BRIGHT_EXPOSURE)
+    setup_color(BRIGHT_LOOK, BRIGHT_EXPOSURE)
     t = Turnaround(chairs={"A": "blanket", "B": None}).build()
     t.light_bright()
     scr, w, h = t.objs["half_B"]["tv_screen"]
@@ -2369,59 +2467,87 @@ def render_crt_b():
     write_meta("crt_set_b", meta)
 
 
-REV_CAM = dict(loc=(0.46, -0.32, 0.75), target=(-1.02, -3.25, 0.58), lens=22.0)
+def _envf(name, default):
+    return float(os.environ.get(name, default))
+
+
+REV = dict(cam=(_envf("OPP_REV_X", "1.34"), _envf("OPP_REV_Y", "0.92"), _envf("OPP_REV_Z", "0.75")),
+           aim=(_envf("OPP_REV_AX", "-1.10"), _envf("OPP_REV_AY", "-3.30"), _envf("OPP_REV_AZ", "0.80")),
+           lens=_envf("OPP_REV_LENS", "32"),
+           easel_a=(_envf("OPP_REV_EAX", "-0.35"), _envf("OPP_REV_EAY", "-3.00")),
+           easel_b=(_envf("OPP_REV_EBX", "1.02"), _envf("OPP_REV_EBY", "-0.915"), _envf("OPP_REV_EBZ", "0.47")),
+           chair=(_envf("OPP_REV_CX", "0.74"), _envf("OPP_REV_CY", "0.70")))
 
 
 def render_reverse():
+    """THE REVERSE ANGLE (12c-12d). The camera stands on Set B's side BEHIND the gold frame (between the frame and
+    the back wall), at a seated child's eye height, and looks back out through the frame's opening. The open front
+    of the set is closed by a fourth wall that repeats the back wall (Set A's doorway, handless clock and chest),
+    so through the frame the room simply continues: the same room, seen from the wrong side. Through the opening:
+    the Chair For You, bare; Set A's easel turned to face us. Outside the opening, on our side: Set B's easel turned
+    to face us (its board readable), and the top of our own chair with the blanket, soft, bottom right."""
     reset(640, 480, samples=96)
-    setup_color("AgX - Base Contrast", BRIGHT_EXPOSURE)
-    loc = Vector(REV_CAM["loc"])
-    d = Vector(REV_CAM["target"]) - loc
-    d.z = 0
-    d.normalize()
-    left = Vector((-d.y, d.x, 0.0))
-    # Set A's easel turned to face this camera; Set B's easel brought round to our side, board lowered
-    ex, ey = EASEL[0], EASEL[1]
-    yaw_a = math.degrees(math.atan2(loc.x - ex, -(loc.y - ey)))
-    t = Turnaround(chairs={"A": "bare", "B": None}, front_wall=True, easel_a=(ex, ey, yaw_a),
+    setup_color(BRIGHT_LOOK, BRIGHT_EXPOSURE)
+    loc = Vector(REV["cam"])
+
+    def face_cam(x, y):
+        return math.degrees(math.atan2(loc.x - x, -(loc.y - y)))
+
+    ea = REV["easel_a"]
+    t = Turnaround(chairs={"A": "bare", "B": None}, front_wall=True, easel_a=(ea[0], ea[1], face_cam(*ea)),
                    easel_b="hide", pendants_on=True)
     t.build()
+    # the back wall is behind this camera: take it (and everything standing against it) out of the shot
+    bpy.context.view_layer.update()
+    for ob in list(scene().objects):
+        if ob.type not in ("MESH", "CURVE", "FONT") or ob.name.startswith(("Floor", "Ceiling", "Side", "PlatformFace")):
+            continue
+        ys = [(ob.matrix_world @ Vector(c)).y for c in ob.bound_box]
+        if min(ys) > -0.7:
+            ob.hide_render = True
     HB = t.half_materials("B", t.roots["B"])
-    bc = loc + d * float(os.environ.get("OPP_REV_EB_F", "1.05")) + left * float(os.environ.get("OPP_REV_EB_L", "0.66"))
-    yaw_b = math.degrees(math.atan2(loc.x - bc.x, -(loc.y - bc.y)))
-    eb = t.build_easel("EaselOurs", HB, None, bc.x, bc.y, yaw_b, float(os.environ.get("OPP_REV_EB_Z", "0.80")))
-    # our chair, with the blanket: bottom-right foreground, facing the frame, right in front of us
-    cp = loc + d * 0.52 - left * 0.30
-    yaw_c = math.degrees(math.atan2(d.x, -d.y))
-    t.build_chair("ChairOurs", HB, None, (cp.x, cp.y, yaw_c), blanket=True)
-    # light: the room is closed by the fourth wall now, so the studio keys become ceiling soft-boxes
+    eb = REV["easel_b"]
+    # our side's board is turned square to the lens (parallel to the image plane) so its card reads flat
+    axis = (Vector(REV["aim"]) - loc)
+    yaw_par = math.degrees(math.atan2(-axis.x, axis.y))
+    eb_obj = t.build_easel("EaselOurs", HB, None, eb[0], eb[1], yaw_par, eb[2], lean=0.0, rear=False)
+    cx, cy = REV["chair"]
+    yaw_c = face_cam(cx, cy) + 180.0 + 8.0      # its back toward us: we see the top of the backrest + blanket
+    t.build_chair("ChairOurs", HB, None, (cx, cy, yaw_c), blanket=True)
+    # light: the fourth wall closes the set, so the studio keys come from ceiling soft-boxes; the same flat light,
+    # 15% dimmer and a little colder than the show's
     s = scene()
     cool = kelvin(5600)
+    k = BRIGHT_SCALE * 0.85
     s.world.node_tree.nodes["Background"].inputs["Color"].default_value = (*cool, 1)
-    s.world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.03
+    s.world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.03 * k
     for sx in (-1, 1):
-        light(f"RevKey{sx}", "AREA", (sx * 1.9, -1.0, RH - 0.06), 330 * 0.85, cool, rot=(0, 0, 0), size=2.4,
+        light(f"RevKey{sx}", "AREA", (sx * 1.9, -1.0, RH - 0.06), 1400 * k, cool, rot=(0, 0, 0), size=2.4,
               size_y=1.6)
-        light(f"RevFront{sx}", "AREA", (sx * 1.9, -4.0, RH - 0.06), 330 * 0.85, cool, rot=(0, 0, 0), size=2.4,
+        light(f"RevFront{sx}", "AREA", (sx * 1.9, -4.0, RH - 0.06), 1400 * k, cool, rot=(0, 0, 0), size=2.4,
               size_y=1.6)
-    light("RevTop", "AREA", (0.0, -2.5, RH - 0.06), 380 * 0.85, cool, rot=(0, 0, 0), size=3.0, size_y=2.4)
-    cam = camera(REV_CAM["loc"], target=REV_CAM["target"], lens=REV_CAM["lens"], name="CamReverse")
+    light("RevTop", "AREA", (0.0, -2.5, RH - 0.06), 1600 * k, cool, rot=(0, 0, 0), size=3.0, size_y=2.4)
+    cam = camera(REV["cam"], target=REV["aim"], lens=REV["lens"], name="CamReverse")
+    chair_a_w = tuple(wpt(t.roots["A"], (CHAIR[0], CHAIR[1], 0.33)))
     cam.data.dof.use_dof = True
-    cam.data.dof.focus_distance = (Vector(REV_CAM["target"]) - Vector(REV_CAM["loc"])).length
-    cam.data.dof.aperture_fstop = 2.0
+    cam.data.dof.focus_distance = (Vector(chair_a_w) - loc).length * 0.72   # Set A and our board sharp, our chair soft
+    cam.data.dof.aperture_fstop = _envf("OPP_REV_FSTOP", "4.5")
     render("turnaround_reverse")
     fo, fi = frame_quads()
-    ob, bw, bh = eb["board"]
+    ob, bw, bh = eb_obj["board"]
     bpy.context.view_layer.update()
     mw = ob.matrix_world
-    near = proj_pts([mw @ Vector((sx * bw / 2, -0.0095, sz * bh / 2)) for sx, sz in ((-1, 1), (1, 1), (1, -1), (-1, -1))])
-    meta = dict(frame_opening=rect_of(fi), frame_opening_quad=fi,
-                board_a=board_quad(t, "A"), board_b_near=near,
-                chair_a=chair_anchor(t.roots["A"]),
+    near = order_quad(proj_pts([mw @ Vector((sx * bw / 2, -0.0095, sz * bh / 2))
+                                for sx, sz in ((-1, 1), (1, 1), (1, -1), (-1, -1))]))
+    our = proj((cx, cy, 0.66))
+    meta = dict(frame_opening=rect_of(fi), frame_opening_quad=fi, frame_outer=rect_of(fo),
+                board_a=board_quad(t, "A"), board_b_near=near, our_chair_top=our,
+                chair_a=proj(chair_a_w),
                 door_a=door_anchor_front(t, "A"), clock_a=clock_anchor_front(t, "A"),
-                note="Reverse angle from behind the frame on Set B's side. Through the opening: Set A's chair (bare), "
-                     "Set A's easel turned to us, and Set A's fourth wall (doorway, handless clock, chest) - all "
-                     "reading mirrored, because we are on the wrong side. Our chair + blanket bottom-right, soft.")
+                note="Reverse angle from behind the frame on Set B's side, looking out through the opening. Through it: "
+                     "Set A's chair (bare), Set A's easel turned to us, and the fourth wall repeating the back wall "
+                     "(doorway, handless clock, chest) - reading mirrored, because we are on the wrong side. Our chair + "
+                     "blanket bottom right, soft. Quads clockwise from the image top-left.")
     save_blend("turnaround_reverse")
     write_meta("turnaround_reverse", meta)
 
@@ -2638,15 +2764,15 @@ def render_frame_mirror_night():
 # ============================================================== BEHIND SET B
 def render_behind_set():
     reset(640, 480, samples=int(os.environ.get("OPP_BS_SAMPLES", "128")))
-    setup_color("AgX - Base Contrast", float(os.environ.get("OPP_BS_EXPOSURE", "1.0")))
+    setup_color("AgX - Base Contrast", float(os.environ.get("OPP_BS_EXPOSURE", "0.5")))
     s = scene()
     s.world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.0, 0.0, 0.0, 1)
     floor = concrete_mat("PassageConcrete", ("#6A6662", "#55524E"))
     box2("PFloor", (-3.0, -3.0, -0.1), (4.0, 10.0, 0.0), floor)
     ply = make_mat("PlyBack", rough=0.85, var=0.1, var_scale=2.5, grime=0.4, grime_scale=1.8, space="world",
-                   floor_dirt=0.35, base=wood_base(hexc("#B08A60"), hexc("#8E6C48"), 2.2, "Z", 6.0))
+                   floor_dirt=0.35, base=wood_base(hexc("#A08C74"), hexc("#7E6B58"), 2.2, "Z", 6.0))
     ply2 = make_mat("PlyBack2", rough=0.85, var=0.1, var_scale=2.5, grime=0.45, grime_scale=1.6, space="world",
-                    floor_dirt=0.35, base=wood_base(hexc("#A47F58"), hexc("#7E603F"), 2.4, "Y", 6.0))
+                    floor_dirt=0.35, base=wood_base(hexc("#978670"), hexc("#756553"), 2.4, "Y", 6.0))
     pine = make_mat("TwoByFour", rough=0.8, var=0.08, grime=0.35, space="world",
                     base=streak_wood(hexc("#C9A577"), hexc("#A88356"), "z"))
     pine_y = make_mat("TwoByFourY", rough=0.8, var=0.08, grime=0.35, space="world",
@@ -2683,9 +2809,9 @@ def render_behind_set():
                 cyl(f"ClampScrew{i}{z}", (XL + 0.06, y1, z), 0.008, 0.16, steel, rot=(0, 90, 0), verts=8)
     # stencils on the plywood: only B-3 and B-4
     fnt = font(FONT_STENCIL)
-    for i, label in ((1, "B-3"), (2, "B-4")):
+    for i, label in ((0, "B-3"), (1, "B-4")):
         yc = 0.3 + (i + 0.5) * fw
-        text_obj(f"Stencil{label}", label, 0.30, paint, (XL + 0.001, yc, 1.62), rot=(90, 0, 90), extrude=0.0004,
+        text_obj(f"Stencil{label}", label, 0.40, paint, (XL + 0.001, yc, 1.38), rot=(90, 0, 90), extrude=0.0004,
                  fnt=fnt)
     # right: the backs of another run of flats (no numbers), ending at y = 5.3 - the passage turns right there
     for i in range(4):
@@ -2727,15 +2853,17 @@ def render_behind_set():
          0.009, rubber)
     # light: cold grey spill from round the far corner, a faint warm bounce on the near flats from behind
     cold = kelvin(6500)
-    light("CornerSpill", "AREA", (2.2, 5.85, 1.4), float(os.environ.get("OPP_BS_COLD", "70")), cold,
+    light("CornerSpill", "AREA", (2.2, 5.85, 1.4), float(os.environ.get("OPP_BS_COLD", "45")), cold,
           target=(-0.4, 5.6, 0.9), size=0.8, size_y=2.2)
     light("CornerSpillLow", "AREA", (1.4, 5.8, 0.25), 8.0, cold, target=(-0.6, 5.0, 0.0), size=0.6, size_y=0.4)
-    light("GhostBounce", "AREA", (0.15, -1.6, 2.2), float(os.environ.get("OPP_BS_WARM", "9")), kelvin(2700),
-          target=(-0.3, 1.2, 1.2), size=0.9, size_y=0.9)
-    cam = camera((0.04, -0.6, 1.5), target=(0.05, 6.0, 1.28), lens=28.0, roll=2.0, name="CamBehind")
+    # the ghost light is out on the stage behind the camera: its warm light rakes down the passage and dies away
+    light("GhostRake", "SPOT", (0.25, -3.2, 1.9), float(os.environ.get("OPP_BS_WARM", "120")), kelvin(2700),
+          target=(-0.25, 2.6, 1.3), size=0.05, spot=34.0, blend=0.6)
+    light("GhostBounce", "AREA", (0.15, -1.6, 2.2), 1.2, kelvin(2700), target=(-0.3, 1.2, 1.2), size=0.9, size_y=0.9)
+    cam = camera((0.10, -0.6, 1.5), target=(-0.30, 6.0, 1.28), lens=28.0, roll=2.0, name="CamBehind")
     render("behind_set")
     meta = dict(far_end=proj((0.0, 6.0, 1.2)), corner=proj((XR, 5.3, 1.2)),
-                stencils={"B-3": proj((XL, 0.3 + 1.5 * fw, 1.62)), "B-4": proj((XL, 0.3 + 2.5 * fw, 1.62))},
+                stencils={"B-3": proj((XL, 0.3 + 0.5 * fw, 1.38)), "B-4": proj((XL, 0.3 + 1.5 * fw, 1.38))},
                 note="640x480 camcorder view down the 1 m passage behind Set B; the passage turns right at the far "
                      "end, where the cold light comes from.")
     save_blend("behind_set")

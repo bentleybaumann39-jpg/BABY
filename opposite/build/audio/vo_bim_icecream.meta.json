@@ -1,0 +1,11 @@
+{
+ "text": "Is ice cream yucky?",
+ "voice": "bim",
+ "espeak_text": "Is ice cream yucky?",
+ "espeak_speed": 170,
+ "pause_limit": null,
+ "max_seconds": 1.4,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

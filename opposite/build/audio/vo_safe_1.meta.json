@@ -1,0 +1,10 @@
+{
+ "text": "You're safe.",
+ "voice": "mib_flat",
+ "espeak_text": "You're safe.",
+ "espeak_speed": 135,
+ "pause_limit": null,
+ "max_seconds": 1.1,
+ "fits": true,
+ "recipe": "od-1"
+}

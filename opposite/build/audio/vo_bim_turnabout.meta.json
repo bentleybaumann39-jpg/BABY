@@ -1,0 +1,11 @@
+{
+ "text": "This is Mister Turnabout! He's upside down today.",
+ "voice": "bim",
+ "espeak_text": "This is Mister Turnabout! He's upside down today.",
+ "espeak_speed": 182,
+ "pause_limit": 0.16,
+ "max_seconds": 3.0,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

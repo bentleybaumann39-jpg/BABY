@@ -1,0 +1,10 @@
+{
+ "text": "NO!",
+ "voice": "child_rev",
+ "espeak_text": "No!",
+ "espeak_speed": 160,
+ "pause_limit": null,
+ "max_seconds": 0.9,
+ "fits": true,
+ "recipe": "od-1"
+}

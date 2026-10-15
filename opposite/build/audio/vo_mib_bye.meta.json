@@ -1,0 +1,11 @@
+{
+ "text": "That's all for Opposite Day! Remember, goodbye means hello. Goodbye, kids!",
+ "voice": "mib_as_bim",
+ "espeak_text": "That's all for Opposite Day! Remember, goodbye means hello. Goodbye, kids!",
+ "espeak_speed": 194,
+ "pause_limit": 0.16,
+ "max_seconds": 4.6,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

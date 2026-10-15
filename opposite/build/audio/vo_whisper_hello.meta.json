@@ -1,0 +1,10 @@
+{
+ "text": "I mean hello.",
+ "voice": "whisper",
+ "espeak_text": "I mean hello.",
+ "espeak_speed": 135,
+ "pause_limit": 0.16,
+ "max_seconds": 1.2,
+ "fits": true,
+ "recipe": "od-1"
+}

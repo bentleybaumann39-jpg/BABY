@@ -1,0 +1,20 @@
+{
+ "loop": true,
+ "steps_per_s": 1.6,
+ "dead_stops_at": [
+  0.287,
+  0.937,
+  1.558,
+  2.191,
+  2.792,
+  3.414,
+  4.062,
+  4.691,
+  5.286,
+  5.934,
+  6.57,
+  7.187
+ ],
+ "note": "7.5 s (assets.json target 6.0) so 10b's 7.0 s needs no loop",
+ "recipe": "od-1"
+}

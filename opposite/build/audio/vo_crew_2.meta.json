@@ -1,0 +1,10 @@
+{
+ "text": "The camera does negative. Watch.",
+ "voice": "crew",
+ "espeak_text": "The camera does negative. Watch.",
+ "espeak_speed": 155,
+ "pause_limit": 0.22,
+ "max_seconds": 2.2,
+ "fits": true,
+ "recipe": "od-1"
+}

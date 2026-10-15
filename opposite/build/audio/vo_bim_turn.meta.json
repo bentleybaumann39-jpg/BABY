@@ -1,0 +1,11 @@
+{
+ "text": "Let's turn him right side up!",
+ "voice": "bim",
+ "espeak_text": "Let's turn him right side up!",
+ "espeak_speed": 185,
+ "pause_limit": 0.16,
+ "max_seconds": 1.8,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

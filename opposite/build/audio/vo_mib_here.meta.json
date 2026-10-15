@@ -1,0 +1,11 @@
+{
+ "text": "Hi, kids! BIM is right here!",
+ "voice": "mib_as_bim",
+ "espeak_text": "Hi, kids! Bim is right here!",
+ "espeak_speed": 200,
+ "pause_limit": 0.16,
+ "max_seconds": 2.0,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

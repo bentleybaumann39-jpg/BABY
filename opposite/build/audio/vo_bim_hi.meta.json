@@ -1,0 +1,11 @@
+{
+ "text": "Hi, kids! I'm BIM!",
+ "voice": "bim",
+ "espeak_text": "Hi, kids! I'm Bim!",
+ "espeak_speed": 170,
+ "pause_limit": null,
+ "max_seconds": 1.8,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

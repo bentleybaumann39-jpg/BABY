@@ -1,0 +1,11 @@
+{
+ "text": "Welcome back, kids! Did you miss us?",
+ "voice": "bim_low",
+ "espeak_text": "Welcome back, kids! Did you miss us?",
+ "espeak_speed": 170,
+ "pause_limit": 0.16,
+ "max_seconds": 2.6,
+ "fits": true,
+ "twin_shift_semitones": -4.0,
+ "recipe": "od-1"
+}

@@ -1,0 +1,11 @@
+{
+ "text": "And this is your spot, right here on my side!",
+ "voice": "bim",
+ "espeak_text": "And this is your spot, right here on my side!",
+ "espeak_speed": 170,
+ "pause_limit": null,
+ "max_seconds": 3.0,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

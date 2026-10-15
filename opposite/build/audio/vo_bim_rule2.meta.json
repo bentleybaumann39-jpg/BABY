@@ -1,0 +1,11 @@
+{
+ "text": "Rule number two! Forward is backward! Let's do the Backwards Walk!",
+ "voice": "bim",
+ "espeak_text": "Rule number two! Forward is backward! Let's do the Backwards Walk!",
+ "espeak_speed": 197,
+ "pause_limit": 0.16,
+ "max_seconds": 3.8,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

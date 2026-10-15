@@ -1,0 +1,11 @@
+{
+ "text": "Rule number one! On Opposite Day, yes means no!",
+ "voice": "bim",
+ "espeak_text": "Rule number one! On Opposite Day, yes means no!",
+ "espeak_speed": 185,
+ "pause_limit": 0.16,
+ "max_seconds": 3.2,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

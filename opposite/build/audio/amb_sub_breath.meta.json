@@ -1,0 +1,6 @@
+{
+ "loop": true,
+ "breath_hz": 0.3,
+ "cut_dead": true,
+ "recipe": "od-1"
+}

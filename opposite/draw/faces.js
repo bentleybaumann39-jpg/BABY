@@ -269,10 +269,10 @@ function buildFace(c) {
   const albedoId = ag.getImageData(0, 0, W, H);
   const lit = HZ.reliefPP(G.st, { W, H, h, alb: albedoId, matId: mat, mats: [Object.assign({}, MAT.felt, c.feltMat || {}), MAT.button, MAT.skin, MAT.thread, Object.assign({}, MAT.felt, { visK: c.petalShadowK || 0 }), c.mat5 || MAT.felt, c.mat6 || MAT.felt],
     cavity: c.cavity === undefined ? 0.012 : c.cavity, cavityR: R * 0.07, shadow: Object.assign({ steps: 70, soft: 7, bias: 1.0, maxDist: R * 1.3 }, c.shadow || {}) });
-  if (c.lost) {
-    const d = lit.img.data, ca = Math.cos(c.lost.ang * DEG), sa = Math.sin(c.lost.ang * DEG);
+  for (const lost of [].concat(c.lost || [])) {      // lost edges: the head dissolves into black toward each direction given
+    const d = lit.img.data, ca = Math.cos(lost.ang * DEG), sa = Math.sin(lost.ang * DEG);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const t = ((x - G.cx) * ca + (y - G.cy) * sa) / R, f = 1 - sstep(c.lost.a, c.lost.b, t) * (c.lost.k === undefined ? 1 : c.lost.k);
+      const t = ((x - G.cx) * ca + (y - G.cy) * sa) / R, f = 1 - sstep(lost.a, lost.b, t) * (lost.k === undefined ? 1 : lost.k);
       if (f < 1) { const i = (y * W + x) * 4; d[i] *= f; d[i + 1] *= f; d[i + 2] *= f; }
     }
   }
@@ -527,6 +527,20 @@ function feltSlit(G, e, EW, OPEN, lowerFlat, pad) {
   return { pts: pts.map(([x, y]) => { const p = TU.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; }), S, TU,
     upper: S.up.map(([x, y]) => { const p = TU.transformPoint(new DOMPoint(x * 1.02, y * 1.06 - 0.01)); return [p.x, p.y]; }) };
 }
+/* a torn hole in the felt around an eye, big enough to show the human lids
+ * (crease, lashes, lid skin) of the realistic eye set inside it. Eye frame
+ * (TU, flips included): up = the upper-lid side BEFORE any flip. */
+function tornHole(G, e, EW, OPEN, o) {
+  o = Object.assign({ kx: 0.66, up: 1.55, lo: 1.0, jag: 0.07, pw: 2.6 }, o || {});
+  const TU = eyeTU(G, e), w = EW, h = w * 0.38 * OPEN, r = rng(e.seed + ':hole'), sd = HZ.hashStr(e.seed) % 997, pts = [], N = 140;
+  for (let i = 0; i < N; i++) {
+    const a = i / N * TAU, c = Math.cos(a), sn = Math.sin(a);
+    const ex = 2 / o.pw, cx = Math.sign(c) * Math.pow(Math.abs(c), ex), sy = Math.sign(sn) * Math.pow(Math.abs(sn), ex);
+    const k = 1 + o.jag * HZ.noise1(i * 0.45, sd) + 0.025 * (r() - 0.5) + (r() < 0.06 ? 0.06 * r() : 0);
+    pts.push([cx * w * o.kx * k, (sy < 0 ? sy * h * o.up : sy * h * o.lo) * k - h * 0.1]);
+  }
+  return pts.map(([x, y]) => { const p = TU.transformPoint(new DOMPoint(x, y)); return [p.x, p.y]; });
+}
 /* torn running stitches along a lip edge (device px points): thread stubs that
  * used to close the mouth, puncture holes, a few loose ends hanging into it */
 function tornStitches(cg, G, pts, o) {
@@ -612,7 +626,7 @@ function twinHeadParts(c, hk) {
     if (prevH) prevH(h, mat, G, U);
   };
   const prevHx = c.hatchExtra;
-  c.hatchExtra = (g, G) => { g.fill(G.hairPath); for (const e of G.ears) g.fill(path(e)); if (prevHx) prevHx(g, G); };
+  c.hatchExtra = (g, G) => { if (hk.hatchHair !== false) g.fill(G.hairPath); for (const e of G.ears) g.fill(path(e)); if (prevHx) prevHx(g, G); };
   const prevCx = c.contourExtra;
   c.contourExtra = (cg, G, b, fadeLit) => {
     HZ.tremor(cg, G.hairScr, { lw: SS, seed: c.seed + ':cth:' + b, closed: true, passes: 2, w: [0.6, 1.6], alpha: 0.8, fade: fadeLit([0, 10]) });
@@ -631,52 +645,53 @@ function twinHeadParts(c, hk) {
  * hard terminator, the far side lost. Rotated 180 degrees it is a sweet,
  * smiling, toothy face (bim_scare_turn). */
 function bimScare(boil) {
-  const R = 276;
-  const MX = 0.47, mY = 0.6;
-  const yB = (x) => { const t = clamp(x / MX, -1, 1); return mY + 0.115 * t * t + 0.01 * Math.sin(x * 13); };                     // inverted upper lip (bottom edge)
-  const yT = (x) => { const t = clamp(x / MX, -1, 1); return yB(x) - 0.25 * Math.pow(Math.max(0, 1 - t * t), 0.72) - 0.008; };    // inverted lower lip (top edge)
-  const lips = lipOpening(-MX, MX, yT, yB, 90, 0.008, 'bimS');
+  const R = 300;
+  const MX = 0.5, mY = 0.6;
+  const yB = (x) => { const t = clamp(x / MX, -1, 1); return mY + 0.13 * t * t + 0.01 * Math.sin(x * 13); };                      // inverted upper lip (bottom edge)
+  const yT = (x) => { const t = clamp(x / MX, -1, 1); return yB(x) - 0.27 * Math.pow(Math.max(0, 1 - t * t), 0.7) - 0.008; };     // inverted lower lip (top edge)
+  const lips = lipOpening(-MX, MX, yT, yB, 100, 0.008, 'bimS');
   const c = {
-    W: 800, H: 600, cx: 400, cy: 316, R, sx: 1, sy: 1.04, tilt: 0, eyeTilt: 0, crumple: 0.25, jaw: 0.0, seed: 'bimS1', boil,
-    petals: false, nose: false, outline: OPP.headOutline(), faceCol: '#D8B444', decay: 0.5, stainK: 0.7, pills: 380, feltK: 1.0, dome: 0.42,
+    W: 800, H: 600, cx: 400, cy: 322, R, sx: 1, sy: 1.04, tilt: 0, eyeTilt: 0, crumple: 0.1, jaw: 0.0, seed: 'bimS1', boil, halfK: 1.05,
+    petals: false, nose: false, outline: OPP.headOutline(), faceCol: '#D8B444', decay: 0.55, stainK: 0.75, pills: 520, feltK: 1.0, dome: 0.42, fuzzH: 1.1, pillH: 1.0,
     lights: (G) => ({
-      light: { x: 310 * SS, y: 740 * SS, z: 300 * SS, col: [1.18, 1.08, 0.92], power: 2.3, d0: 320 * SS, hard: 0.7, cut: 0.14, cutSoft: 0.1 },
-      fill: { x: 560 * SS, y: -200 * SS, z: 900 * SS, col: [0.55, 0.65, 0.9], power: 0.09, d0: 1200 * SS },
-      ambient: [0.004, 0.003, 0.004],
+      // key 45 degrees below, from the left: the chin and the screen-left cheek catch it, the forehead falls away
+      light: { x: 270 * SS, y: 800 * SS, z: 390 * SS, col: [1.18, 1.08, 0.92], power: 2.9, d0: 250 * SS, hard: 0.8, cut: 0.15, cutSoft: 0.08 },
+      fill: { x: 560 * SS, y: -200 * SS, z: 900 * SS, col: [0.55, 0.65, 0.9], power: 0.07, d0: 1200 * SS },
+      ambient: [0.003, 0.003, 0.004],
     }),
-    lost: { ang: 8, a: 0.12, b: 0.95, k: 0.96 },
+    lost: [{ ang: 10, a: 0.1, b: 0.92, k: 0.97 }, { ang: -95, a: 0.35, b: 1.05, k: 0.9 }],
     shadow: { soft: 3.2, bias: 2 },
     tone: { exp: 1.6, shoulder: 1.6, gamma: 1.12 },
-    hatch: { n: 560, len: [24, 60], w: 1.5, alpha: [0.45, 0.85], cluster: [5, 9], gap: 5, lite: 0.3, liteBand: [0.004, 0.07] },
+    hatch: { n: 640, len: [22, 54], w: 1.4, alpha: [0.45, 0.85], cluster: [5, 9], gap: 4.5, lite: 0, liteBand: [0.004, 0.06], band: [0.015, 0.08, 0.3] },
   };
-  const EW = 0.42, OPEN = 1.32;
+  const EW = 0.43, OPEN = 1.16;
   // the eyes (drawn flipped): screen-left eye uses side +1 so its nasal corner stays toward the nose once turned
   const eyes = [
-    { u: -0.35, v: 0.0, side: 1, flip: true, seed: 'bimS:eL' },
-    { u: 0.35, v: 0.035, side: -1, flip: true, seed: 'bimS:eR' },       // one eye 3.5% lower (a proportion break)
+    { u: -0.36, v: 0.0, side: 1, flip: true, seed: 'bimS:eL' },
+    { u: 0.36, v: 0.04, side: -1, flip: true, seed: 'bimS:eR' },       // one eye 4% lower (a proportion break)
   ];
   c.albedo = (ag, G, U) => {
-    G.slits = eyes.map(e => feltSlit(G, e, EW, OPEN, 0.8));
-    G.sockets = G.slits.map(s => s.pts);
+    // asymmetric tears (damage, not a mask): the screen-left hole is ripped wider and ragged toward the temple
+    G.sockets = eyes.map((e, k) => tornHole(G, e, EW, OPEN, k === 0 ? { kx: 0.7, up: 1.42, lo: 0.95, jag: 0.16, pw: 2.2 } : { kx: 0.58, up: 1.18, lo: 0.8, jag: 0.08, pw: 2.8 }));
     for (const s of G.sockets) { ag.fillStyle = '#0A0706'; ag.fill(path(s)); }
     G.mouthScr = mapPts(G.h, lips.open);
     ag.fillStyle = '#050203'; ag.fill(path(G.mouthScr));
     // the old smile's corner tucks, turned over: one short dark thread stitch pointing down-and-out at each corner
-    ag.save(); ag.strokeStyle = 'rgba(52,10,18,0.95)'; ag.lineWidth = 6; ag.lineCap = 'round';
-    for (const sd of [-1, 1]) { const a = G.h(sd * (MX + 0.015), yB(sd * MX) + 0.01), b = G.h(sd * (MX + 0.05), yB(sd * MX) + 0.075); ag.beginPath(); ag.moveTo(a[0], a[1]); ag.lineTo(b[0], b[1]); ag.stroke(); }
+    ag.save(); ag.strokeStyle = 'rgba(52,10,18,0.95)'; ag.lineWidth = 9; ag.lineCap = 'round';
+    for (const sd of [-1, 1]) { const a = G.h(sd * (MX + 0.01), yB(sd * MX) + 0.005), b = G.h(sd * (MX + 0.035), yB(sd * MX) + 0.05); ag.beginPath(); ag.moveTo(a[0], a[1]); ag.lineTo(b[0], b[1]); ag.stroke(); }
     ag.restore();
-    // grime in the felt creases at the mouth corners
-    ag.save(); ag.strokeStyle = 'rgba(90,64,20,0.45)'; ag.lineCap = 'round';
+    // grime in the felt creases at the mouth corners and under the holes
+    ag.save(); ag.strokeStyle = 'rgba(90,64,20,0.28)'; ag.lineCap = 'round'; ag.filter = 'blur(2px)';
     for (const sd of [-1, 1]) for (let k = 0; k < 3; k++) { const a = G.h(sd * (MX + 0.02), yB(sd * MX) - 0.04 - k * 0.03), b = G.h(sd * (MX + 0.12 + k * 0.03), yB(sd * MX) - 0.12 - k * 0.06); ag.lineWidth = 2 + k; ag.beginPath(); ag.moveTo(a[0], a[1]); ag.lineTo(b[0], b[1]); ag.stroke(); }
     ag.restore();
   };
   c.height = (h, mat, G, U) => {
     const R2 = G.R;
-    for (const s of G.slits) {
-      const m = U.maskOf(g => g.fill(path(s.pts)), R2 * 0.02);
-      for (let i = 0; i < h.length; i++) if (m[i]) h[i] -= m[i] * R2 * 0.05;
-      // a felt fold along the (turned-over) upper lid: the heavy lid sits at the BOTTOM of each eye
-      U.addTo(h, U.maskOf(g => { g.lineWidth = R2 * 0.045; g.lineCap = 'round'; g.stroke(path(s.upper, false)); }, R2 * 0.02), R2 * 0.035);
+    for (const s of G.sockets) {
+      const m = U.maskOf(g => g.fill(path(s)), R2 * 0.012);
+      for (let i = 0; i < h.length; i++) if (m[i]) h[i] -= m[i] * R2 * 0.06;
+      // the torn felt rim stands up a little
+      U.addTo(h, U.maskOf(g => { g.lineWidth = R2 * 0.03; g.lineJoin = 'round'; g.stroke(path(s)); }, R2 * 0.012), R2 * 0.012);
     }
     const mp = path(G.mouthScr);
     const lip = U.maskOf(g => { g.lineWidth = R2 * 0.07; g.lineJoin = 'round'; g.stroke(mp); }, R2 * 0.02), m = U.maskOf(g => g.fill(mp), 2.5);
@@ -684,34 +699,35 @@ function bimScare(boil) {
     const bump = (u, v, rx, ry, amp) => { const [x, y] = G.h(u, v); const mm = U.maskOf(g => { g.beginPath(); g.ellipse(x, y, rx * R2, ry * R2 * G.sy, 0, 0, TAU); g.fill(); }, R2 * Math.min(rx, ry) * 0.7); U.addTo(h, mm, amp * R2); };
     bump(-0.6, 0.36, 0.26, 0.2, 0.045); bump(0.6, 0.36, 0.26, 0.2, 0.04); bump(0, 0.9, 0.36, 0.1, 0.03);
   };
-  twinHeadParts(c, { partX: 0.42, cheekK: 0.85, noBrows: true, noseH: 0.11 });
+  twinHeadParts(c, { partX: 0.42, cheekK: 0.85, noBrows: true, noseH: 0.11, hatchHair: false });
   c.overlay = (cg, G, U) => {
     const R2 = G.R, litAt = litSampler(cg, G);
-    // ---- the mouth: upper teeth turned over, standing on their gums at the bottom of the opening;
-    //      the lower row hangs at the top, set back in the dark
+    // ---- the mouth: upper teeth turned over, standing on their wet gums at the bottom of the opening;
+    //      the lower row hangs at the top, set back in the dark (too many teeth: a second row behind)
     const gumL = [], backL = [];
-    for (let i = 0; i <= 60; i++) { const x = lerp(-MX * 0.86, MX * 0.86, i / 60); gumL.push([x, yB(x) - 0.055]); backL.push([x * 0.9, yT(x) + 0.05]); }
+    for (let i = 0; i <= 60; i++) { const x = lerp(-MX * 0.88, MX * 0.88, i / 60); gumL.push([x, yB(x) - 0.06]); backL.push([x * 0.92, yT(x) + 0.05]); }
     const frontVis = (X, Y) => { const [u, v] = G.toHead(X, Y); return 0.4 + 0.6 * sstep(0.0, 0.09, yB(u) - v - 0.02); };
     const backVis = (X, Y) => { const [u, v] = G.toHead(X, Y); return 0.12 + 0.3 * sstep(0.02, 0.1, v - yT(u)); };
     mouthPP(cg, G, {
       open: lips.open,
       rows: [
-        { line: backL, dir: 1, n: 10, len: 0.085, crooked: 1.6, jit: 0.2, persp: 0.45, lower: true, z: R2 * 0.02, zBack: R2 * 0.1, ao: [0.75, 0.25], seed: 'bimS:lo', vis: backVis, back: true,
+        { line: backL, dir: 1, n: 14, len: 0.085, crooked: 1.6, jit: 0.2, persp: 0.45, lower: true, z: R2 * 0.02, zBack: R2 * 0.1, ao: [0.75, 0.25], seed: 'bimS:lo', vis: backVis, back: true,
           gum: { depth: 0.05, height: 0.012, round: 0.01, pap: 0.22, arc: 0.06, col: ['#2A1014', '#6A3438', '#8A5052'], vis: (X, Y) => 0.25 } },
-        { line: gumL, dir: -1, n: 12, len: 0.15, crooked: 1.4, jit: 0.15, persp: 0.42, z: R2 * 0.07, zBack: R2 * 0.12, ao: [1, 0.3], seed: 'bimS:up', vis: frontVis,
-          gum: { depth: 0.075, height: 0.018, round: 0.012, pap: 0.26, arc: 0.07, col: ['#5E2A32', '#B56E74', '#D99C9A'] } },
+        { line: gumL, dir: -1, n: 17, len: 0.15, crooked: 2.1, jit: 0.24, persp: 0.42, z: R2 * 0.07, zBack: R2 * 0.12, ao: [1, 0.3], seed: 'bimS:up', vis: frontVis,
+          gum: { depth: 0.09, height: 0.026, round: 0.014, pap: 0.3, arc: 0.075, col: ['#5E2A32', '#B56E74', '#D99C9A'] } },
       ],
-      shadowLip: [{ pts: lips.up, width: 0.05, blur: 8, a: 0.85 }, { pts: lips.lo, width: 0.035, blur: 6, a: 0.55 }], ivory: '#E8DFC8',
+      shadowLip: [{ pts: lips.up, width: 0.05, blur: 8, a: 0.85 }, { pts: lips.lo, width: 0.035, blur: 6, a: 0.5 }], ivory: '#E8DFC8',
     });
     // torn stitches on both edges, loose threads across the gap
     tornStitches(cg, G, mapPts(G.h, lips.up), { side: 1, seed: 'bimS:tu', light: litAt, every: 30, len: 16 });
     tornStitches(cg, G, mapPts(G.h, lips.lo), { side: -1, seed: 'bimS:tl', light: litAt, every: 30, len: 12 });
     fray(cg, mapPts(G.h, lips.up), { n: 2, len: [3, 10], side: 1, seed: 'bimS:fu', col: [236, 204, 96], alpha: [0.35, 0.85], light: litAt });
     fray(cg, mapPts(G.h, lips.lo), { n: 2, len: [3, 10], side: -1, seed: 'bimS:fl', col: [236, 204, 96], alpha: [0.35, 0.85], light: litAt });
-    // ---- the eyes: real, wet, turned over in their felt slits; pinpoint pupils dead into the lens
-    eyes.forEach((e, k) => eyeInSocket(cg, G, Object.assign({ socketPath: G.sockets[k], w: EW, open: OPEN, iris: 0.17, pupil: 0.1, lidSpread: 1.25, irisCol: ['#8A7A50', '#6E7E74', '#2E3C40'], veins: 8, veinCol: '#C9A3A0',
-      gaze: [0, 0], lowerFlat: 0.8, window: { x: 0, y: -0.3, s: 0.26, a: 0.95, panes: 1 }, ring: 0, socket: 0.45, recess: 0.03, lidShadow: 0.85, lashes: 16, lashLen: 0.1,
-      gain: 1.6, shadeLo: 0.22, marginA: 0.14, rimShadow: 0.8, wetK: 1.1 }, e)));
+    // ---- the eyes: real, wet, turned over inside torn holes in the felt: the heavy lashed lid at the
+    //      BOTTOM, the shining waterline on TOP pressed against the iris; pinpoint pupils dead into the lens
+    eyes.forEach((e, k) => eyeInSocket(cg, G, Object.assign({ socketPath: G.sockets[k], w: EW, open: OPEN, iris: 0.18, pupil: 0.08, lidSpread: 1.2, ring: 0.13, lidSkin: '#A88470',
+      irisCol: ['#A8AC9C', '#8A9696', '#3A4448'], limbal: 0.13, veins: 9, veinCol: '#C49896', gaze: [0, 0], irisDy: 0.13, lowerFlat: 0.8, window: { x: 0, y: -0.32, s: 0.24, a: 0.95, panes: 1 },
+      socket: 0.55, recess: 0.03, lidShadow: 0.9, lashes: 32, lashLen: 0.17, gain: 1.45, shadeLo: 0.18, marginA: 0.5, rimShadow: 0.9, wetK: 1.25, waterline: 1.4 }, e)));
     G.sockets.forEach((s, k) => fray(cg, s, { n: 2, len: [2, 9], side: 1, seed: 'bimS:sf' + k, col: [236, 204, 96], alpha: [0.3, 0.75], light: litAt, every: 2 }));
   };
   c.background = (cg, G) => {
@@ -738,8 +754,14 @@ function fisheye(c, k, cxF, cyF) {
   const cx = W * (cxF || 0.5), cy = H * (cyF || 0.5), R = Math.hypot(W, H) / 2;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const dx = (x - cx) / R, dy = (y - cy) / R, r2 = dx * dx + dy * dy, f = 1 - k + k * r2 * 1.25;
-    const sx = clamp(cx + dx * f * R, 0, W - 1.001), sy = clamp(cy + dy * f * R, 0, H - 1.001);
-    const x0 = sx | 0, y0 = sy | 0, fx = sx - x0, fy = sy - y0, i = (y * W + x) * 4, a = (y0 * W + x0) * 4, b = a + 4, cc = a + W * 4, d = cc + 4;
+    const rx = cx + dx * f * R, ry = cy + dy * f * R, i = (y * W + x) * 4;
+    if (rx < 0 || ry < 0 || rx > W - 1.001 || ry > H - 1.001) {      // outside the source: black (no clamped edge smears)
+      const out = Math.max(-rx, -ry, rx - (W - 1), ry - (H - 1)), k = clamp(1 - out / 6, 0, 1);
+      const qx = clamp(rx, 0, W - 1.001) | 0, qy = clamp(ry, 0, H - 1.001) | 0, q = (qy * W + qx) * 4;
+      dd[i] = sd[q] * k; dd[i + 1] = sd[q + 1] * k; dd[i + 2] = sd[q + 2] * k; dd[i + 3] = 255; continue;
+    }
+    const sx = rx, sy = ry;
+    const x0 = sx | 0, y0 = sy | 0, fx = sx - x0, fy = sy - y0, a = (y0 * W + x0) * 4, b = a + 4, cc = a + W * 4, d = cc + 4;
     for (let ch = 0; ch < 4; ch++) dd[i + ch] = (sd[a + ch] * (1 - fx) + sd[b + ch] * fx) * (1 - fy) + (sd[cc + ch] * (1 - fx) + sd[d + ch] * fx) * fy;
   }
   g.putImageData(dst, 0, 0);
@@ -757,32 +779,32 @@ function fisheye(c, k, cxF, cyF) {
  * mouth. Underlit by the camcorder lamp from below-right, hard terminator; the
  * far side of the head dissolves into black. */
 function mibScare(boil) {
-  const R = 236, MX0 = 0.4, MX = 0.64, mY = 0.6;
+  const R = 252, MX0 = 0.4, MX = 0.66, mY = 0.6;
   // MIB's smile = BIM's frown turned over: centre low, corners high (head units)
   const yC = (x) => { const t = x / MX0; return mY + 0.36 * 0.4 * (1 - t * t) * (Math.abs(t) <= 1 ? 1 : 1) - 0.04 * Math.pow(t, 4) * 0.4; };
   const yS = (x) => { const t = clamp(Math.abs(x) / MX0, 0, 2); return Math.abs(x) <= MX0 ? yC(x) : yC(Math.sign(x) * MX0) - (Math.abs(x) - MX0) * 0.75 - Math.pow(Math.abs(x) - MX0, 2) * 0.9; };
-  const half = (x) => { const t = Math.abs(x) / MX; return 0.034 * Math.pow(Math.max(0, 1 - Math.pow(t, 2.4)), 0.6) + 0.004; };
+  const half = (x) => { const t = Math.abs(x) / MX; return 0.046 * Math.pow(Math.max(0, 1 - Math.pow(t, 2.4)), 0.6) + 0.005; };
   const lips = (() => { const up = [], lo = [], r = rng('mibS:lip'); for (let i = 0; i <= 120; i++) { const x = lerp(-MX, MX, i / 120), y = yS(x), o = half(x) * (0.8 + 0.35 * HZ.noise1(i * 0.4, 7)); up.push([x, y - o * 0.8 + (r() - 0.5) * 0.004]); lo.push([x, y + o * 1.2 + (r() - 0.5) * 0.004]); } return { up, lo, open: up.concat(lo.slice().reverse()) }; })();
   const c = {
-    W: 800, H: 600, cx: 410, cy: 300, R, sx: 1, sy: 1.02, tilt: -6, eyeTilt: -6, crumple: 0.55, jaw: 0.0, seed: 'mibS1', boil, dome: 0.4,
-    petals: false, nose: false, outline: OPP.headOutline(), faceCol: '#CDB04A', decay: 0.75, stainK: 0.8, pills: 560, feltK: 1.15, fuzzH: 2.4, pillH: 1.3,
+    W: 800, H: 600, cx: 410, cy: 310, R, sx: 1, sy: 1.02, tilt: -6, eyeTilt: -6, crumple: 0.3, jaw: 0.0, seed: 'mibS1', boil, dome: 0.4,
+    petals: false, nose: false, outline: OPP.headOutline(), faceCol: '#CDB04A', decay: 0.75, stainK: 0.8, pills: 640, feltK: 1.15, fuzzH: 1.4, pillH: 1.3,
     lights: (G) => ({
       light: { x: 510 * SS, y: 660 * SS, z: 265 * SS, col: [1.25, 1.2, 1.1], power: 2.6, d0: 250 * SS, hard: 0.85, cut: 0.12, cutSoft: 0.08 },
       fill: { x: 100 * SS, y: -300 * SS, z: 700 * SS, col: [0.4, 0.55, 0.5], power: 0.06, d0: 1200 * SS },
       ambient: [0.003, 0.003, 0.003],
     }),
-    lost: { ang: 196, a: 0.18, b: 0.9, k: 0.985 },
+    lost: [{ ang: 196, a: 0.18, b: 0.9, k: 0.985 }, { ang: -100, a: 0.45, b: 1.1, k: 0.85 }],
     shadow: { soft: 4, bias: 2 },
     tone: { exp: 1.6, shoulder: 1.6, gamma: 1.15 },
-    hatch: { n: 520, len: [22, 56], w: 1.4, alpha: [0.45, 0.85], cluster: [4, 8], gap: 5, lite: 0.3, liteBand: [0.004, 0.07] },
+    hatch: { n: 600, len: [22, 56], w: 1.4, alpha: [0.45, 0.85], cluster: [4, 8], gap: 4.5, lite: 0, liteBand: [0.004, 0.06], band: [0.015, 0.08, 0.3] },
   };
-  const EW = 0.48, OPEN = 1.5;
+  const EW = 0.48, OPEN = 1.62;
   const eye = { u: -0.37, v: 0.02, side: -1, seed: 'mibS:eye' };
   const btn = { u: 0.35, v: 0.02, r: 0.17 };
   c.albedo = (ag, G, U) => {
     G.slit = feltSlit(G, eye, EW, OPEN, 0.85, 1.04);
-    G.sockets = [G.slit.pts];
-    ag.fillStyle = '#0A0706'; ag.fill(path(G.slit.pts));
+    G.sockets = [tornHole(G, eye, EW, OPEN, { kx: 0.6, up: 0.98, lo: 0.86, jag: 0.1 })];
+    ag.fillStyle = '#0A0706'; ag.fill(path(G.sockets[0]));
     // the button eye: glossy black, cracked
     G.btnPts = []; for (let k = 0; k < 64; k++) { const a = k / 64 * TAU; G.btnPts.push([btn.u + Math.cos(a) * btn.r, btn.v + Math.sin(a) * btn.r]); }
     G.btnScr = mapPts(G.h, G.btnPts);
@@ -799,8 +821,9 @@ function mibScare(boil) {
   };
   c.height = (h, mat, G, U) => {
     const R2 = G.R;
-    const m = U.maskOf(g => g.fill(path(G.slit.pts)), R2 * 0.02);
-    for (let i = 0; i < h.length; i++) if (m[i]) h[i] -= m[i] * R2 * 0.05;
+    const m = U.maskOf(g => g.fill(path(G.sockets[0])), R2 * 0.012);
+    for (let i = 0; i < h.length; i++) if (m[i]) h[i] -= m[i] * R2 * 0.06;
+    U.addTo(h, U.maskOf(g => { g.lineWidth = R2 * 0.03; g.lineJoin = 'round'; g.stroke(path(G.sockets[0])); }, R2 * 0.012), R2 * 0.012);
     // button: a glossy dome (material 1)
     const bm = U.maskOf(g => g.fill(path(G.btnScr)), R2 * 0.006), bmB = U.maskOf(g => g.fill(path(G.btnScr)), R2 * 0.05);
     for (let i = 0; i < h.length; i++) if (bm[i] > 0.02) { h[i] += R2 * 0.1 * Math.pow(bmB[i], 0.5) * bm[i]; if (bm[i] > 0.5) mat[i] = 1; }
@@ -811,7 +834,7 @@ function mibScare(boil) {
     const bump = (u, v, rx, ry, amp) => { const [x, y] = G.h(u, v); const q = U.maskOf(g => { g.beginPath(); g.ellipse(x, y, rx * R2, ry * R2, 0, 0, TAU); g.fill(); }, R2 * Math.min(rx, ry) * 0.7); U.addTo(h, q, amp * R2); };
     bump(-0.6, 0.38, 0.24, 0.18, 0.05); bump(0.6, 0.36, 0.24, 0.18, 0.05);
   };
-  twinHeadParts(c, { partX: -0.42, cheekK: 0.7, noBrows: true, noseH: 0.14, nose: { x: 0, y: 0.24, r: 0.105 } });
+  twinHeadParts(c, { partX: -0.42, cheekK: 0.7, noBrows: true, noseH: 0.14, nose: { x: 0, y: 0.24, r: 0.105 }, hatchHair: false });
   c.mat5 = undefined;
   c.overlay = (cg, G, U) => {
     const R2 = G.R, litAt = litSampler(cg, G);
@@ -851,9 +874,10 @@ function mibScare(boil) {
     fray(cg, mapPts(G.h, lips.up), { n: 2, len: [3, 9], side: 1, seed: 'mibS:fu', col: [214, 190, 96], alpha: [0.35, 0.85], light: litAt });
     fray(cg, mapPts(G.h, lips.lo), { n: 2, len: [3, 9], side: -1, seed: 'mibS:fl', col: [214, 190, 96], alpha: [0.35, 0.85], light: litAt });
     // ---- the real eye: white all round the iris, pinpoint pupil, dead into the lens
-    eyeInSocket(cg, G, Object.assign({ socketPath: G.sockets[0], w: EW, open: OPEN, iris: 0.16, pupil: 0.09, lidSpread: 1.25, irisCol: ['#7A6E4A', '#5E6E64', '#26302E'], veins: 8, veinCol: '#C9A3A0',
-      gaze: [0.05, 0], irisDy: -0.04, lowerFlat: 0.85, window: { x: 0.2, y: 0.32, s: 0.26, a: 0.97, panes: 1 }, ring: 0, socket: 0.5, recess: 0.03, lidShadow: 0.8, lashes: 16, lashLen: 0.1,
-      gain: 1.8, shadeLo: 0.25, shadeA: -0.9, shadeB: 0.7, marginA: 0.16, rimShadow: 0.85, wetK: 1.2, waterline: 1.4 }, eye));
+    // white all round the iris (lids pulled wide), pinpoint pupil, dead into the lens; human lids inside the torn felt
+    eyeInSocket(cg, G, Object.assign({ socketPath: G.sockets[0], w: EW, open: OPEN, iris: 0.14, pupil: 0.075, lidSpread: 1.15, ring: 0.1, lidSkin: '#A47C68', lidPores: 0.55, lidNoise: [0.9, 2.5], irisCol: ['#8C8466', '#6C7A70', '#2A3432'], limbal: 0.13, veins: 8, veinCol: '#C49896',
+      gaze: [0.03, 0], irisDy: -0.06, lowerFlat: 0.85, window: { x: 0.2, y: 0.32, s: 0.24, a: 0.97, panes: 1 }, socket: 0.55, recess: 0.03, lidShadow: 0.35, lashes: 28, lashLen: 0.13,
+      gain: 1.8, shadeLo: 0.25, shadeA: -0.9, shadeB: 0.7, marginA: 0.4, rimShadow: 0.9, wetK: 1.25, waterline: 1.5 }, eye));
     fray(cg, G.sockets[0], { n: 3, len: [2, 10], side: 1, seed: 'mibS:sf', col: [214, 190, 96], alpha: [0.3, 0.8], light: litAt, every: 2 });
     // ---- the button: lamp catchlight (hard disc), a hairline crack with a 1 px highlight on one side
     const [bx, by] = G.h(btn.u, btn.v), br = btn.r * G.R;
@@ -868,12 +892,20 @@ function mibScare(boil) {
     G.sharp.push(path(G.btnScr));
   };
   c.background = (cg, G) => {
-    const W = G.W, H = G.H, sp = cg.createRadialGradient(560 * SS, 640 * SS, 30 * SS, 520 * SS, 560 * SS, 520 * SS);
-    sp.addColorStop(0, 'rgb(40,40,36)'); sp.addColorStop(0.4, 'rgb(20,20,19)'); sp.addColorStop(0.8, 'rgb(6,6,6)'); sp.addColorStop(1, 'rgb(1,1,1)');
+    const W = G.W, H = G.H, sp = cg.createRadialGradient(560 * SS, 640 * SS, 30 * SS, 520 * SS, 560 * SS, 760 * SS);
+    sp.addColorStop(0, 'rgb(26,25,23)'); sp.addColorStop(0.3, 'rgb(12,12,11)'); sp.addColorStop(0.6, 'rgb(5,5,5)'); sp.addColorStop(1, 'rgb(1,1,1)');
     cg.fillStyle = sp; cg.fillRect(0, 0, W, H);
   };
   c.grade = (cg, G) => capRed(cg, G.W, G.H, 0.8);
-  c.post = (cg, G) => fisheye(cg.canvas, 0.14, 0.5, 0.52);
+  c.post = (cg, G) => {
+    fisheye(cg.canvas, 0.24, 0.5, 0.52);
+    // close-focus: the lens can only hold the middle of the face sharp; the rim of the head goes soft
+    const W = G.W, H = G.H, b = mk(W, H), bg = b.getContext('2d'); bg.filter = `blur(${3.2 * SS}px)`; bg.drawImage(cg.canvas, 0, 0);
+    const m = mk(W, H), mg = m.getContext('2d'), gr = mg.createRadialGradient(W * 0.5, H * 0.52, H * 0.32, W * 0.5, H * 0.52, H * 0.78);
+    gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, 'rgba(0,0,0,1)'); mg.fillStyle = gr; mg.fillRect(0, 0, W, H);
+    bg.filter = 'none'; bg.globalCompositeOperation = 'destination-in'; bg.drawImage(m, 0, 0);
+    cg.drawImage(b, 0, 0);
+  };
   c.contourExtra = (cg, G, b, fadeLit) => {
     HZ.tremor(cg, G.sockets[0], { lw: SS, seed: 'mibS:cts:' + b, closed: true, passes: 2, w: [0.5, 1.2], alpha: 0.55, fade: fadeLit([0, -8]) });
     HZ.tremor(cg, G.btnScr, { lw: SS, seed: 'mibS:ctb:' + b, closed: true, passes: 2, w: [0.5, 1.3], alpha: 0.6, fade: fadeLit([0, -8]) });
@@ -965,31 +997,32 @@ function turnabout(o) {
   const R = (scare ? 152 : 150) * sc;
   // head-local outline: bald dome, temples, full cheeks, jowls, chin
   const outline = []; for (let i = 0; i < 96; i++) { const a = i / 96 * TAU, cs = Math.cos(a), sn = Math.sin(a); const top = sn < 0; const rx = top ? 1.0 - 0.06 * Math.pow(-sn, 3) : 1.0 + 0.04 * sn - 0.2 * Math.pow(sn, 6); const ry = top ? 1.28 : 1.18; outline.push([cs * rx, sn * ry]); }
-  const EYE = [{ u: -0.4, v: -0.08, side: 1, flip: true, seed: 'tb:eL' }, { u: 0.4, v: -0.08, side: -1, flip: true, seed: 'tb:eR' }];
+  const EYE = [{ u: -0.42, v: -0.08 - (o.mode === 'scare' ? 0.035 : 0), side: 1, flip: true, seed: 'tb:eL' }, { u: 0.42, v: -0.08, side: -1, flip: true, seed: 'tb:eR' }];   // scare: one eye 3.5% higher
   const EW = 0.5, OPEN = 1.18;
-  const MX = 0.5, mY = 0.68;
+  const MX = o.mode === 'scare' ? 0.56 : 0.5, mY = 0.68;
   // the jolly painted smile (corners up) turned over: corners DOWN, the opening arched
-  const yB = (x) => { const t = clamp(x / MX, -1, 1); return mY + 0.12 * t * t + 0.006 * Math.sin(x * 17); };
-  const yT = (x) => { const t = clamp(x / MX, -1, 1); return yB(x) - (scare ? 0.27 : 0.13) * Math.pow(Math.max(0, 1 - t * t), 0.7) - 0.006; };
+  const yB = (x) => { const t = clamp(x / MX, -1, 1); return mY + (scare ? 0.12 : 0.17) * t * t + 0.006 * Math.sin(x * 17); };
+  const yT = (x) => { const t = clamp(x / MX, -1, 1); return yB(x) - (scare ? 0.27 : 0.15) * Math.pow(Math.max(0, 1 - t * t), 0.7) - 0.006; };
   const lips = lipOpening(-MX, MX, yT, yB, 90, 0.006, 'tbL');
   const skin = scare ? '#D8987E' : '#E4A684', skinLo = '#B06A58', rosy = '#D8645A', white = '#F2EEE6';
   const c = {
-    W: o.W, H: o.H, cx: o.W / 2, cy: (scare ? 286 : 300) * sc, R, sx: 1, sy: 1, tilt: 0, eyeTilt: 0, seed: 'turnabout1', boil: o.boil,
+    W: o.W, H: o.H, cx: o.W / 2, cy: (scare ? 290 : 300) * sc, R, sx: 1, sy: scare ? 1.08 : 1, tilt: 0, eyeTilt: 0, seed: 'turnabout1', boil: o.boil,
     petals: false, nose: false, outline, faceCol: skin, pills: 0, crumple: 0, fuzzH: 0.5, dome: 0.5, cavity: 0.02,
     feltMat: { fuzz: 0, wrap: 0.32, sss: [1, 0.78, 0.68], spec: 0.02, pow: 8 },
     lights: scare ? (G) => ({
-      light: { x: G.cx - 40 * SS * sc, y: (G.cy + 300 * SS * sc), z: 230 * SS * sc, col: [1.26, 1.04, 0.94], power: 2.4, d0: 260 * SS * sc, hard: 0.75, cut: 0.15, cutSoft: 0.1 },
+      light: { x: G.cx - 40 * SS * sc, y: (G.cy + 300 * SS * sc), z: 260 * SS * sc, col: [1.26, 1.04, 0.94], power: 2.15, d0: 250 * SS * sc, hard: 0.8, cut: 0.15, cutSoft: 0.08 },
       fill: { x: G.cx + 260 * SS * sc, y: -100 * SS * sc, z: 700 * SS * sc, col: [0.62, 0.62, 0.72], power: 0.16, d0: 1200 * SS * sc },
       ambient: [0.006, 0.005, 0.005],
     }) : (G) => ({
-      light: { x: G.cx - 260 * SS * sc, y: G.cy - 420 * SS * sc, z: 520 * SS * sc, col: [1.15, 1.08, 0.98], power: 1.75, d0: 900 * SS * sc, cut: 0.0 },
-      fill: { x: G.cx + 400 * SS * sc, y: G.cy + 100 * SS * sc, z: 600 * SS * sc, col: [0.5, 0.48, 0.55], power: 0.35, d0: 900 * SS * sc },
-      ambient: [0.08, 0.07, 0.07],
+      // painted portrait light: soft, high and frontal (a studio portrait painter's north window), no long cast shadows
+      light: { x: G.cx - 300 * SS * sc, y: G.cy - 380 * SS * sc, z: 1500 * SS * sc, col: [1.1, 1.04, 0.96], power: 1.45, d0: 2200 * SS * sc, cut: 0.0 },
+      fill: { x: G.cx + 500 * SS * sc, y: G.cy + 200 * SS * sc, z: 1200 * SS * sc, col: [0.55, 0.52, 0.58], power: 0.45, d0: 2200 * SS * sc },
+      ambient: [0.16, 0.14, 0.13],
     }),
-    lost: scare ? { ang: 15, a: 0.3, b: 1.15, k: 0.9 } : null,
+    lost: scare ? [{ ang: 15, a: 0.3, b: 1.15, k: 0.92 }, { ang: -90, a: 0.55, b: 1.25, k: 0.85 }] : null,
     shadow: scare ? { soft: 4, bias: 1.5 } : { soft: 3, bias: 1.5 },
-    tone: scare ? { exp: 1.6, shoulder: 1.5, gamma: 1.12 } : { exp: 1.3, shoulder: 1.2, gamma: 0.95 },
-    hatch: scare ? { n: 460, len: [20, 54], w: 1.3, alpha: [0.4, 0.8], cluster: [4, 8], gap: 5, lite: 0.3, liteBand: [0.004, 0.07] } : false,
+    tone: scare ? { exp: 1.55, shoulder: 1.6, gamma: 1.16 } : { exp: 1.12, shoulder: 1.2, gamma: 1.0 },
+    hatch: scare ? { n: 680, len: [20, 54], w: 1.3, alpha: [0.45, 0.85], cluster: [4, 8], gap: 4.5, lite: 0, band: [0.02, 0.1, 0.4] } : false,
     contour: scare ? { passes: 3 } : false, grain: scare ? 6 : 4,
   };
   if (!scare) { c.hatch = false; c.contour = false; }
@@ -999,7 +1032,7 @@ function turnabout(o) {
     fg.addColorStop(0, HZ.mixc(skin, '#FFF0E0', 0.25)); fg.addColorStop(0.6, skin); fg.addColorStop(1, skinLo);
     ag.fillStyle = fg; ag.fill(G.facePath);
     ag.save(); ag.clip(G.facePath);
-    for (const [u, v, rr, col, a] of [[-0.55, 0.3, 0.32, rosy, 0.55], [0.55, 0.3, 0.32, rosy, 0.55], [0, 0.18, 0.2, rosy, 0.6], [0, -0.95, 0.5, '#F0C8A8', 0.35]]) {
+    for (const [u, v, rr, col, a] of [[-0.55, 0.3, 0.32, rosy, scare ? 0.55 : 0.72], [0.55, 0.3, 0.32, rosy, scare ? 0.55 : 0.72], [0, 0.18, 0.2, rosy, 0.6], [0, -0.95, 0.5, '#F0C8A8', 0.35]]) {
       const [x, y] = G.h(u, v), gr = ag.createRadialGradient(x, y, 0, x, y, rr * R * SS); gr.addColorStop(0, HZ.rgba(col, a)); gr.addColorStop(1, HZ.rgba(col, 0));
       ag.fillStyle = gr; ag.fillRect(0, 0, G.W, G.H);
     }
@@ -1014,7 +1047,7 @@ function turnabout(o) {
     G.ears = [-1, 1].map(sd => { const pts = []; for (let k = 0; k < 40; k++) { const a = k / 40 * TAU; pts.push([sd * 1.02 + Math.cos(a) * 0.14, -0.08 + Math.sin(a) * 0.24]); } return mapPts(G.h, pts); });
     for (const e of G.ears) { ag.fillStyle = HZ.mixc(skin, rosy, 0.3); ag.fill(path(e)); }
     for (const ch of G.chops) {
-      ag.save(); ag.filter = `blur(${10 * sc}px)`; ag.fillStyle = HZ.mixc(white, '#B8B0A4', 0.25); ag.fill(path(ch)); ag.restore();
+      ag.save(); ag.filter = `blur(${10 * sc}px)`; ag.fillStyle = scare ? HZ.mixc(white, '#B8B0A4', 0.25) : HZ.mixc(white, '#D8D0C4', 0.15); ag.fill(path(ch)); ag.restore();
       ag.save(); ag.clip(path(ch)); const rr = rng('tb:hair' + ch[0][0]); ag.lineCap = 'round';
       for (let k = 0; k < 420; k++) { const x = lerp(G.cx - R * 1.25 * SS, G.cx + R * 1.25 * SS, rr()), y = lerp(G.cy - R * 0.6 * SS, G.cy + R * 1.0 * SS, rr()); ag.strokeStyle = rr() < 0.5 ? 'rgba(255,255,255,0.65)' : 'rgba(140,130,120,0.55)'; ag.lineWidth = (1.2 + rr() * 2.4) * sc; ag.beginPath(); ag.moveTo(x, y); ag.quadraticCurveTo(x + (rr() - 0.5) * 16 * sc, y + 16 * sc, x + (rr() - 0.5) * 22 * sc, y + 34 * sc); ag.stroke(); }
       ag.restore();
@@ -1046,17 +1079,34 @@ function turnabout(o) {
       const tl = []; for (let i = 0; i <= 20; i++) { const x = lerp(-MX * 0.8, MX * 0.8, i / 20); tl.push(G.h(x, yB(x) - 0.01)); } for (let i = 20; i >= 0; i--) { const x = lerp(-MX * 0.8, MX * 0.8, i / 20); tl.push(G.h(x, yB(x) - 0.06)); }
       ag.fill(path(tl)); ag.restore();
       for (const e of EYE) {
-        const [x, y] = G.h(e.u, e.v), w = EW * R * SS;
+        const [x, y] = G.h(e.u, e.v), w = EW * R * SS * 1.18;
         ag.save(); ag.translate(x, y); ag.rotate(Math.PI);          // painted the right way up for the viewer of the hung portrait
-        ag.fillStyle = '#F4EEE4'; ag.beginPath(); ag.ellipse(0, 0, w * 0.5, w * 0.24, 0, 0, TAU); ag.fill();
-        ag.fillStyle = '#3A5A7A'; ag.beginPath(); ag.arc(0, w * 0.02, w * 0.16, 0, TAU); ag.fill();
-        ag.fillStyle = '#101010'; ag.beginPath(); ag.arc(0, w * 0.02, w * 0.08, 0, TAU); ag.fill();
-        ag.fillStyle = '#FFFFFF'; ag.beginPath(); ag.arc(-w * 0.05, -w * 0.04, w * 0.04, 0, TAU); ag.fill();
-        // a jolly smiling lower lid (the twinkle) and a heavy upper lid line
-        ag.strokeStyle = '#7A3A30'; ag.lineWidth = w * 0.07; ag.lineCap = 'round';
-        ag.beginPath(); ag.ellipse(0, 0, w * 0.5, w * 0.24, 0, Math.PI * 1.05, Math.PI * 1.95); ag.stroke();
-        ag.lineWidth = w * 0.05; ag.beginPath(); ag.moveTo(-w * 0.42, w * 0.2); ag.quadraticCurveTo(0, w * 0.06, w * 0.42, w * 0.2); ag.stroke();
-        ag.beginPath(); ag.moveTo(w * 0.5, -w * 0.02); ag.lineTo(w * 0.66, -w * 0.12); ag.moveTo(w * 0.52, w * 0.06); ag.lineTo(w * 0.68, w * 0.06); ag.stroke();   // crow's feet
+        const out = e.u < 0 ? 1 : -1;                                  // the outer corner (local x sign) once turned over
+        // a jolly crescent eye: the upper lid arched, the lower lid pushed up by the smiling cheek
+        const ap = new Path2D(); ap.moveTo(-w * 0.47, w * 0.03); ap.bezierCurveTo(-w * 0.32, -w * 0.25, w * 0.32, -w * 0.25, w * 0.47, w * 0.03);
+        ap.bezierCurveTo(w * 0.25, -w * 0.05, -w * 0.25, -w * 0.05, -w * 0.47, w * 0.03); ap.closePath();
+        ag.save(); ag.clip(ap);
+        ag.fillStyle = '#F6F0E4'; ag.fillRect(-w, -w, w * 2, w * 2);
+        ag.fillStyle = '#3A6488'; ag.beginPath(); ag.arc(0, -w * 0.07, w * 0.15, 0, TAU); ag.fill();
+        ag.fillStyle = '#20384E'; ag.beginPath(); ag.arc(0, -w * 0.07, w * 0.15, 0, TAU); ag.lineWidth = w * 0.03; ag.strokeStyle = '#1A2A3A'; ag.stroke();
+        ag.fillStyle = '#0E0E10'; ag.beginPath(); ag.arc(0, -w * 0.07, w * 0.065, 0, TAU); ag.fill();
+        ag.fillStyle = 'rgba(80,40,30,0.35)'; ag.fillRect(-w, -w * 0.3, w * 2, w * 0.08);     // the lid's shadow on the eyeball
+        ag.restore();
+        // twinkles
+        ag.fillStyle = '#FFFFFF'; ag.beginPath(); ag.arc(-w * 0.05, -w * 0.12, w * 0.05, 0, TAU); ag.fill();
+        ag.beginPath(); ag.arc(w * 0.06, -w * 0.02, w * 0.022, 0, TAU); ag.fill();
+        // upper lid line and a few short lashes, the lower lid line, the smile crease under it
+        ag.strokeStyle = '#5A2A20'; ag.lineCap = 'round'; ag.lineWidth = w * 0.065;
+        ag.beginPath(); ag.moveTo(-w * 0.49, w * 0.04); ag.bezierCurveTo(-w * 0.32, -w * 0.26, w * 0.32, -w * 0.26, w * 0.49, w * 0.04); ag.stroke();
+        ag.lineWidth = w * 0.025;
+        for (let k = 0; k < 5; k++) { const t = 0.2 + k * 0.15, lx = lerp(-w * 0.42, w * 0.42, t), ly = -w * 0.19 * Math.sin(Math.PI * t) - w * 0.02; ag.beginPath(); ag.moveTo(lx, ly); ag.lineTo(lx + out * w * 0.03 + (t - 0.5) * w * 0.08, ly - w * 0.07); ag.stroke(); }
+        ag.strokeStyle = 'rgba(140,60,50,0.8)'; ag.lineWidth = w * 0.03;
+        ag.beginPath(); ag.moveTo(-w * 0.42, w * 0.02); ag.bezierCurveTo(-w * 0.2, -w * 0.05, w * 0.2, -w * 0.05, w * 0.42, w * 0.02); ag.stroke();
+        ag.strokeStyle = 'rgba(150,70,56,0.6)'; ag.lineWidth = w * 0.035;
+        ag.beginPath(); ag.moveTo(-w * 0.36, w * 0.13); ag.quadraticCurveTo(0, w * 0.04, w * 0.36, w * 0.13); ag.stroke();
+        // crow's feet at the outer corner
+        ag.strokeStyle = 'rgba(130,60,48,0.7)'; ag.lineWidth = w * 0.028;
+        for (const [a, L] of [[-0.45, 0.17], [0.0, 0.2], [0.42, 0.16]]) { ag.beginPath(); ag.moveTo(out * w * 0.53, w * 0.0); ag.quadraticCurveTo(out * w * (0.53 + L * 0.6), Math.sin(a) * w * L * 0.4, out * w * (0.53 + L), Math.sin(a) * w * L * 0.85); ag.stroke(); }
         ag.restore();
       }
     } else {
@@ -1078,7 +1128,7 @@ function turnabout(o) {
     bump(-0.56, 0.24, 0.3, 0.24, 0.1); bump(0.56, 0.24, 0.3, 0.24, 0.1);          // cheeks (apples)
     bump(0, 0.98, 0.34, 0.2, 0.08); bump(-0.6, 0.78, 0.22, 0.2, 0.05); bump(0.6, 0.78, 0.22, 0.2, 0.05);   // chin, jowls
     bump(0, 0.02, 0.08, 0.24, 0.12);                                                // nose bridge
-    const nm = U.maskOf(g => g.fill(path(mapPts(G.h, G.nosePts))), R2 * 0.05); U.addTo(h, nm, R2 * 0.24);
+    const nm = U.maskOf(g => g.fill(path(mapPts(G.h, G.nosePts))), R2 * 0.05); U.addTo(h, nm, R2 * (scare ? 0.24 : 0.13));
     for (const sd of [-1, 1]) {   // eye sockets
       const [x, y] = G.h(sd * 0.38, -0.1); const q = U.maskOf(g => { g.beginPath(); g.ellipse(x, y, 0.27 * R2, 0.16 * R2, 0, 0, TAU); g.fill(); }, R2 * 0.08); U.addTo(h, q, -R2 * 0.07);
       const nl = []; for (let k = 0; k <= 12; k++) { const t = k / 12; nl.push(G.h(sd * (0.2 + 0.26 * t), 0.36 + 0.34 * t)); }   // nasolabial folds
@@ -1138,9 +1188,15 @@ function turnabout(o) {
         ],
         shadowLip: [{ pts: lips.up, width: 0.05, blur: 8, a: 0.85 }, { pts: lips.lo, width: 0.035, blur: 6, a: 0.55 }], ivory: '#E8DFC8',
       });
-      EYE.forEach((e, k) => eyeInSocket(cg, G, Object.assign({ socketPath: null, w: EW, open: OPEN, iris: 0.18, pupil: 0.09, lidSpread: 1.3, irisCol: ['#8A8460', '#5E7488', '#26344A'], veins: 6, veinCol: '#C9A3A0',
-        gaze: [0, 0], irisDy: -0.2, lowerFlat: 0.7, window: { x: 0, y: -0.3, s: 0.26, a: 0.95, panes: 1 }, ring: 0.22, lidSkin: '#B88068', socket: 0.5, recess: 0.04, lidShadow: 0.85, lashes: 30, lashLen: 0.15, lashW: 1.4,
-        gain: 1.7, shadeLo: 0.25, marginA: 0.3, wetK: 1.1 }, e)));
+      EYE.forEach((e, k) => {
+        eyeInSocket(cg, G, Object.assign({ socketPath: null, w: EW, open: OPEN, iris: 0.18, pupil: 0.08, lidSpread: 1.3, irisCol: ['#9A9A86', '#6E8494', '#2A3646'], limbal: 0.13, veins: 7, veinCol: '#C49896',
+          gaze: [0, 0], irisDy: 0.13, lowerFlat: 0.7, window: { x: 0, y: -0.32, s: 0.24, a: 0.95, panes: 1 }, ring: 0.22, lidSkin: '#B88068', socket: 0.5, recess: 0.04, lidShadow: 0.85, lashes: 34, lashLen: 0.16,
+          gain: 1.6, shadeLo: 0.22, marginA: 0.45, wetK: 1.2, waterline: 1.4, lashW: 2.6, lashLineW: 1.6 }, e));
+        // keep the human lids and lashes out of the gouache repaint (the inverted lid is what reads as wrong)
+        const T = eyeTU(G, e), lid = new Path2D(), m = new DOMMatrix().multiply(T);
+        const ell = new Path2D(); ell.ellipse(0, -EW * 0.38 * OPEN * 0.25, EW * 0.66, EW * 0.38 * OPEN * 1.55, 0, 0, TAU); lid.addPath(ell, m);
+        G.sharp.push(lid);
+      });
     }
     // the gouache: every painted surface gets brush strokes (the realism patches excepted)
     gouache(cg, G, { sizes: scare ? [26, 15, 8] : [14, 8, 4.5].map(v => v * sc * 1.6), seed: 'tb:gouache', poster: scare ? 11 : 9, err: [0, 0.03, 0.045] });

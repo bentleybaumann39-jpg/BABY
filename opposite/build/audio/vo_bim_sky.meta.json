@@ -1,0 +1,11 @@
+{
+ "text": "Is the sky green?",
+ "voice": "bim",
+ "espeak_text": "Is the sky green?",
+ "espeak_speed": 170,
+ "pause_limit": null,
+ "max_seconds": 1.3,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

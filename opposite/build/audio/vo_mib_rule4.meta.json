@@ -1,0 +1,11 @@
+{
+ "text": "Rule number four! To stop Opposite Day, just say: It's NOT Opposite Day! Ready?",
+ "voice": "mib_as_bim",
+ "espeak_text": "Rule number four! To stop Opposite Day, just say: It's not Opposite Day! Ready?",
+ "espeak_speed": 191,
+ "pause_limit": 0.16,
+ "max_seconds": 5.0,
+ "fits": true,
+ "twin_shift_semitones": 4.0,
+ "recipe": "od-1"
+}

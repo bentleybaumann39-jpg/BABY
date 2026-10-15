@@ -1,0 +1,7 @@
+{
+ "source": "build/audio/vo_safe_1.wav",
+ "source_crc": 4039498426,
+ "ends_at_line_onset": true,
+ "lead_s": 0.8,
+ "recipe": "od-1"
+}
