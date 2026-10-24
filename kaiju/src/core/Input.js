@@ -32,11 +32,13 @@ export class Input {
     });
     addEventListener('mouseup', (e) => { this.mouse.buttons &= ~(1 << e.button); });
     addEventListener('mousemove', (e) => {
-      if (!this.locked) return;
+      // captured mouse looks freely; where capture is refused (some embeds and app views),
+      // dragging with a button held still turns the camera
+      if (!this.locked && !this.mouse.buttons) return;
       this.mouse.dx += e.movementX;
       this.mouse.dy += e.movementY;
     });
-    addEventListener('wheel', (e) => { if (this.locked) this.mouse.wheel += Math.sign(e.deltaY); }, { passive: true });
+    addEventListener('wheel', (e) => { if (this.locked || e.target === this.canvas) this.mouse.wheel += Math.sign(e.deltaY); }, { passive: true });
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('pointerlockchange', () => { this.locked = document.pointerLockElement === this.canvas; });
   }
@@ -45,7 +47,9 @@ export class Input {
     if (this.locked) return;
     try {
       const p = this.canvas.requestPointerLock({ unadjustedMovement: true });
-      if (p && p.catch) p.catch(() => { try { this.canvas.requestPointerLock(); } catch (e) { /* not available */ } });
+      if (p && p.catch) p.catch(() => {
+        try { const q = this.canvas.requestPointerLock(); if (q && q.catch) q.catch(() => {}); } catch (e) { /* not available */ }
+      });
     } catch (e) { /* not available in this context */ }
   }
   unlock() { if (document.pointerLockElement) document.exitPointerLock(); }

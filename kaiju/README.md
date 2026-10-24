@@ -64,7 +64,7 @@ kaiju/
   tools/build.mjs             single-file build
 ```
 
-- **Rebuild `Landfall.html`:** run `npm install` at the repo root, then `node kaiju/tools/build.mjs`.
+- **Rebuild `Landfall.html`:** run `npm install` at the repo root, then `node kaiju/tools/build.mjs`. Add `--web <dir>` for a hosted build instead: a small page plus the models as separate files, for a site that can't serve one 25 MB page.
 - **Rebuild a kaiju:** use Python 3.11 with the `bpy`, `numpy`, `scipy` and `scikit-image` packages. From `kaiju/blender/`, run `python build.py <gorvax|kragmaw|thornback|scyllax>`. A full build takes about four minutes.
   - `--fast` gives a quick low-resolution pass.
   - `--sheet walk,attack1 --sheetdir out/` renders animation contact sheets.

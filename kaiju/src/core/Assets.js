@@ -42,8 +42,11 @@ export async function loadGLB(name, onProgress) {
     let buf;
     if (e) buf = b64ToBuffer(e);
     else {
-      const r = await fetch(BASE + name + '.glb');
-      if (!r.ok) throw new Error('missing asset ' + name + '.glb');
+      // hosts that will not serve binary .glb files get them as base64 text (see tools/build.mjs --web)
+      const asText = typeof window !== 'undefined' && !!window.__KJ_B64__;
+      const file = name + (asText ? '.glb.txt' : '.glb');
+      const r = await fetch(BASE + file);
+      if (!r.ok) throw new Error('missing asset ' + file);
       const total = Number(r.headers.get('content-length')) || 0;
       if (r.body && total && onProgress) {
         const reader = r.body.getReader();
@@ -60,6 +63,7 @@ export async function loadGLB(name, onProgress) {
         for (const c of chunks) { all.set(c, o); o += c.length; }
         buf = all.buffer;
       } else buf = await r.arrayBuffer();
+      if (asText) buf = b64ToBuffer(new TextDecoder().decode(buf).trim());
     }
     return new Promise((ok, fail) => loader.parse(buf, BASE, ok, fail));
   })();
