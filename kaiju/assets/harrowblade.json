@@ -1,97 +1,102 @@
 {
- "name": "kragmaw",
- "height": 46.0,
- "preview_angle": 50,
+ "name": "harrowblade",
+ "height": 55.0,
+ "preview_angle": 40,
+ "sheet_angle": 60,
  "close": [
   0,
-  -12,
-  30,
-  38
+  -34,
+  44,
+  30
  ],
  "speed": {
-  "walk": 8.695652173913045,
-  "run": 25.806451612903224
- },
- "cycle": {
-  "walk": 20.0,
-  "run": 40.0
+  "walk": 14.166666666666668,
+  "run": 53.83022774327123
  },
  "hits": {
-  "attack1": 0.48,
-  "attack2": 0.55,
-  "heavy": 1.0,
+  "attack1": 0.45,
+  "attack2": 0.42,
+  "heavy": 0.8,
   "stomp": 1.25
  },
- "feet": [
-  "toeL",
-  "handL",
-  "toeR",
-  "handR"
- ],
  "foot_phase": {
   "walk": [
    0.0,
-   0.18,
-   0.5,
-   0.68
+   0.5
   ],
   "run": [
    0.0,
-   0.0,
-   0.5,
-   0.1
+   0.5
   ]
+ },
+ "duty": {
+  "walk": 0.6,
+  "run": 0.42
+ },
+ "cycle": {
+  "walk": 28.333333333333336,
+  "run": 61.904761904761905
  },
  "body": [
   [
    "thighL",
    "shinL",
-   5.2
+   5.0
   ],
   [
    "thighR",
    "shinR",
-   5.2
+   5.0
   ],
   [
-   "upperarmL",
-   "forearmL",
-   5.2
+   "shinL",
+   "footL",
+   2.6
   ],
   [
-   "upperarmR",
-   "forearmR",
-   5.2
-  ],
-  [
-   "forearmL",
-   "handL",
-   4.5
-  ],
-  [
-   "forearmR",
-   "handR",
-   4.5
+   "shinR",
+   "footR",
+   2.6
   ],
   [
    "hips",
    "chest",
-   10.5
+   8.6
   ],
   [
    "chest",
    "head",
-   6.5
+   5.0
+  ],
+  [
+   "tail1",
+   "tail3",
+   5.4
+  ],
+  [
+   "tail3",
+   "tail6",
+   3.4
+  ],
+  [
+   "tail6",
+   "tail9",
+   2.0
   ]
  ],
  "aim": {
   "head": "head",
   "chain": [
-   "neck",
+   "neck1",
+   "neck2",
    "head"
   ],
-  "pitch0": 0.1
+  "pitch0": 0.17
  },
+ "feet": [
+  "toeL",
+  "toeR"
+ ],
  "mouth": "mouth",
  "clips": {
   "idle": {
@@ -99,11 +104,11 @@
    "loop": true
   },
   "walk": {
-   "duration": 2.3,
+   "duration": 2.0,
    "loop": true
   },
   "run": {
-   "duration": 1.55,
+   "duration": 1.15,
    "loop": true
   },
   "attack1": {
@@ -111,11 +116,11 @@
    "loop": false
   },
   "attack2": {
-   "duration": 1.2,
+   "duration": 1.0,
    "loop": false
   },
   "heavy": {
-   "duration": 1.6,
+   "duration": 1.7,
    "loop": false
   },
   "stomp": {
@@ -123,19 +128,19 @@
    "loop": false
   },
   "roar": {
-   "duration": 3.2,
+   "duration": 3.1,
    "loop": false
   },
   "special_in": {
-   "duration": 1.0,
+   "duration": 0.7,
    "loop": false
   },
   "special_loop": {
-   "duration": 1.0,
+   "duration": 1.15,
    "loop": true
   },
   "special_out": {
-   "duration": 0.8,
+   "duration": 0.7,
    "loop": false
   },
   "hit": {

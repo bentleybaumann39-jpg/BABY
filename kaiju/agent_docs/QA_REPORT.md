@@ -2,42 +2,62 @@
 
 All runs used headless Chromium on SwiftShader (no GPU), at `q=low`, driven with a fixed 1/30 s timestep. Absolute frame rates in this environment say nothing about real hardware.
 
-## Gameplay: `tests/play.mjs ... moves`
+## Alien roster: `tests/play.mjs ... probe`
 
-Each run walks into the city, then performs every move.
+The probe stands each kaiju in front of an intact 65 m building and fires every move in turn. It records:
+- where the striking bones are mid-window, in metres in front of the body and above the ground
+- the damage each move deals, in millions of dollars
+- the special, then the stomp
 
-| Kaiju | Attack 1 / 2 | Heavy | Stomp / leap | Signature | Result |
+Moves run one after another, so later moves hit a building that earlier ones have already damaged.
+
+| Kaiju | Attack 1 | Attack 2 | Heavy | Special | Stomp |
 |---|---|---|---|---|---|
-| Gorvax | ✔ | ✔ tail sweep | ✔ quake | ✔ beam (`default`, `beam` scripts) | Pass |
-| Kragmaw | ✔ | ✔ ground slam | ✔ leap, apex ≈ 63 m, lands with a slam | ✔ grab → hold → throw. The rock is released on button-up and adds about $1.7B of damage. | Pass |
-| Thornback | ✔ | ✔ tail mace | ✔ earthshaker | ✔ charge at 41 m/s, about 260 m through the city | Pass |
-| Scyllax | ✔ | ✔ stinger | ✔ pounce, apex ≈ 65 m | ✔ acid spray: in → loop → out, adds about $3.4B | Pass |
+| Razormaw | Talon Rake 41 | Backhand Rake 97 | Hammerfall 407 | Plasma Breath: beam fires, ≈ 400/s | Quake Stomp ✔ |
+| Harrowblade | Blade Cleave 95 | Raptor Claw 12 | Fin Scythe 218 | Blade Charge: 5 s sprint, ≈ 1,400 | Pounce ✔ (see the note below) |
+| Hollowstrider | Impaler 68 (reach 67 m) | Maw Lunge 71 | Fork Lash 153 (tail tip 94 m high) | Spore Torrent ≈ 3,900 | Pillar Slam ✔ |
+| Nyxwing | Lance Strike 127 | Wing Buffet 95 | Spade Lash 194 | Acid Volley: 2 globs/s, ≈ 1,800 | Wingbeat Leap, apex 55 m ✔ |
+| Gravemaw | Siege Fist 83 | Hammerhead Ram 5 | Twin Pound 383 | Dread Pulse ≈ 1,100 | Earthbreaker ✔ |
+| Carapex | Mandible Snap 126 | Leg Spear 5 | Scythe Fall 353 | Bile Mortar: 4 bombs, ≈ 3,100 | Hive Quake ✔ |
 
-The only console error in any run is *"A user gesture is required to request Pointer Lock"*. That is expected headless, because no click ever happens.
+Notes:
+- Harrowblade's leap was pressed the instant its charge ended, so it was correctly ignored.
+- Razormaw also ran the full `moves` script: it walks through dense blocks at about 12 m/s, and every move and the roar run with 0 console errors.
 
 ## Menus: `tests/ui.mjs`
 
 The test runs against both `index.html` and the built `Landfall.html`. It covers:
 - title
 - lab
-- awakening the three locked kaiju, with the correct biomass deducted
+- awakening all five locked kaiju, with the correct biomass deducted (40,000 → 18,400)
 - buying two Growth levels, after which the model is rescaled on the stage
 - settings
-- deploy
-- mission
-- results, with the correct reward credited
+- deploying as Carapex, with the correct name, health and moves on the HUD
+- results, with the correct reward credited (+264)
 - the return to the lab
 
-Peak memory was about 0.7 GB in the GPU process plus 0.6 GB in the renderer. In an earlier run three software-rendered browsers shared four cores and one was OOM-killed at 8 GB. That did not recur when the test ran alone.
+The run produced 0 console errors.
 
 ## Fixed during this pass
-- Building drag multiplied speed by up to 0.6 per frame, so kaiju crawled at about 1 m/s in dense blocks. It is now a bounded exponential drag that settles at about 45% of intended speed against a solid wall.
-- Move windows were read as fractions of the clip in code but written in seconds in config. Everything now uses clip seconds. Gorvax's tail sweep and the new kaiju's heavies had been landing outside their swings.
-- During the intro, the HUD showed the default name ("GORVAX") for every kaiju.
-- The Settings panel overflowed at 720p.
-- Mission briefs were cut mid-line in the lab cards.
-- The camera could dive into wide kaiju when towers boxed it in. It now keeps a minimum distance based on the body's footprint.
+- Hollowstrider's Fork Lash and Carapex's mortar curl rotated the wrong way: the tail went into the ground and the abdomen tucked under the body. Both now arc up over the back.
+- Harrowblade's flank chevrons were too thick, and the faint vein glow on Nyxwing's wing membranes came out as green blotches in game, where emission is boosted. The markings are thinner and the membranes no longer glow.
+- Hollowstrider's skin folds were a regular corrugation. Folds are now patchy and noise-modulated.
+- Holding the special button chained a second Dread Pulse straight away. Each pulse now needs its own press.
+- Other small fixes:
+  - Bile Mortar damage and radius toned down.
+  - Spore Torrent power reduced.
+  - Long kaiju names no longer collide with the price tag.
+  - The dossier opens at the top for each kaiju.
+  - The HUD never shows more health than the maximum.
+
+## Earlier passes (kept for reference)
+- Building drag is a bounded exponential, so kaiju wade through dense blocks at about 45% speed instead of crawling.
+- Move windows use seconds of clip time.
+- The HUD identity is set when the mission loads, not after the intro.
+- Settings fit at 720p.
+- The camera keeps a minimum distance based on the body's footprint.
 
 ## Known limits
 - Real-GPU performance is unmeasured. Dynamic resolution (`App._adapt`) drops the render scale to as low as 0.6 when frame time exceeds 24 ms.
-- The thin horn and spike parts are low-poly cones. They read fine at gameplay distance but look faceted in extreme close-ups.
+- Folded wings (Nyxwing at rest) bunch up on the back. Skinning a membrane sculpted spread cannot fold it neatly.
+- `Landfall.html` is about 44 MB, because it embeds six 2048-texture kaiju. The hosted build loads the same models as separate files.

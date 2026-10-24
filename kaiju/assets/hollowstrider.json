@@ -1,0 +1,191 @@
+{
+ "name": "hollowstrider",
+ "height": 52.0,
+ "preview_angle": 50,
+ "sheet_angle": 60,
+ "close": [
+  0,
+  -20,
+  30,
+  30
+ ],
+ "speed": {
+  "walk": 7.812500000000001,
+  "run": 35.294117647058826
+ },
+ "hits": {
+  "attack1": 0.6,
+  "attack2": 0.33,
+  "heavy": 0.85,
+  "stomp": 0.95
+ },
+ "foot_phase": {
+  "walk": [
+   0.0,
+   0.5
+  ],
+  "run": [
+   0.0,
+   0.12
+  ]
+ },
+ "duty": {
+  "walk": 0.72,
+  "run": 0.45
+ },
+ "cycle": {
+  "walk": 25.0,
+  "run": 60.0
+ },
+ "body": [
+  [
+   "upperarmL",
+   "forearmL",
+   3.0
+  ],
+  [
+   "upperarmR",
+   "forearmR",
+   3.0
+  ],
+  [
+   "forearmL",
+   "handL",
+   2.4
+  ],
+  [
+   "forearmR",
+   "handR",
+   2.4
+  ],
+  [
+   "thighL",
+   "shinL",
+   3.2
+  ],
+  [
+   "thighR",
+   "shinR",
+   3.2
+  ],
+  [
+   "hips",
+   "chest",
+   7.4
+  ],
+  [
+   "chest",
+   "head",
+   4.0
+  ],
+  [
+   "tail1",
+   "tail4",
+   3.0
+  ],
+  [
+   "tail4",
+   "tail8",
+   1.8
+  ]
+ ],
+ "aim": {
+  "head": "head",
+  "chain": [
+   "neck1",
+   "neck2",
+   "head"
+  ],
+  "pitch0": 0.38
+ },
+ "feet": [
+  "toeL",
+  "toeR",
+  "handL",
+  "handR"
+ ],
+ "mouth": "mouth",
+ "springs": [
+  {
+   "bones": [
+    "tail1",
+    "tail2",
+    "tail3",
+    "tail4",
+    "tail5",
+    "tail6",
+    "tail7",
+    "tail8",
+    "tail9",
+    "tail10"
+   ],
+   "yaw": 1.2,
+   "pitch": 1.0,
+   "gain": 0.2
+  },
+  {
+   "bones": [
+    "tongue1",
+    "tongue2",
+    "tongue3"
+   ],
+   "yaw": 1.5,
+   "pitch": 2.0,
+   "gain": 0.5
+  }
+ ],
+ "clips": {
+  "idle": {
+   "duration": 6.0,
+   "loop": true
+  },
+  "walk": {
+   "duration": 3.2,
+   "loop": true
+  },
+  "run": {
+   "duration": 1.7,
+   "loop": true
+  },
+  "attack1": {
+   "duration": 1.3,
+   "loop": false
+  },
+  "attack2": {
+   "duration": 1.0,
+   "loop": false
+  },
+  "heavy": {
+   "duration": 1.6,
+   "loop": false
+  },
+  "stomp": {
+   "duration": 1.6,
+   "loop": false
+  },
+  "roar": {
+   "duration": 3.4,
+   "loop": false
+  },
+  "special_in": {
+   "duration": 0.9,
+   "loop": false
+  },
+  "special_loop": {
+   "duration": 1.2,
+   "loop": true
+  },
+  "special_out": {
+   "duration": 0.7,
+   "loop": false
+  },
+  "hit": {
+   "duration": 0.7,
+   "loop": false
+  },
+  "death": {
+   "duration": 3.4,
+   "loop": false
+  }
+ }
+}

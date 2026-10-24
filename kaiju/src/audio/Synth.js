@@ -68,10 +68,12 @@ function loopify(a, sr, xf = 0.25) {
 // ------------------------------------------------------------------ creature voices
 
 export const VOICES = {
-  gorvax: { base: 150, dur: 3.4, creak: 0.9, growl: 0.55, scream: 1.0, sub: 0.7, vowel: [[650, 1150, 2500], [480, 820, 2300]], bright: 1.0 },
-  kragmaw: { base: 85, dur: 2.8, creak: 0.5, growl: 1.0, scream: 0.35, sub: 1.0, vowel: [[560, 1000, 2350], [400, 760, 2200]], bright: 0.7 },
-  thornback: { base: 52, dur: 3.2, creak: 0.35, growl: 1.0, scream: 0.15, sub: 1.2, vowel: [[380, 800, 2100], [300, 650, 1900]], bright: 0.5 },
-  scyllax: { base: 420, dur: 2.6, creak: 1.0, growl: 0.25, scream: 0.9, sub: 0.3, vowel: [[900, 1700, 3200], [1200, 2300, 3600]], bright: 1.4, click: 1 },
+  razormaw: { base: 110, dur: 3.4, creak: 0.85, growl: 0.9, scream: 0.75, sub: 0.9, vowel: [[600, 1100, 2400], [450, 800, 2200]], bright: 0.9 },
+  harrowblade: { base: 260, dur: 2.8, creak: 0.7, growl: 0.4, scream: 1.2, sub: 0.4, vowel: [[800, 1500, 2900], [650, 1250, 2700]], bright: 1.3 },
+  hollowstrider: { base: 330, dur: 3.2, creak: 1.1, growl: 0.3, scream: 1.0, sub: 0.3, vowel: [[900, 1600, 3100], [700, 1900, 3300]], bright: 1.2, click: 1 },
+  nyxwing: { base: 520, dur: 2.6, creak: 0.6, growl: 0.2, scream: 1.3, sub: 0.2, vowel: [[1000, 1900, 3400], [1300, 2400, 3800]], bright: 1.5 },
+  gravemaw: { base: 48, dur: 3.4, creak: 0.3, growl: 1.1, scream: 0.1, sub: 1.3, vowel: [[350, 750, 2000], [280, 620, 1800]], bright: 0.45 },
+  carapex: { base: 380, dur: 2.8, creak: 1.0, growl: 0.25, scream: 0.8, sub: 0.3, vowel: [[950, 1800, 3300], [1200, 2300, 3600]], bright: 1.4, click: 1 },
 };
 
 export function roar(sr, voice, seed = 1, scale = 1) {

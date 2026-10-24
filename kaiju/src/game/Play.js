@@ -246,8 +246,13 @@ export class Play {
   _special(dt, held) {
     const k = this.kaiju, S = k.special, mv = this.def.moves.special;
     const canStart = k.canAct() && k.energy > mv.cost * 0.35;
-    if (mv.kind === 'beam' || mv.kind === 'spray') {
-      if (held && !S.on && canStart) {
+    const clipDur = (n, d) => (k.clips[n] ? k.clips[n].duration : d);
+    const channel = mv.kind === 'beam' || mv.kind === 'spray' || mv.kind === 'spit' || mv.kind === 'mortar';
+    if (channel) {
+      // hold to channel: wind up, sustain while held and fed, wind down
+      const shots = mv.kind === 'spit' || mv.kind === 'mortar';
+      const shotCost = mv.cost * k.stats.specialCost;
+      if (held && !S.on && canStart && (!shots || k.energy >= shotCost)) {
         S.on = true; S.kind = mv.kind; S.phase = 'in'; S.t = 0;
         k.play('special_in', { full: true });
         this.app.audio && this.app.audio.charge(k, true);
@@ -256,17 +261,31 @@ export class Play {
         S.t += dt;
         if (S.phase === 'in') {
           S.glow = Math.min(1, S.t / 1.0);
-          if (S.t >= (k.clips.special_in ? k.clips.special_in.duration : 0.8)) {
+          if (S.t >= clipDur('special_in', 0.8)) {
             S.phase = 'loop';
+            S.fireT = shots ? (mv.kind === 'spit' ? 0.38 : 0.48) : 0;
             k.play('special_loop', { full: true, loop: true, fade: 0.1 });
-            this.app.audio && this.app.audio.beam(k, true);
+            if (!shots) this.app.audio && this.app.audio.beam(k, true);
           }
         } else if (S.phase === 'loop') {
           S.glow = 1;
-          if (!held || k.energy <= 0) {
+          if (shots) {
+            // one glob or bomb per heave of the loop clip (two heaves per loop)
+            const every = clipDur('special_loop', 1.0) / 2;
+            S.fireT += dt;
+            if (S.fireT >= every && k.energy >= shotCost) {
+              S.fireT -= every;
+              k.energy -= shotCost;
+              const from = k.bonePos(mv.kind === 'mortar' ? (k.meta.launcher || 'mouth') : (k.meta.mouth || 'mouth'), new THREE.Vector3());
+              const aim = this.aim.clone();
+              if (mv.kind === 'mortar') aim.add(new THREE.Vector3((Math.random() - 0.5) * 40, 0, (Math.random() - 0.5) * 40));
+              this.abilities.launchOrb(k, from, aim, mv.kind === 'spit');
+            }
+          }
+          if (!held || k.energy <= 0 || (shots && k.energy < shotCost)) {
             S.phase = 'out'; S.t = 0;
             k.play('special_out', { full: true, fade: 0.12 });
-            this.app.audio && this.app.audio.beam(k, false);
+            if (!shots) this.app.audio && this.app.audio.beam(k, false);
           }
         } else if (S.phase === 'out') {
           S.glow = Math.max(0, 1 - S.t / 0.6);
@@ -275,8 +294,29 @@ export class Play {
       } else S.glow = Math.max(0, S.glow - dt);
       const firing = S.on && S.phase === 'loop';
       if (mv.kind === 'beam') this.abilities.beamUpdate(dt, k, firing, this.aim);
-      else if (firing) this.abilities.spray(dt, k, this.aim);
+      else if (mv.kind === 'spray' && firing) this.abilities.spray(dt, k, this.aim);
       if (k.energy < 0) k.energy = 0;
+    } else if (mv.kind === 'pulse') {
+      // one press: rear up while the shell charges, slam, and the pulse leaves on impact
+      const cost = mv.cost * k.stats.specialCost;
+      if (!held) S.latch = false; // each pulse needs its own press
+      if (held && !S.latch && !S.on && k.canAct() && k.energy >= cost) {
+        S.on = true; S.kind = 'pulse'; S.phase = 'in'; S.t = 0; S.fired = false; S.latch = true;
+        k.energy -= cost;
+        k.play('special_in', { full: true });
+        this.app.audio && this.app.audio.charge(k, true);
+      }
+      if (S.on) {
+        S.t += dt;
+        if (S.phase === 'in') {
+          S.glow = Math.min(1, S.t / clipDur('special_in', 1.0));
+          if (S.t >= clipDur('special_in', 1.0)) { S.phase = 'out'; S.t = 0; k.play('special_out', { full: true, fade: 0.05 }); }
+        } else {
+          if (!S.fired && S.t >= (k.meta.hits?.special_out ?? 0.2)) { S.fired = true; this.abilities.pulse(k); }
+          S.glow = Math.max(0, 1 - S.t / 0.8);
+          if (S.t >= clipDur('special_out', 1.0)) { S.on = false; S.phase = null; }
+        }
+      } else S.glow = Math.max(0, S.glow - dt);
     } else if (mv.kind === 'throw') {
       if (held && !S.on && canStart) {
         S.on = true; S.kind = 'throw'; S.t = 0; S.phase = 'in';
@@ -287,7 +327,7 @@ export class Play {
         S.t += dt;
         if (S.phase === 'in' || S.phase === 'hold') {
           this.abilities.holdBoulder(k, S.phase === 'in' ? S.t : 1);
-          const tIn = k.clips.special_in ? k.clips.special_in.duration : 1.0;
+          const tIn = clipDur('special_in', 1.0);
           if (S.phase === 'in' && S.t >= tIn && held) {
             // keep the rock overhead while the button stays down
             S.phase = 'hold';
@@ -304,15 +344,26 @@ export class Play {
       S.glow = S.on ? 1 : Math.max(0, S.glow - dt);
     } else if (mv.kind === 'charge') {
       if (held && !S.on && canStart) {
-        S.on = true; S.kind = 'charge'; S.t = 0; S.phase = 'loop';
+        S.on = true; S.kind = 'charge'; S.t = 0;
+        S.phase = k.clips.special_in ? 'in' : 'loop';
         k.energy -= mv.cost * k.stats.specialCost;
+        if (k.clips.special_in) k.play('special_in', { full: true });
         this.app.audio && this.app.audio.roar(k, 0.8);
       }
       if (S.on) {
         S.t += dt;
         S.glow = 1;
-        k.speed = Math.max(k.speed, k.runSpeed * 1.2);
-        if (S.t > mv.duration * (1 + 0.1 * (this.cfg.levels?.power || 0))) { S.on = false; S.kind = null; }
+        if (S.phase === 'in') {
+          if (S.t >= clipDur('special_in', 0.7)) {
+            S.phase = 'loop';
+            // the charge cycle is authored at run pace; play it as fast as the charge actually goes
+            if (k.clips.special_loop) k.play('special_loop', { full: true, loop: true, fade: 0.1, speed: 1.45 });
+          }
+        } else k.speed = Math.max(k.speed, k.runSpeed * 1.2);
+        if (S.t > mv.duration * (1 + 0.1 * (this.cfg.levels?.power || 0))) {
+          S.on = false; S.kind = null; S.phase = null;
+          if (k.clips.special_out) k.play('special_out', { full: true, fade: 0.15 });
+        }
       } else S.glow = Math.max(0, S.glow - dt);
     }
   }

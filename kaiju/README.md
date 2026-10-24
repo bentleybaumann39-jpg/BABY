@@ -2,7 +2,7 @@
 
 *A kaiju destruction game. Choose a titan, come ashore and level a living city.*
 
-The city was built on the assumption that nothing bigger would ever come ashore. Pick one of four kaiju, wade in from the harbour and tear the city apart floor by floor while traffic jams, crowds flee and the military escalates. Your rampages earn **biomass**, which you spend to evolve your kaiju or to awaken new ones.
+The city was built on the assumption that nothing bigger would ever come ashore. Pick one of six alien kaiju, wade in from the harbour and tear the city apart floor by floor while traffic jams, crowds flee and the military escalates. Your rampages earn **biomass**, which you spend to evolve your kaiju or to awaken new ones.
 
 ## Play
 
@@ -25,14 +25,18 @@ You need a desktop browser with WebGL2 (Chrome, Edge or Firefox) and a dedicated
 
 ## The roster
 
-| Kaiju | Height | Style | Signature power |
-|---|---|---|---|
-| **Gorvax**, the Thermal Apex | 93 m | Bipedal saurian. Claw, bite, tail sweep, quake stomp. | **Thermal Breath**: a sustained beam that cuts through towers |
-| **Kragmaw**, the Magma Primate | 74 m | Knuckle-walking megaprimate with magma veins. Haymaker, hammer fist, two-handed ground slam, seismic leap. | **Tectonic Hurl**: tears up a slab of city and throws it |
-| **Thornback**, the Living Fortress | 64 m | Armoured quadruped. Horn gore, shield bash, club-tail mace, earthshaker. | **Juggernaut Charge**: an unstoppable sprint that plows through blocks |
-| **Scyllax**, the Abyssal Reaver | 58 m | Eight-legged crab-scorpion. Pincer snap, twin shear, stinger lance, pounce. | **Acid Torrent**: a spray that melts what it touches |
+Six original alien kaiju. Each is sculpted, textured, rigged and animated in Blender, with 13 animations, bioluminescent markings, and secondary motion on its tail and antennae.
 
-Gorvax is available from the start. The others are awakened with biomass. Every kaiju has seven upgrade tracks: Vitality, Armoured Hide, Might, Metabolism, Stride, Growth (which makes it physically bigger), and Signature Power.
+| Kaiju | Height | Build | Signature power |
+|---|---|---|---|
+| **Razormaw**, the Split Crest | 87 m | Hunched brute that knuckle-walks on glowing talons. Its skull splits into two toothed crest blades. | **Plasma Breath**: a sustained beam |
+| **Harrowblade**, the Knife Stalker | 85 m | Digitigrade hunter with a knife-blade skull, a shark fin and glowing chevrons. | **Blade Charge**: a head-down sprint through whole blocks |
+| **Hollowstrider**, the Gaunt Walker | 83 m | Pale, ribbed horror on four enormously long limbs, with a forked whip tail. | **Spore Torrent**: a choking spray |
+| **Nyxwing**, the Acid Wraith | 74 m, 175 m wingspan | Four-legged acid-spitter with vast membrane wings. Its leaps carry further. | **Acid Volley**: burning globs, two a second |
+| **Gravemaw**, the Siege Titan | 70 m | Hammer-headed armoured brute. The seams of its carapace glow amber. | **Dread Pulse**: an EMP shockwave that wrecks every machine nearby |
+| **Carapex**, the Hive Engine | 66 m | Six-legged siege insect with sickle mandibles. | **Bile Mortar**: bile bombs lobbed over the skyline |
+
+Razormaw is available from the start. You awaken the others with biomass. Each kaiju has seven upgrade tracks: Vitality, Armoured Hide, Might, Metabolism, Stride, Growth (which makes it physically bigger), and Signature Power. Saves from the earlier four-kaiju version still load: biomass spent on those kaiju is refunded.
 
 ## Missions
 
@@ -65,7 +69,7 @@ kaiju/
 ```
 
 - **Rebuild `Landfall.html`:** run `npm install` at the repo root, then `node kaiju/tools/build.mjs`. Add `--web <dir>` for a hosted build instead: a small page plus the models as separate files, for a site that can't serve one 25 MB page.
-- **Rebuild a kaiju:** use Python 3.11 with the `bpy`, `numpy`, `scipy` and `scikit-image` packages. From `kaiju/blender/`, run `python build.py <gorvax|kragmaw|thornback|scyllax>`. A full build takes about four minutes.
+- **Rebuild a kaiju:** use Python 3.11 with the `bpy`, `numpy`, `scipy` and `scikit-image` packages. From `kaiju/blender/`, run `python build.py <razormaw|harrowblade|hollowstrider|nyxwing|gravemaw|carapex>`. A full build takes three to five minutes.
   - `--fast` gives a quick low-resolution pass.
   - `--sheet walk,attack1 --sheetdir out/` renders animation contact sheets.
   - `python shape_preview.py <name> out.png` renders the sculpt alone in seconds.

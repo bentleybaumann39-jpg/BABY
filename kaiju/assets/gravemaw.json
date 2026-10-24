@@ -1,0 +1,158 @@
+{
+ "name": "gravemaw",
+ "height": 44.0,
+ "preview_angle": 35,
+ "sheet_angle": 45,
+ "close": [
+  0,
+  -20,
+  30,
+  30
+ ],
+ "speed": {
+  "walk": 7.575757575757575,
+  "run": 27.53623188405797
+ },
+ "hits": {
+  "attack1": 0.52,
+  "attack2": 0.46,
+  "heavy": 0.97,
+  "stomp": 0.97,
+  "special_out": 0.22
+ },
+ "foot_phase": {
+  "walk": [
+   0.0,
+   0.5
+  ],
+  "run": [
+   0.0,
+   0.15
+  ]
+ },
+ "duty": {
+  "walk": 0.66,
+  "run": 0.46
+ },
+ "cycle": {
+  "walk": 19.696969696969695,
+  "run": 41.30434782608695
+ },
+ "body": [
+  [
+   "upperarmL",
+   "forearmL",
+   5.0
+  ],
+  [
+   "upperarmR",
+   "forearmR",
+   5.0
+  ],
+  [
+   "forearmL",
+   "handL",
+   4.4
+  ],
+  [
+   "forearmR",
+   "handR",
+   4.4
+  ],
+  [
+   "thighL",
+   "shinL",
+   4.4
+  ],
+  [
+   "thighR",
+   "shinR",
+   4.4
+  ],
+  [
+   "hips",
+   "chest",
+   11.0
+  ],
+  [
+   "chest",
+   "head",
+   7.0
+  ],
+  [
+   "tail1",
+   "tail3",
+   5.0
+  ],
+  [
+   "tail3",
+   "tail6",
+   3.6
+  ]
+ ],
+ "aim": {
+  "head": "head",
+  "chain": [
+   "neck1",
+   "head"
+  ],
+  "pitch0": 0.24
+ },
+ "feet": [
+  "toeL",
+  "toeR",
+  "handL",
+  "handR"
+ ],
+ "mouth": "mouth",
+ "clips": {
+  "idle": {
+   "duration": 6.0,
+   "loop": true
+  },
+  "walk": {
+   "duration": 2.6,
+   "loop": true
+  },
+  "run": {
+   "duration": 1.5,
+   "loop": true
+  },
+  "attack1": {
+   "duration": 1.2,
+   "loop": false
+  },
+  "attack2": {
+   "duration": 1.1,
+   "loop": false
+  },
+  "heavy": {
+   "duration": 1.7,
+   "loop": false
+  },
+  "stomp": {
+   "duration": 1.7,
+   "loop": false
+  },
+  "roar": {
+   "duration": 3.4,
+   "loop": false
+  },
+  "special_in": {
+   "duration": 1.2,
+   "loop": false
+  },
+  "special_out": {
+   "duration": 1.0,
+   "loop": false
+  },
+  "hit": {
+   "duration": 0.7,
+   "loop": false
+  },
+  "death": {
+   "duration": 3.4,
+   "loop": false
+  }
+ }
+}

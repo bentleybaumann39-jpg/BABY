@@ -28,13 +28,13 @@ console.log('screen', await screen());
 await wait(1500);
 await shot('ui_00_title');
 await page.click('[data-act="lab"]');
-await stageReady('gorvax');
+await stageReady('razormaw');
 await wait(1500);
 console.log('screen', await screen());
-await shot('ui_01_lab_gorvax');
+await shot('ui_01_lab_razormaw');
 // grant biomass so the rest of the roster can be awakened and evolved
-await page.evaluate(() => { const a = window.__kj.app; a.profile.biomass = 30000; a.save(); a.ui.renderLab(); });
-for (const id of ['kragmaw', 'thornback', 'scyllax']) {
+await page.evaluate(() => { const a = window.__kj.app; a.profile.biomass = 40000; a.save(); a.ui.renderLab(); });
+for (const id of ['harrowblade', 'hollowstrider', 'nyxwing', 'gravemaw', 'carapex']) {
   await page.click(`.kcard:has-text("${id.toUpperCase()}")`);
   await page.click('#unlock');
   await stageReady(id);
@@ -45,9 +45,9 @@ const ups = await page.$$eval('[data-up]:not([disabled])', (b) => b.map((x) => x
 console.log('upgrades available', ups.join(','));
 await page.click('[data-up="growth"]');
 await page.click('[data-up="growth"]');
-await stageReady('scyllax');
+await stageReady('carapex');
 await wait(1500);
-await shot('ui_03_scyllax_grown');
+await shot('ui_03_carapex_grown');
 const prof = await page.evaluate(() => { const p = window.__kj.app.profile; return { biomass: p.biomass, unlocked: p.unlocked, levels: p.levels, selected: p.selected }; });
 console.log(JSON.stringify(prof));
 await page.click('#lab [data-act="settings"]');
@@ -64,7 +64,7 @@ await wait(1500);
 console.log('screen', await screen());
 await shot('ui_06_results');
 await page.click('#results [data-act="lab"]');
-await stageReady('scyllax');
+await stageReady('carapex');
 await wait(1000);
 console.log('screen', await screen(), 'biomass', await page.evaluate(() => window.__kj.app.profile.biomass));
 await shot('ui_07_back_to_lab');

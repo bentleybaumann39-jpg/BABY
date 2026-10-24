@@ -1,9 +1,9 @@
 // Profile + settings persistence with validation and repair. Never trusts stored data.
-import { KAIJU, UPGRADES, MISSIONS } from './Config.js';
+import { KAIJU, UPGRADES, MISSIONS, STARTER, LEGACY } from './Config.js';
 
 const KEY = 'landfall.profile';
 const SKEY = 'landfall.settings';
-export const VERSION = 1;
+export const VERSION = 2; // 2: the alien roster replaced the four original kaiju
 
 export const SETTINGS_DEF = {
   quality: 'high', sensitivity: 1, invertY: false, fov: 55, master: 0.9, music: 0.6, sfx: 0.9,
@@ -25,7 +25,7 @@ function store() {
 export function newProfile() {
   const levels = {};
   for (const id of Object.keys(KAIJU)) levels[id] = {};
-  return { v: VERSION, biomass: 0, unlocked: { gorvax: true }, levels, missions: {}, selected: 'gorvax', stats: { rampages: 0, damage: 0, towers: 0, kills: 0 } };
+  return { v: VERSION, biomass: 0, unlocked: { [STARTER]: true }, levels, missions: {}, selected: STARTER, stats: { rampages: 0, damage: 0, towers: 0, kills: 0 } };
 }
 
 export function repairProfile(p) {
@@ -34,7 +34,19 @@ export function repairProfile(p) {
   const out = d;
   out.biomass = Number.isFinite(p.biomass) && p.biomass >= 0 ? Math.floor(p.biomass) : 0;
   if (p.unlocked && typeof p.unlocked === 'object') for (const id of Object.keys(KAIJU)) if (p.unlocked[id] === true) out.unlocked[id] = true;
-  out.unlocked.gorvax = true;
+  out.unlocked[STARTER] = true;
+  // refund what was spent on kaiju that no longer exist, so an old save can awaken the new roster
+  for (const [id, cost] of Object.entries(LEGACY)) {
+    if (KAIJU[id]) continue;
+    if (p.unlocked && p.unlocked[id] === true) out.biomass += cost;
+    const L = p.levels && p.levels[id];
+    if (L && typeof L === 'object') {
+      for (const u of UPGRADES) {
+        const v = Number.isInteger(L[u.id]) ? Math.min(u.max, Math.max(0, L[u.id])) : 0;
+        for (let i = 0; i < v; i++) out.biomass += u.cost[i];
+      }
+    }
+  }
   if (p.levels && typeof p.levels === 'object') {
     for (const id of Object.keys(KAIJU)) {
       const L = p.levels[id];

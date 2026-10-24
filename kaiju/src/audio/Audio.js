@@ -77,8 +77,7 @@ export class Audio {
       ['crumble0', () => S.crumble(sr, 4, 3.5, 0.4)], ['crumble1', () => S.crumble(sr, 5, 2.5, 0.8)], ['crumble2', () => S.crumble(sr, 6, 4.5, 0.2)],
       ['glass', () => S.glass(sr, 8)], ['expl0', () => S.explosion(sr, 9, 1)], ['expl1', () => S.explosion(sr, 10, 0.5)],
       ['rumble', () => S.rumble(sr, 12, 10)], ['whoosh', () => S.whoosh(sr, 13, 0.9)], ['whooshL', () => S.whoosh(sr, 14, 1.6, 120, 700)],
-      ['roar_gorvax', () => S.roar(sr, S.VOICES.gorvax, 21)], ['roar_kragmaw', () => S.roar(sr, S.VOICES.kragmaw, 22)],
-      ['roar_thornback', () => S.roar(sr, S.VOICES.thornback, 23)], ['roar_scyllax', () => S.roar(sr, S.VOICES.scyllax, 24)],
+      ...Object.keys(S.VOICES).map((id, i) => ['roar_' + id, () => S.roar(sr, S.VOICES[id], 21 + i)]),
       ['beam', () => S.beamLoop(sr, 30)], ['charge', () => S.charge(sr, 31)],
       ['cannon', () => S.gunshot(sr, 40, 1.4)], ['mg', () => S.gunshot(sr, 41, 0.15)], ['rotor', () => S.rotorLoop(sr, 42)], ['jet', () => S.jetLoop(sr, 43)],
       ['siren', () => S.siren(sr)], ['police', () => S.policeLoop(sr)],
@@ -237,7 +236,7 @@ export class Audio {
   }
 
   roar(k, s = 1) {
-    const name = 'roar_' + (k.id || 'gorvax');
+    const name = 'roar_' + (S.VOICES[k.id] ? k.id : Object.keys(S.VOICES)[0]);
     const p = k.bonePos(k.meta.mouth || 'head');
     this.at(name, p, { gain: 1.6 * s, ref: 400, rate: 1 / Math.sqrt(k.scale), vary: false, wet: 0.45, nodelay: true });
     this.musicKick = 1;

@@ -1,8 +1,9 @@
-// Signature abilities: thermal beam, hurled boulder, juggernaut charge, acid torrent,
-// and the leaping slam. Each owns its visuals and applies damage through the play session.
+// Signature abilities: breath beam, hurled boulder, charge, spray, spat globs, lobbed bile bombs,
+// the EMP pulse and the leaping slam. Each owns its visuals and applies damage through the play session.
 import * as THREE from 'three';
 import { G as SG } from '../render/Shading.js';
 import { clamp, damp } from '../core/Rng.js';
+import { DECAL } from '../render/Decals.js';
 
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion();
 const UP = new THREE.Vector3(0, 1, 0);
@@ -64,6 +65,16 @@ export class Abilities {
     this.projectiles = [];
     this.sprayT = 0;
     this.leap = null;
+    this.orbGeo = new THREE.IcosahedronGeometry(1, 2);
+    this.orbMats = new Map();
+    // EMP shock ring
+    this.ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+    this.ring = new THREE.Mesh(new THREE.RingGeometry(0.86, 1, 96, 1), this.ringMat);
+    this.ring.rotation.x = -Math.PI / 2;
+    this.ring.visible = false;
+    this.ring.renderOrder = 5;
+    this.scene.add(this.ring);
+    this.ringT = -1;
   }
 
   // ------------------------------------------------------------------ beam
@@ -163,8 +174,9 @@ export class Abilities {
       const sp = 70 + Math.random() * 40;
       const jitter = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(0.25);
       const d = dir.clone().add(jitter).normalize();
-      ps.add.spawn({ p: [mouth.x, mouth.y, mouth.z], v: [d.x * sp, d.y * sp, d.z * sp], life: 1.6, size: 4, size1: 11, color: [0.7, 2.2, 0.5], alpha: 0.75, drag: 0.4, grav: 9.81, tile: 4, fadeIn: 0.02 });
-      if (i % 3 === 0) ps.lit.spawn({ p: [mouth.x, mouth.y, mouth.z], v: [d.x * sp * 0.7, d.y * sp * 0.7, d.z * sp * 0.7], life: 3, size: 6, size1: 26, color: [0.45, 0.6, 0.3], alpha: 0.5, drag: 1.2, buoy: 0.5, fadeIn: 0.02 });
+      const c = k.def.moves.special.color;
+      ps.add.spawn({ p: [mouth.x, mouth.y, mouth.z], v: [d.x * sp, d.y * sp, d.z * sp], life: 1.6, size: 4, size1: 11, color: [c[0] * 2.2, c[1] * 2.2, c[2] * 2.2], alpha: 0.75, drag: 0.4, grav: 9.81, tile: 4, fadeIn: 0.02 });
+      if (i % 3 === 0) ps.lit.spawn({ p: [mouth.x, mouth.y, mouth.z], v: [d.x * sp * 0.7, d.y * sp * 0.7, d.z * sp * 0.7], life: 3, size: 6, size1: 26, color: [0.3 + c[0] * 0.25, 0.3 + c[1] * 0.25, 0.25 + c[2] * 0.2], alpha: 0.5, drag: 1.2, buoy: 0.5, fadeIn: 0.02 });
     }
     // damage in a cone: sample points along the aim
     for (let s = 20; s < range; s += 24) {
@@ -186,13 +198,88 @@ export class Abilities {
     k.energy -= k.def.moves.special.cost * k.stats.specialCost * dt;
   }
 
+  // ------------------------------------------------------------------ spat globs and lobbed bombs
+
+  _orbMat(c) {
+    const key = c.join(',');
+    if (!this.orbMats.has(key)) {
+      const m = new THREE.MeshBasicMaterial({ color: new THREE.Color(c[0] * 6, c[1] * 6, c[2] * 6) });
+      this.play.shade(m, 'orb');
+      this.orbMats.set(key, m);
+    }
+    return this.orbMats.get(key);
+  }
+
+  // A glowing glob of acid or bile. flat: fast, low trajectory (spit); otherwise a high mortar arc.
+  launchOrb(k, from, aim, flat) {
+    const mv = k.def.moves.special;
+    const d = aim.clone().sub(from);
+    const flatD = Math.hypot(d.x, d.z);
+    const T = flat ? clamp(flatD / 320, 0.35, 1.6) : clamp(flatD / 150, 1.3, 3.6);
+    const vel = new THREE.Vector3(d.x / T, (d.y + 0.5 * 9.81 * T * T) / T, d.z / T);
+    const size = (flat ? 3.2 : 6.0) * k.scale;
+    const m = new THREE.Mesh(this.orbGeo, this._orbMat(mv.color));
+    m.scale.setScalar(size);
+    m.position.copy(from);
+    this.scene.add(m);
+    this.projectiles.push({ mesh: m, vel, t: 0, T: T + 0.5, kind: 'orb', color: mv.color, r: mv.radius * k.scale * (flat ? 0.7 : 1.0),
+      dmg: k.stats.special * (flat ? 0.55 : 0.9), spin: new THREE.Vector3(Math.random(), Math.random(), Math.random()) });
+    this.play.audio && this.play.audio.whoosh(from, flat ? 0.5 : 0.8);
+  }
+
+  splash(p, r, dmg, c) {
+    const P = this.play;
+    P.damageVolume(p, r, dmg, new THREE.Vector3(0, 6, 0), 'acid');
+    P.hitUnitsSphere(p, r * 1.4, dmg, 'acid');
+    P.world.buildings.forChunksInSphere(p, r * 1.4, (id) => {
+      const B = P.world.buildings;
+      B.dmgv[id] = Math.min(1, B.dmgv[id] + 0.5);
+      B._setState(id);
+    });
+    if (P.traffic && p.y < 20) P.traffic.blast(p, r);
+    const ps = P.particles;
+    const n = Math.ceil(60 * ps.q);
+    for (let i = 0; i < n; i++) {
+      const d = new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.9 + 0.2, Math.random() - 0.5).normalize();
+      const sp = r * (0.6 + Math.random() * 1.2);
+      ps.add.spawn({ p: [p.x, p.y, p.z], v: [d.x * sp, d.y * sp, d.z * sp], life: 1.4, size: 3, size1: 9, color: [c[0] * 3, c[1] * 3, c[2] * 3], alpha: 0.8, drag: 0.6, grav: 9.81, tile: 4, fadeIn: 0.02 });
+    }
+    for (let i = 0; i < 6; i++) ps.smoke(p, r * 0.8, { dark: 0.05, rise: 6, life: 10, heat: 0.2 });
+    if (p.y < 6) P.decals.add(DECAL.SCORCH, p.x, Math.max(0, P.world.groundAt(p.x, p.z)), p.z, r * 1.8);
+    P.rig.impulse(p, 0.4, r * 12);
+    P.app.audio && P.app.audio.impact(p, Math.min(1, r / 40));
+  }
+
+  // ------------------------------------------------------------------ EMP pulse
+
+  pulse(k) {
+    const P = this.play, mv = k.def.moves.special;
+    const p = k.pos.clone();
+    p.y = P.world.groundAt(p.x, p.z);
+    const R = mv.radius * k.scale;
+    P.slam(k, p, R * 0.45, k.stats.special * 1.3);
+    P.damageVolume(new THREE.Vector3(p.x, p.y + 60 * k.scale, p.z), R * 0.42, k.stats.special * 0.7, new THREE.Vector3(0, 10, 0), 'pulse');
+    P.hitUnitsSphere(p, R * 1.8, k.stats.special * 4, 'pulse');  // the pulse fries every machine in reach
+    const c = mv.color;
+    P.particles.sparks(new THREE.Vector3(p.x, p.y + 30 * k.scale, p.z), Math.ceil(260 * P.particles.q), R * 0.5, [c[0] * 8, c[1] * 8, c[2] * 8]);
+    this.ringMat.color.setRGB(c[0] * 5, c[1] * 5, c[2] * 5);
+    this.ring.position.set(p.x, p.y + 3, p.z);
+    this.ringT = 0;
+    this.ringR = R * 2.2;
+    this.mouthLight.color.setRGB(c[0], c[1], c[2]);
+    this.mouthLight.position.set(p.x, p.y + 40 * k.scale, p.z);
+    this.mouthLight.intensity = 30000;
+    P.fx.flash = P.app.settings.reducedMotion ? 0.08 : 0.3;
+    P.rig.addTrauma(0.8);
+  }
+
   // ------------------------------------------------------------------ leap slam
 
   startLeap(k, target) {
     const from = k.pos.clone();
     const d = target.clone().sub(from);
     d.y = 0;
-    const maxD = 260 * k.scale;
+    const maxD = 260 * k.scale * (k.def.moves.stomp.range || 1); // winged kaiju glide further
     if (d.length() > maxD) d.setLength(maxD);
     const to = from.clone().add(d);
     to.y = this.play.world.groundAt(to.x, to.z);
@@ -231,14 +318,28 @@ export class Abilities {
       pr.vel.y -= 9.81 * dt;
       pr.mesh.position.addScaledVector(pr.vel, dt);
       pr.mesh.rotation.x += pr.spin.x * dt * 2; pr.mesh.rotation.y += pr.spin.y * dt * 2;
-      if (Math.random() < dt * 30) P.particles.smoke(pr.mesh.position, 5, { dark: 0.15, rise: 2, life: 4, heat: 0.7 });
       const p = pr.mesh.position;
+      if (pr.kind === 'orb') {
+        const c = pr.color;
+        if (Math.random() < dt * 40) P.particles.add.spawn({ p: [p.x, p.y, p.z], v: [0, 0, 0], life: 0.8, size: pr.mesh.scale.x * 1.2, size1: pr.mesh.scale.x * 2.4, color: [c[0] * 1.5, c[1] * 1.5, c[2] * 1.5], alpha: 0.5, drag: 1, tile: 4, fadeIn: 0.02 });
+      } else if (Math.random() < dt * 30) P.particles.smoke(p, 5, { dark: 0.15, rise: 2, life: 4, heat: 0.7 });
       const g = P.world.solidHeightAt(p.x, p.z);
       if (p.y <= g + 4 || pr.t > pr.T + 3) {
-        P.explode(p.clone(), pr.r, pr.dmg, pr.vel.clone().normalize().multiplyScalar(30));
+        if (pr.kind === 'orb') this.splash(p.clone(), pr.r, pr.dmg, pr.color);
+        else P.explode(p.clone(), pr.r, pr.dmg, pr.vel.clone().normalize().multiplyScalar(30));
         this.scene.remove(pr.mesh);
         this.projectiles.splice(i, 1);
       }
+    }
+    if (this.ringT >= 0) {
+      this.ringT += dt;
+      const u = this.ringT / 0.9;
+      this.ring.visible = u < 1;
+      const s = this.ringR * (1 - Math.pow(1 - Math.min(1, u), 3));
+      this.ring.scale.set(s, s, 1);
+      this.ringMat.opacity = Math.max(0, 1 - u);
+      this.mouthLight.intensity = Math.max(0, 30000 * (1 - u * 2));
+      if (u >= 1) this.ringT = -1;
     }
   }
 }

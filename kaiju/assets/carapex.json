@@ -1,26 +1,27 @@
 {
- "name": "scyllax",
- "height": 34.0,
+ "name": "carapex",
+ "height": 40.0,
  "preview_angle": 40,
+ "sheet_angle": 55,
  "close": [
   0,
-  -14,
-  14,
-  34
+  -16,
+  26,
+  30
  ],
  "speed": {
-  "walk": 10.909090909090908,
-  "run": 22.857142857142858
+  "walk": 10.714285714285714,
+  "run": 30.0
  },
  "cycle": {
-  "walk": 16.363636363636363,
-  "run": 24.0
+  "walk": 21.428571428571427,
+  "run": 36.0
  },
  "hits": {
-  "attack1": 0.42,
-  "attack2": 0.48,
-  "heavy": 0.64,
-  "stomp": 1.25
+  "attack1": 0.44,
+  "attack2": 0.5,
+  "heavy": 0.95,
+  "stomp": 0.8
  },
  "feet": [
   "foot2L",
@@ -28,39 +29,24 @@
  ],
  "foot_phase": {
   "walk": [
-   0.54,
-   0.04
+   0.53,
+   0.03
   ],
   "run": [
-   0.54,
-   0.04
+   0.53,
+   0.03
   ]
  },
  "body": [
   [
    "hips",
    "head",
-   12.0
+   9.0
   ],
   [
-   "upperarmL",
-   "clawL",
-   4.0
-  ],
-  [
-   "upperarmR",
-   "clawR",
-   4.0
-  ],
-  [
-   "tail1",
-   "tail4",
-   4.5
-  ],
-  [
-   "tail4",
-   "tail6",
-   3.0
+   "abdomen1",
+   "abdomen3",
+   7.0
   ],
   [
    "leg1L",
@@ -73,13 +59,13 @@
    2.0
   ],
   [
-   "leg4L",
-   "foot4L",
+   "leg3L",
+   "foot3L",
    2.0
   ],
   [
-   "leg4R",
-   "foot4R",
+   "leg3R",
+   "foot3R",
    2.0
   ]
  ],
@@ -88,20 +74,41 @@
   "chain": [
    "head"
   ],
-  "pitch0": 0.0
+  "pitch0": 0.3
  },
  "mouth": "mouth",
+ "launcher": "abdomen3",
+ "springs": [
+  {
+   "bones": [
+    "ant1L",
+    "ant2L"
+   ],
+   "yaw": 2.0,
+   "pitch": 2.0,
+   "gain": 0.6
+  },
+  {
+   "bones": [
+    "ant1R",
+    "ant2R"
+   ],
+   "yaw": 2.0,
+   "pitch": 2.0,
+   "gain": 0.6
+  }
+ ],
  "clips": {
   "idle": {
    "duration": 4.0,
    "loop": true
   },
   "walk": {
-   "duration": 1.5,
+   "duration": 2.0,
    "loop": true
   },
   "run": {
-   "duration": 1.05,
+   "duration": 1.2,
    "loop": true
   },
   "attack1": {
@@ -113,15 +120,15 @@
    "loop": false
   },
   "heavy": {
-   "duration": 1.5,
+   "duration": 1.6,
    "loop": false
   },
   "stomp": {
-   "duration": 1.5,
+   "duration": 1.4,
    "loop": false
   },
   "roar": {
-   "duration": 3.0,
+   "duration": 3.4,
    "loop": false
   },
   "special_in": {
@@ -129,11 +136,11 @@
    "loop": false
   },
   "special_loop": {
-   "duration": 1.0,
+   "duration": 1.2,
    "loop": true
   },
   "special_out": {
-   "duration": 0.6,
+   "duration": 0.7,
    "loop": false
   },
   "hit": {

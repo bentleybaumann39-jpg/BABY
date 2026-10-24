@@ -133,6 +133,7 @@ export class UI {
       if (P.biomass < d.cost) h += `<p class="note">Earn biomass by completing rampages to awaken this titan.</p>`;
     }
     D.innerHTML = h;
+    if (this._dossierFor !== id) { D.scrollTop = 0; this._dossierFor = id; } // a new kaiju opens at the top
     for (const b of D.querySelectorAll('[data-up]')) b.onclick = () => { if (app.buyUpgrade(id, b.dataset.up)) this.renderLab(); };
     const ub = $('unlock');
     if (ub) ub.onclick = () => { if (app.unlockKaiju(id)) { this.view = id; this.renderLab(); } };
@@ -281,7 +282,7 @@ export class UI {
     if (this.hudT > 0) return;
     this.hudT = 3;
     $('h-hp').style.width = (k.hp / k.maxHp * 100) + '%';
-    $('h-hp-t').textContent = Math.ceil(k.hp) + ' / ' + Math.round(k.maxHp);
+    $('h-hp-t').textContent = Math.min(Math.ceil(k.hp), Math.round(k.maxHp)) + ' / ' + Math.round(k.maxHp);
     $('h-en').style.width = (k.energy / k.maxEnergy * 100) + '%';
     $('h-money').textContent = '$' + fmtMoney(play.score.damage);
     $('h-sub').textContent = `${play.score.buildings} buildings · ${play.score.towers} towers · ${play.score.kills} military`;

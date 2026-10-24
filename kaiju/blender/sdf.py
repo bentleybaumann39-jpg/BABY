@@ -193,6 +193,59 @@ class Sculpt:
         _set_bounds(p)
         return self._add(p, mirror)
 
+    def ellx(self, c, xdir, ydir, radii, bone=None, k=1.0, mat='skin', op='add', mirror=False, bias=0.0):
+        """Ellipsoid with explicit axes: radii[0] along xdir, radii[1] along ydir (made orthogonal
+        to xdir), radii[2] along their cross product. Handy for flat crests, fins and webbing."""
+        X = np.asarray(xdir, float)
+        X = X / np.linalg.norm(X)
+        Y = np.asarray(ydir, float)
+        Y = Y - X * (Y @ X)
+        Y = Y / np.linalg.norm(Y)
+        Z = np.cross(X, Y)
+        p = Prim()
+        p.kind, p.a, p.b = 'ell', np.array(c, float), None
+        p.radii = np.array(radii, float)
+        p.R = np.stack([X, Y, Z], 1)
+        p.r1 = p.r2 = float(max(radii))
+        p.bone, p.k, p.mat, p.op, p.bias = bone, k, mat, op, bias
+        _set_bounds(p)
+        return self._add(p, mirror)
+
+    def blade(self, a, b, wdir, widths, thick, n=6, bone=None, k=0.6, mat='skin', mirror=False, bias=0.0):
+        """A flat tapering sheet from a to b, `widths` (start, end) across wdir, `thick` (start, end)
+        through it, built from overlapping oriented ellipsoids. bone may be a list (one per piece)."""
+        a, b = np.asarray(a, float), np.asarray(b, float)
+        L = np.linalg.norm(b - a)
+        for i in range(n):
+            s = (i + 0.5) / n
+            w = widths[0] + (widths[1] - widths[0]) * s
+            t = thick[0] + (thick[1] - thick[0]) * s
+            bn = bone[i] if isinstance(bone, (list, tuple)) else bone
+            self.ellx(a + (b - a) * s, b - a, wdir, (L / n * 1.35, w, t), bone=bn, k=k, mat=mat, mirror=mirror, bias=bias)
+
+    def tri(self, p0, p1, p2, thick, n=6, bone=None, k=0.4, mat='skin', mirror=False, sag=0.0):
+        """A thin membrane filling the triangle p0-p1-p2 (a wing web), tiled with flat ellipsoids
+        lying in its plane. bone may be a function of the piece centre returning a bone name.
+        sag bows the membrane along its normal (metres at the centre)."""
+        p0, p1, p2 = (np.asarray(p, float) for p in (p0, p1, p2))
+        nrm = np.cross(p1 - p0, p2 - p0)
+        nrm /= np.linalg.norm(nrm)
+        e = p1 - p0
+        cell = max(np.linalg.norm(p1 - p0), np.linalg.norm(p2 - p0), np.linalg.norm(p2 - p1)) / n
+        for i in range(n):
+            for j in range(n - i):
+                for flip in ((0,) if j == n - i - 1 else (0, 1)):
+                    if flip == 0:
+                        a, b = (i + 1 / 3) / n, (j + 1 / 3) / n
+                    else:
+                        a, b = (i + 2 / 3) / n, (j + 2 / 3) / n
+                    c = p0 + (p1 - p0) * a + (p2 - p0) * b
+                    w0 = 1 - a - b
+                    c = c + nrm * sag * 27.0 * max(0.0, w0 * a * b)  # 1 at the centroid
+                    bn = bone(c) if callable(bone) else bone
+                    self.ellx(c, e, np.cross(nrm, e), (cell * 0.75, cell * 0.75, thick), bone=bn, k=k, mat=mat,
+                              mirror=mirror)
+
     def chain(self, pts, radii, bones, k=1.0, mat='skin', mirror=False):
         """Tapered capsules through successive points; bones[i] owns segment i."""
         for i in range(len(pts) - 1):

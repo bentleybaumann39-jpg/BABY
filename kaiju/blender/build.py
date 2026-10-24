@@ -160,9 +160,26 @@ def hi_material(spec):
     crag = math_node('SMOOTH_MIN', vor.outputs['Distance'], 0.12, (-650, 200))
     crag = math_node('MULTIPLY', crag, 1 / 0.12, (-500, 200), clamp=True)
     crag2 = math_node('MULTIPLY', vor2.outputs['Distance'], 1 / 0.1, (-650, -50), clamp=True)
-    back_h = math_node('ADD', math_node('MULTIPLY', crag, 0.75, (-350, 200)),
-                       math_node('MULTIPLY', crag2, 0.25, (-350, 0)), (-200, 100))
-    back_h = math_node('ADD', back_h, math_node('MULTIPLY', noi.outputs['Fac'], 0.35, (-350, -250)), (-50, 100))
+    # relief mix: scaly crags (default) through to fleshy, folded alien hide (LOOK crag/noisew/folds)
+    cw = L.get('crag', 1.0)
+    back_h = math_node('ADD', math_node('MULTIPLY', crag, 0.75 * cw, (-350, 200)),
+                       math_node('MULTIPLY', crag2, 0.25 * cw, (-350, 0)), (-200, 100))
+    back_h = math_node('ADD', back_h, math_node('MULTIPLY', noi.outputs['Fac'], L.get('noisew', 0.35), (-350, -250)), (-50, 100))
+    if L.get('folds'):
+        fold = node(nt, 'ShaderNodeTexWave', (-900, -1300))
+        fold.wave_type = 'BANDS'
+        fold.bands_direction = 'Z'
+        fold.wave_profile = 'SIN'
+        fold.inputs['Scale'].default_value = L.get('foldscale', 0.5)
+        fold.inputs['Distortion'].default_value = L.get('folddist', 7.0)
+        fold.inputs['Detail'].default_value = 3
+        fold.inputs['Detail Scale'].default_value = 1.4
+        nt.links.new(tc.outputs['Object'], fold.inputs['Vector'])
+        fh = math_node('POWER', fold.outputs['Fac'], 2.5, (-650, -1300))
+        # patchy: folds bunch up in places and smooth out in others, never a regular corrugation
+        patch = math_node('MULTIPLY', math_node('POWER', noi.outputs['Fac'], 1.5, (-650, -1450)), 1.8, (-500, -1450))
+        fh = math_node('MULTIPLY', fh, patch, (-400, -1300))
+        back_h = math_node('ADD', back_h, math_node('MULTIPLY', fh, L['folds'], (-300, -1300)), (-50, -50))
     belly_h = math_node('ADD', math_node('MULTIPLY', wave.outputs['Fac'], 0.7, (-500, -700)),
                         math_node('MULTIPLY', noi.outputs['Fac'], 0.3, (-500, -850)), (-300, -700))
     mixh = nt.nodes.new('ShaderNodeMix')
@@ -235,8 +252,25 @@ def hi_material(spec):
         ve = math_node('SUBTRACT', 1.0, math_node('MULTIPLY', vv.outputs['Distance'], 1.0 / w, (300, -950), clamp=True), (450, -950))
         ve = math_node('POWER', ve, 3.0, (600, -950))
         ve = math_node('MULTIPLY', ve, sep.outputs[1], (750, -950))
-        nt.links.new(ve, bsdf.inputs['Emission Strength'])
-        bsdf.inputs['Emission Color'].default_value = (*L['emit'], 1)
+        if not L.get('glow'):
+            nt.links.new(ve, bsdf.inputs['Emission Strength'])
+            bsdf.inputs['Emission Color'].default_value = (*L['emit'], 1)
+    if L.get('glow'):
+        # bioluminescent patterns painted per vertex by the spec ('Glow' colour attribute), plus veins
+        ga = node(nt, 'ShaderNodeAttribute', (500, -1150))
+        ga.attribute_name = 'Glow'
+        gm = nt.nodes.new('ShaderNodeMix')
+        gm.data_type = 'RGBA'
+        gm.blend_type = 'ADD'
+        gm.location = (750, -1150)
+        nt.links.new(ga.outputs['Color'], gm.inputs['A'])
+        if L.get('emit'):
+            nt.links.new(ve, gm.inputs['Factor'])
+            gm.inputs['B'].default_value = (*L['emit'], 1)
+        else:
+            gm.inputs['Factor'].default_value = 0.0
+        nt.links.new(gm.outputs['Result'], bsdf.inputs['Emission Color'])
+        bsdf.inputs['Emission Strength'].default_value = 1.0
     return m
 
 
@@ -404,9 +438,12 @@ def main():
     HP = butil.vert_array(high)
     HN = butil.vert_normals(high)
     mats = material_weights(S, HP)
-    col, mask = spec.body_color(HP, HN, mats)
+    res = spec.body_color(HP, HN, mats)
+    col, mask = res[0], res[1]
     butil.set_point_color(high, 'Col', np.c_[col, np.ones(len(col))])
     butil.set_point_color(high, 'Mask', mask)
+    if len(res) > 2:
+        butil.set_point_color(high, 'Glow', np.c_[res[2], np.ones(len(col))])
     high.data.materials.append(hi_material(spec))
     log('colours + masks')
 
@@ -444,7 +481,7 @@ def main():
     for k in ('visible_camera', 'visible_diffuse', 'visible_glossy', 'visible_shadow', 'visible_transmission'):
         setattr(low, k, True)
     im_e = None
-    if spec.LOOK.get('emit'):
+    if spec.LOOK.get('emit') or spec.LOOK.get('glow'):
         im_e = new_image(f'{args.name}_e', tex)
         bake('EMIT', low, high, im_e, 4 if not args.fast else 1, ext, ext * 2.2)
 

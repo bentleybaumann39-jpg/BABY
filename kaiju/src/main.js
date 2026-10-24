@@ -60,7 +60,7 @@ class App {
     window.__kj.ready = true;
     const auto = this.params.get('auto');
     if (auto) {
-      this.startMission(this.params.get('mission') || 'landfall', KAIJU[auto] ? auto : 'gorvax', {
+      this.startMission(this.params.get('mission') || 'landfall', KAIJU[auto] ? auto : Object.keys(KAIJU)[0], {
         time: this.params.get('time') || undefined, city: this.params.get('city') || undefined,
       });
       return;

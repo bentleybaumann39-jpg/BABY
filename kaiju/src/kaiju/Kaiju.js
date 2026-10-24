@@ -180,7 +180,7 @@ export class Kaiju {
       // slow down while turning hard so the body swings round instead of skating
       target *= 1 - 0.5 * Math.min(1, Math.abs(d) / 1.6);
     } else this.turnVel = damp(this.turnVel, 0, 6, dt);
-    if (this.special.on && this.special.kind === 'charge') target = this.runSpeed * 1.45;
+    if (this.special.on && this.special.kind === 'charge' && this.special.phase !== 'in') target = this.runSpeed * 1.45;
     // wading: deep water drags at the legs
     const depth = -world.groundAt(this.pos.x, this.pos.z);
     if (depth > 0) target *= Math.max(0.45, 1 - depth / (this.height * 0.9));
@@ -214,6 +214,7 @@ export class Kaiju {
     }
     this.mixer.update(dt);
     this._postPose(dt, ctl);
+    this._secondary(dt);
     this.model.updateMatrixWorld(true);
     // ---- regen
     this.hp = Math.min(this.maxHp, this.hp + s.regen * dt * (this.hurtT > 0 ? 0.2 : 1));
@@ -224,7 +225,9 @@ export class Kaiju {
     const glowK = Math.min(1, 0.3 / ex);
     for (const m of this.glowMats) m.emissiveIntensity = g * g * 9 * glowK;
     // veins aim for a fixed on-screen brightness by day and run hotter while the special charges
-    const veinK = Math.max(1, 0.6 / ex) * (1 + 1.5 * g);
+    this._glowT = (this._glowT || 0) + dt;
+    const pulse = 0.88 + 0.12 * Math.sin(this._glowT * 1.6) * Math.sin(this._glowT * 0.37 + 1.1);
+    const veinK = Math.max(1, 0.6 / ex) * (1 + 1.5 * g) * pulse;
     for (const m of this.veinMats) m.emissiveIntensity = m.userData.baseEmit * veinK;
   }
 
@@ -306,6 +309,56 @@ export class Kaiju {
       const inv = _q.clone().invert();
       b.quaternion.premultiply(inv.multiply(_q2).multiply(_q));
       b.updateMatrixWorld(true);
+    }
+  }
+
+  // Secondary motion: tails (and any chains the asset lists in meta.springs) lag behind the body.
+  // A cascade of damped springs, each chasing the one before it, turns turning and braking into a
+  // travelling wave of follow-through on top of the authored animation.
+  _secondary(dt) {
+    if (!this.springs) {
+      let defs = this.meta.springs;
+      if (!defs) {
+        const tail = Object.keys(this.bones).filter((n) => /^tail\d+$/.test(n)).sort((a, b) => +a.slice(4) - +b.slice(4));
+        defs = tail.length ? [{ bones: tail, yaw: 1, pitch: 1 }] : [];
+      }
+      this.springs = defs.map((d) => ({ ...d, bones: d.bones.filter((n) => this.bones[n]), s: d.bones.map(() => ({ y: 0, vy: 0, p: 0, vp: 0 })) }))
+        .filter((d) => d.bones.length);
+      this._lastSpeed = this.speed;
+      this._lastY = this.pos.y;
+    }
+    if (!this.springs.length || dt <= 0) return;
+    const accel = (this.speed - this._lastSpeed) / dt;
+    const vy = (this.pos.y - this._lastY) / dt;
+    this._lastSpeed = this.speed;
+    this._lastY = this.pos.y;
+    const right = _v.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw));
+    const qd = new THREE.Quaternion(), qp = new THREE.Quaternion(), inv = new THREE.Quaternion();
+    const w = 7, z = 0.55;
+    this.model.updateMatrixWorld(true);
+    for (const c of this.springs) {
+      const dYaw = clamp(-this.turnVel * 0.35 * (c.yaw ?? 1), -0.7, 0.7);
+      const dPitch = clamp((-accel * 0.012 - vy * 0.004) * (c.pitch ?? 1), -0.5, 0.5); // + lifts a trailing chain
+      for (let i = 0; i < c.s.length; i++) {
+        const s = c.s[i];
+        const ty = i === 0 ? dYaw : c.s[i - 1].y;
+        const tp = i === 0 ? dPitch : c.s[i - 1].p;
+        s.vy += (-w * w * (s.y - ty) - 2 * z * w * s.vy) * dt;
+        s.vp += (-w * w * (s.p - tp) - 2 * z * w * s.vp) * dt;
+        s.y += s.vy * dt;
+        s.p += s.vp * dt;
+      }
+      const gain = (c.gain ?? 0.22);
+      for (let i = 0; i < c.bones.length; i++) {
+        const b = this.bones[c.bones[i]];
+        const s = c.s[i];
+        if (Math.abs(s.y) + Math.abs(s.p) < 1e-5) continue;
+        b.parent.getWorldQuaternion(qp);
+        qd.setFromAxisAngle(UP, s.y * gain).multiply(new THREE.Quaternion().setFromAxisAngle(right, s.p * gain));
+        inv.copy(qp).invert();
+        b.quaternion.premultiply(inv.multiply(qd).multiply(qp));
+        b.updateMatrixWorld(true);
+      }
     }
   }
 

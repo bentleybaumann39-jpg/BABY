@@ -5,7 +5,7 @@ import fs from 'fs';
 import { startServer } from '../../tools/serve.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
-const [, , outdir = '/tmp/kjplay', query = 'auto=gorvax&q=low', script = 'default'] = process.argv;
+const [, , outdir = '/tmp/kjplay', query = 'auto=razormaw&q=low', script = 'default'] = process.argv;
 fs.mkdirSync(outdir, { recursive: true });
 const port = 8100 + Math.floor(Math.random() * 800);
 const server = await startServer(port, true);
@@ -131,6 +131,58 @@ if (script === 'army') {
   await shot('42_walk');
   const u = await page.evaluate(() => window.__kj.play.military.units.map((u) => [u.kind, Math.round(u.pos.x), Math.round(u.pos.y), Math.round(u.pos.z), Math.round(u.hp)]));
   console.log(JSON.stringify(u));
+}
+if (script === 'probe') {
+  // no walking: swing each attack at untouched buildings, log reach and damage per swing
+  const probe = (name) => page.evaluate((name) => {
+    const p = window.__kj.play, k = p.kaiju, mv = p.def.moves[name];
+    const d0 = p.score.damage;
+    p._startMove(name);
+    const samples = [];
+    const bones = mv.bones || (mv.bone ? [mv.bone] : []);
+    for (let t = 0; t < (k.action ? k.action.dur : 1) + 0.2; t += 1 / 30) {
+      p.update(1 / 30);
+      if (bones.length && Math.abs(t - (mv.window ? (mv.window[0] + mv.window[1]) / 2 : 0)) < 0.02) {
+        for (const b of bones) {
+          const w = k.bonePos(b);
+          const rel = w.clone().sub(k.pos);
+          const fwd = rel.x * Math.sin(k.yaw) + rel.z * Math.cos(k.yaw);
+          samples.push({ b, fwd: Math.round(fwd), up: Math.round(rel.y) });
+        }
+      }
+    }
+    return { name, dmg: Math.round((p.score.damage - d0) / 1e6), samples };
+  }, name);
+  // stand facing a tall, intact building, close enough to reach it
+  console.log(JSON.stringify(await page.evaluate(() => {
+    const p = window.__kj.play, k = p.kaiju;
+    const bs = p.world.city.buildings.filter((b) => b.h > 60 && b.w > 30);
+    bs.sort((a, b) => Math.hypot(a.x0 - 100, a.z0 - 300) - Math.hypot(b.x0 - 100, b.z0 - 300));
+    const b = bs[0];
+    k.pos.set(b.x0 + b.w / 2, 0, b.z0 + b.d + 18 * k.scale);
+    k.yaw = Math.PI;
+    return { building: [Math.round(b.x0), Math.round(b.z0), Math.round(b.w), Math.round(b.d), Math.round(b.h)], at: k.pos.toArray().map(Math.round) };
+  })));
+  log(await step(0.5));
+  for (const m of ['attack1', 'attack2', 'heavy']) {
+    console.log(JSON.stringify(await probe(m)));
+    log(await step(0.6));
+  }
+  await shot('70_probe');
+  const st = () => page.evaluate(() => { const p = window.__kj.play, k = p.kaiju; return { dmg: Math.round(p.score.damage / 1e6), act: k.action && k.action.name, sp: k.special.on, phase: k.special.phase, e: Math.round(k.energy), y: +k.pos.y.toFixed(1), proj: p.abilities.projectiles.length }; });
+  await page.evaluate(() => { window.__kj.play.kaiju.yaw += 0.6; });
+  log(await step(1.0, { hold: ['KeyQ'], look: [0, -3] }));
+  console.log('special', JSON.stringify(await st()));
+  log(await step(1.2, { hold: ['KeyQ'] }));
+  console.log('special', JSON.stringify(await st()));
+  await shot('71_special');
+  log(await step(2.0));
+  console.log('special done', JSON.stringify(await st()));
+  log(await step(0.6, { tap: ['Space'] }));
+  console.log('stomp', JSON.stringify(await st()));
+  log(await step(2.4));
+  console.log('stomp done', JSON.stringify(await st()));
+  await shot('72_stomp');
 }
 if (script === 'plow') {
   // walking into dense blocks: speed should settle well above a crawl (no screenshots: fast)

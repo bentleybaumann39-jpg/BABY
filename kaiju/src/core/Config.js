@@ -3,55 +3,85 @@
 // Move windows are in seconds of clip time (the Blender anim functions' t).
 
 export const KAIJU = {
-  gorvax: {
-    name: 'GORVAX', title: 'The Thermal Apex', asset: 'gorvax', height: 58, unlock: 0, color: '#5fd0ff',
-    blurb: 'A 93-metre saurian from the abyssal trench. Bark-black hide, crystalline dorsal plates and a breath that cuts steel.',
-    base: { hp: 1100, armor: 0.25, regen: 4, energy: 100, energyRegen: 5, melee: 300, heavy: 380, stomp: 240, special: 950, speed: 0.85, scale: 1.6 },
+  razormaw: {
+    name: 'RAZORMAW', title: 'The Split Crest', asset: 'razormaw', height: 56, color: '#4fc3ff',
+    blurb: 'An 87-metre alien brute. Its skull splits into two crest blades lined with teeth, and its talons burn with cold blue light.',
+    base: { hp: 1150, armor: 0.26, regen: 4, energy: 100, energyRegen: 5, melee: 320, heavy: 420, stomp: 260, special: 950, speed: 0.9, scale: 1.55 },
     moves: {
-      attack1: { name: 'Raking Claw', bone: 'handR', radius: 9, reach: 4, window: [0.36, 0.66] },
-      attack2: { name: 'Crushing Bite', bone: 'jaw', radius: 9, reach: 6, window: [0.4, 0.6] },
-      heavy: { name: 'Tail Sweep', bones: ['tail3', 'tail4', 'tail5', 'tail6', 'tail7'], radius: 7.5, window: [0.55, 1.2] },
-      stomp: { name: 'Quake Stomp', foot: 'toeR', radius: 46, time: 0.85 },
-      special: { name: 'Thermal Breath', kind: 'beam', cost: 22, range: 900, radius: 7, color: [0.45, 0.85, 1.0] },
+      attack1: { name: 'Talon Rake', bone: 'handR', radius: 10, reach: 4, window: [0.36, 0.62] },
+      attack2: { name: 'Backhand Rake', bone: 'handL', radius: 10, reach: 4, window: [0.36, 0.62] },
+      heavy: { name: 'Hammerfall', bones: ['handL', 'handR'], radius: 42, window: [0.95, 1.1], aoe: true },
+      stomp: { name: 'Quake Stomp', foot: 'toeR', radius: 46, time: 0.84 },
+      special: { name: 'Plasma Breath', kind: 'beam', cost: 22, range: 900, radius: 7, color: [0.35, 0.75, 1.0] },
     },
   },
-  kragmaw: {
-    name: 'KRAGMAW', title: 'The Magma Primate', asset: 'kragmaw', height: 46, unlock: 1, cost: 1800, color: '#ff7a33',
-    blurb: 'A volcanic megaprimate with basalt skin and magma in its veins. Fast, brutal and fond of throwing things.',
-    base: { hp: 950, armor: 0.18, regen: 5, energy: 100, energyRegen: 7, melee: 360, heavy: 430, stomp: 300, special: 900, speed: 0.95, scale: 1.6 },
+  harrowblade: {
+    name: 'HARROWBLADE', title: 'The Knife Stalker', asset: 'harrowblade', height: 55, cost: 1800, color: '#3ee6ff',
+    blurb: 'A fast stalker whose skull runs forward into a knife the length of a city block. Glowing chevrons run down its flanks.',
+    base: { hp: 950, armor: 0.22, regen: 4, energy: 100, energyRegen: 7, melee: 300, heavy: 380, stomp: 260, special: 760, speed: 1.12, scale: 1.55 },
     moves: {
-      attack1: { name: 'Haymaker', bone: 'handR', radius: 9, reach: 3, window: [0.3, 0.56] },
-      attack2: { name: 'Hammer Fist', bone: 'handL', radius: 10, reach: 3, window: [0.36, 0.62] },
-      heavy: { name: 'Ground Slam', bones: ['handL', 'handR'], radius: 40, window: [0.95, 1.1], aoe: true },
-      stomp: { name: 'Seismic Leap', kind: 'leap', radius: 50, time: 1.0 },
-      special: { name: 'Tectonic Hurl', kind: 'throw', cost: 26, range: 700, radius: 34, color: [1.0, 0.45, 0.12] },
+      attack1: { name: 'Blade Cleave', bone: 'head', radius: 10, reach: 16, window: [0.36, 0.62] },
+      attack2: { name: 'Raptor Claw', bone: 'handR', radius: 8, reach: 3, window: [0.32, 0.58] },
+      heavy: { name: 'Fin Scythe', bones: ['tail6', 'tail7', 'tail8', 'tail9'], radius: 8, window: [0.5, 1.15] },
+      stomp: { name: 'Pounce', kind: 'leap', radius: 44, time: 1.0 },
+      special: { name: 'Blade Charge', kind: 'charge', cost: 28, duration: 5, color: [0.3, 0.85, 1.0] },
     },
   },
-  thornback: {
-    name: 'THORNBACK', title: 'The Living Fortress', asset: 'thornback', height: 40, quadruped: true, menuGlow: 0.2, unlock: 2, cost: 3200, color: '#c9b37a',
-    blurb: 'An armoured quadruped the size of a stadium. Slow to start, impossible to stop once it charges.',
-    base: { hp: 1700, armor: 0.45, regen: 6, energy: 100, energyRegen: 6, melee: 320, heavy: 480, stomp: 300, special: 700, speed: 0.8, scale: 1.6 },
+  hollowstrider: {
+    name: 'HOLLOWSTRIDER', title: 'The Gaunt Walker', asset: 'hollowstrider', height: 52, quadruped: true, cost: 3000, color: '#ff8a5c',
+    blurb: 'A pale, ribbed horror carried on four impossibly long limbs. It vents choking spores and lashes a forked whip tail.',
+    base: { hp: 1000, armor: 0.2, regen: 6, energy: 100, energyRegen: 8, melee: 290, heavy: 400, stomp: 300, special: 400, speed: 1.0, scale: 1.6 },
     moves: {
-      attack1: { name: 'Horn Gore', bone: 'head', radius: 11, reach: 10, window: [0.38, 0.62] },
-      attack2: { name: 'Shield Bash', bone: 'head', radius: 13, reach: 6, window: [0.4, 0.6] },
-      heavy: { name: 'Tail Mace', bones: ['tail4', 'tail5', 'tail6'], radius: 11, window: [0.55, 1.15] },
-      stomp: { name: 'Earthshaker', foot: 'handR', radius: 56, time: 0.9 },
-      special: { name: 'Juggernaut Charge', kind: 'charge', cost: 30, duration: 6, color: [1.0, 0.85, 0.5] },
+      attack1: { name: 'Impaler', bone: 'handR', radius: 9, reach: 2, window: [0.46, 0.72] },
+      attack2: { name: 'Maw Lunge', bone: 'jaw', radius: 9, reach: 6, window: [0.25, 0.48] },
+      heavy: { name: 'Fork Lash', bones: ['tail8', 'tail9', 'tail10', 'forkL', 'forkR'], radius: 8, window: [0.55, 1.1] },
+      stomp: { name: 'Pillar Slam', foot: 'handR', radius: 50, time: 0.93 },
+      special: { name: 'Spore Torrent', kind: 'spray', cost: 18, range: 300, radius: 34, color: [1.0, 0.5, 0.25] },
     },
   },
-  scyllax: {
-    name: 'SCYLLAX', title: 'The Abyssal Reaver', asset: 'scyllax', height: 34, unlock: 3, cost: 4800, color: '#7dff9a',
-    blurb: 'An eight-legged crustacean reaver. Pincers that shear girders and acid that melts what they miss.',
-    base: { hp: 900, armor: 0.32, regen: 4, energy: 100, energyRegen: 8, melee: 280, heavy: 400, stomp: 260, special: 520, speed: 1.05, scale: 1.7 },
+  nyxwing: {
+    name: 'NYXWING', title: 'The Acid Wraith', asset: 'nyxwing', height: 46, quadruped: true, cost: 4200, color: '#7dff6a',
+    blurb: 'A winged alien with a throat full of glowing acid. It leaps on beating wings and spits burning globs across the skyline.',
+    base: { hp: 850, armor: 0.18, regen: 5, energy: 100, energyRegen: 9, melee: 280, heavy: 360, stomp: 280, special: 620, speed: 1.1, scale: 1.6 },
     moves: {
-      attack1: { name: 'Pincer Snap', bone: 'clawR', radius: 9, reach: 6, window: [0.3, 0.52] },
-      attack2: { name: 'Twin Shear', bone: 'clawL', radius: 10, reach: 6, window: [0.32, 0.55] },
-      heavy: { name: 'Stinger Lance', bones: ['tail5', 'tail6'], radius: 8, window: [0.5, 0.75] },
-      stomp: { name: 'Pounce', kind: 'leap', radius: 42, time: 1.0 },
-      special: { name: 'Acid Torrent', kind: 'spray', cost: 18, range: 260, radius: 30, color: [0.5, 1.0, 0.35] },
+      attack1: { name: 'Lance Strike', bone: 'jaw', radius: 8, reach: 6, window: [0.34, 0.56] },
+      attack2: { name: 'Wing Buffet', bones: ['wing2R', 'wing3R', 'wingf1R'], radius: 10, window: [0.34, 0.62] },
+      heavy: { name: 'Spade Lash', bones: ['tail7', 'tail8', 'tail9', 'tail10'], radius: 8, window: [0.5, 1.1] },
+      stomp: { name: 'Wingbeat Leap', kind: 'leap', radius: 46, time: 1.0, range: 1.5 },
+      special: { name: 'Acid Volley', kind: 'spit', cost: 7, range: 700, radius: 30, color: [0.4, 1.0, 0.2] },
+    },
+  },
+  gravemaw: {
+    name: 'GRAVEMAW', title: 'The Siege Titan', asset: 'gravemaw', height: 44, quadruped: true, menuGlow: 0.12, cost: 5600, color: '#ffb347',
+    blurb: 'A walking fortress under a domed carapace. When its seams blaze amber, the pulse it releases fries every machine for blocks.',
+    base: { hp: 1800, armor: 0.45, regen: 6, energy: 100, energyRegen: 6, melee: 380, heavy: 480, stomp: 320, special: 900, speed: 0.78, scale: 1.6 },
+    moves: {
+      attack1: { name: 'Siege Fist', bone: 'handR', radius: 11, reach: 3, window: [0.4, 0.66] },
+      attack2: { name: 'Hammerhead Ram', bone: 'head', radius: 13, reach: 8, window: [0.36, 0.62] },
+      heavy: { name: 'Twin Pound', bones: ['handL', 'handR'], radius: 46, window: [0.95, 1.1], aoe: true },
+      stomp: { name: 'Earthbreaker', foot: 'handR', radius: 56, time: 0.96 },
+      special: { name: 'Dread Pulse', kind: 'pulse', cost: 45, radius: 170, color: [1.0, 0.55, 0.12] },
+    },
+  },
+  carapex: {
+    name: 'CARAPEX', title: 'The Hive Engine', asset: 'carapex', height: 40, cost: 7000, color: '#c6ff3a',
+    blurb: 'A six-legged siege insect with sickle mandibles. Its swollen abdomen arches over its back to lob bile bombs across the city.',
+    base: { hp: 1300, armor: 0.38, regen: 5, energy: 100, energyRegen: 7, melee: 300, heavy: 420, stomp: 300, special: 820, speed: 0.95, scale: 1.65 },
+    moves: {
+      attack1: { name: 'Mandible Snap', bone: 'head', radius: 10, reach: 14, window: [0.34, 0.56] },
+      attack2: { name: 'Leg Spear', bone: 'foot1R', radius: 8, reach: 0, window: [0.38, 0.62] },
+      heavy: { name: 'Scythe Fall', bones: ['foot1L', 'foot1R'], radius: 40, window: [0.93, 1.1], aoe: true },
+      stomp: { name: 'Hive Quake', foot: 'foot2L', radius: 50, time: 0.8 },
+      special: { name: 'Bile Mortar', kind: 'mortar', cost: 10, range: 700, radius: 34, color: [0.7, 1.0, 0.15] },
     },
   },
 };
+
+// The kaiju every new profile starts with (the first in the roster).
+export const STARTER = Object.keys(KAIJU)[0];
+
+// Kaiju from earlier versions of the game: unlocks and upgrades bought for them are refunded.
+export const LEGACY = { gorvax: 0, kragmaw: 1800, thornback: 3200, scyllax: 4800 };
 
 // Upgrade tracks shared by every kaiju. value(level) gives the multiplier/addend.
 export const UPGRADES = [
