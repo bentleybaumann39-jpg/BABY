@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LANDFALL</title>
+  <meta name="description" content="A kaiju destruction game. Choose a titan, come ashore and level a living city.">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="view" tabindex="0"></canvas>
+  <div id="popups"></div>
+
+  <div id="loading" class="screen show">
+    <div class="load-inner">
+      <h1 class="logo">LANDFALL</h1>
+      <div class="bar"><div id="load-fill"></div></div>
+      <div id="load-text">Waking up…</div>
+      <div class="tip" id="load-tip"></div>
+    </div>
+  </div>
+
+  <div id="title" class="screen">
+    <div class="title-inner">
+      <h1 class="logo big">LANDFALL</h1>
+      <div class="tagline">The city was built on the assumption that nothing bigger would ever come ashore.</div>
+      <nav class="menu">
+        <button data-act="lab" class="primary">Enter the Trench</button>
+        <button data-act="settings">Settings</button>
+        <button data-act="howto">How to Play</button>
+        <button data-act="credits">Credits</button>
+      </nav>
+    </div>
+    <div class="foot">WASD move · Shift run · Mouse look · LMB attack · RMB heavy · Q / F / MMB special · Space stomp · E roar · Esc pause</div>
+  </div>
+
+  <div id="lab" class="screen">
+    <header class="lab-top">
+      <div class="brand">LANDFALL</div>
+      <div class="bio"><span>BIOMASS</span><b id="bio">0</b></div>
+      <button class="ghost" data-act="settings">Settings</button>
+      <button class="ghost" data-act="title">Title</button>
+    </header>
+    <aside class="roster" id="roster"></aside>
+    <section class="dossier" id="dossier"></section>
+    <footer class="ops">
+      <div class="missions" id="missions"></div>
+      <div class="deploy-box">
+        <div id="sandbox-opts" class="sandbox"></div>
+        <button class="deploy" id="deploy">DEPLOY</button>
+      </div>
+    </footer>
+  </div>
+
+  <div id="hud" class="screen hud">
+    <div class="vitals">
+      <div class="kname" id="h-name">GORVAX</div>
+      <div class="meter hp"><div id="h-hp"></div><span id="h-hp-t"></span></div>
+      <div class="meter en"><div id="h-en"></div><span>ENERGY</span></div>
+    </div>
+    <div class="objectives" id="h-obj"></div>
+    <div class="tally">
+      <div class="money" id="h-money">$0</div>
+      <div class="sub" id="h-sub">0 buildings · 0 towers</div>
+      <div class="threat" id="h-threat"></div>
+      <div class="timer" id="h-time">0:00</div>
+    </div>
+    <div class="cross" id="h-cross"></div>
+    <div class="feed" id="h-feed"></div>
+    <div class="moves" id="h-moves"></div>
+    <div class="banner" id="h-banner"></div>
+    <div class="toast" id="h-toast"></div>
+    <div class="hint" id="h-hint"></div>
+    <div class="fps" id="h-fps"></div>
+  </div>
+
+  <div id="pause" class="screen dim">
+    <div class="panel narrow">
+      <h2>PAUSED</h2>
+      <nav class="menu">
+        <button data-act="resume" class="primary">Resume</button>
+        <button data-act="settings">Settings</button>
+        <button data-act="retreat">Retreat to the Sea</button>
+        <button data-act="quit">Abandon Rampage</button>
+      </nav>
+      <p class="note">Retreating ends the rampage and keeps the biomass you earned.</p>
+    </div>
+  </div>
+
+  <div id="settings" class="screen dim">
+    <div class="panel">
+      <h2>SETTINGS</h2>
+      <div id="settings-form" class="form"></div>
+      <nav class="menu row"><button data-act="back" class="primary">Done</button></nav>
+    </div>
+  </div>
+
+  <div id="howto" class="screen dim">
+    <div class="panel">
+      <h2>HOW TO PLAY</h2>
+      <div class="howto">
+        <p>You are a kaiju. Come ashore, complete the objective, and earn <b>biomass</b> to grow stronger or awaken new titans.</p>
+        <table>
+          <tr><td>WASD / left stick</td><td>Move (camera relative). Hold <b>Shift</b> / LB to run.</td></tr>
+          <tr><td>Mouse / right stick</td><td>Look. Scroll to zoom.</td></tr>
+          <tr><td>Left mouse / X</td><td>Attack. Press again to chain a combo.</td></tr>
+          <tr><td>Right mouse / Y</td><td>Heavy attack.</td></tr>
+          <tr><td>Q, F, middle mouse / LT</td><td>Signature power. Hold to channel; it aims where you look.</td></tr>
+          <tr><td>Space / A</td><td>Stomp or leap.</td></tr>
+          <tr><td>E / B</td><td>Roar: panics the city and rattles the military.</td></tr>
+          <tr><td>Esc / Start</td><td>Pause, settings, retreat.</td></tr>
+        </table>
+        <p>Buildings are real structures: knock out the lower floors and the floors above will fall. Tall towers topple into their neighbours. Fires spread and weaken what they burn.</p>
+        <p>The military escalates with the damage you cause. Tanks hold the avenues, helicopters circle, and jets make strafing runs. Swat them or burn them out of the sky.</p>
+      </div>
+      <nav class="menu row"><button data-act="back" class="primary">Back</button></nav>
+    </div>
+  </div>
+
+  <div id="credits" class="screen dim">
+    <div class="panel narrow">
+      <h2>CREDITS</h2>
+      <p class="note">Design, code, creatures and sound: generated from scratch.<br>Creatures sculpted, rigged, textured and animated procedurally in Blender (signed-distance sculpting, Cycles texture bakes, scripted rigs and animation).<br>Rendering with three.js (MIT). No third-party art or audio is used.</p>
+      <nav class="menu row"><button data-act="back" class="primary">Back</button></nav>
+    </div>
+  </div>
+
+  <div id="results" class="screen dim">
+    <div class="panel wide">
+      <div class="res-label" id="r-label">RAMPAGE OVER</div>
+      <h2 id="r-title"></h2>
+      <div id="r-stats" class="res-stats"></div>
+      <div class="res-reward"><span>BIOMASS EARNED</span><b id="r-reward">0</b></div>
+      <nav class="menu row">
+        <button data-act="lab" class="primary">Return to the Trench</button>
+        <button data-act="retry">Rampage Again</button>
+      </nav>
+    </div>
+  </div>
+
+  <div id="error" class="screen dim"><div class="panel"><h2>Something broke</h2><pre id="err-text"></pre><nav class="menu row"><button data-act="reload">Reload</button></nav></div></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

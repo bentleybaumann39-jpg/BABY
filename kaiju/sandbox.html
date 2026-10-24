@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Landfall sandbox</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}canvas{width:100%;height:100%;display:block}#i{position:fixed;left:8px;top:8px;color:#fff;font:12px monospace;text-shadow:0 0 3px #000}</style>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+</head>
+<body>
+<canvas id="c"></canvas><div id="i"></div>
+<script type="module">
+import * as THREE from 'three';
+import { Renderer } from './src/render/Renderer.js';
+import { World } from './src/world/World.js';
+const q = new URLSearchParams(location.search);
+const canvas = document.getElementById('c');
+const R = new Renderer(canvas, q.get('q') || 'high');
+const cam = new THREE.PerspectiveCamera(Number(q.get('fov') || 50), 1, 1.5, 14000);
+const world = new World(R, cam, { time: q.get('time') || 'golden', city: q.get('city') || 'harbor', skySize: Number(q.get('sky') || 512) });
+R.setup(world.scene, cam);
+if (q.get('bloom') === '0' && R.bloom) R.bloom.enabled = false;
+if (q.get('grain') === '0') R.grade.uniforms.uGrain.value = 0;
+if (q.get('plain')) { const pm = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.8 }); for (const t of world.buildings.tiles) if (t) t.mesh.material = pm; }
+if (q.get('noshadow')) { R.gl.shadowMap.enabled = false; for (const l of world.csm.lights) l.castShadow = false; }
+if (q.get('noenv')) world.scene.environmentIntensity = 0;
+if (q.get('nolight')) for (const l of world.csm.lights) l.intensity = 0;
+if (q.get('env')) world.scene.environmentIntensity = Number(q.get('env'));
+if (q.get('dbg')) { const m = world.buildings.material; m.defines = { ...(m.defines || {}) }; for (const d of q.get('dbg').split(',')) m.defines['KJ_DBG_' + d] = 1; m.needsUpdate = true; const k0 = m.customProgramCacheKey(); m.customProgramCacheKey = () => k0 + q.get('dbg'); }
+const cp = (q.get('cam') || '300,160,600').split(',').map(Number), lk = (q.get('look') || '0,60,-200').split(',').map(Number);
+cam.position.set(...cp); cam.lookAt(...lk);
+window.__kj = { THREE, R, world, cam, ready: false };
+let last = performance.now(), frames = 0;
+function frame() {
+  const now = performance.now(); const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  world.update(dt); R.render(dt); frames++;
+  if (frames === 3) window.__kj.ready = true;
+  document.getElementById('i').textContent = `chunks ${world.buildings.aliveCount} calls ${R.gl.info.render.calls} tris ${R.gl.info.render.triangles}`;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
