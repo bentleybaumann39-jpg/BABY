@@ -144,7 +144,7 @@ export class UI {
       const rec = P.missions[m.id];
       const c = document.createElement('div');
       c.className = 'mcard' + (m.id === this.selMission ? ' sel' : '') + (ok ? '' : ' locked');
-      c.innerHTML = `<div class="mn">${m.name.toUpperCase()}</div><div class="mm">${m.sandbox ? 'Any city · any hour' : CITIES[m.city] + ' · ' + TIMES[m.time]}</div><div class="mb">${ok ? m.brief : 'Complete the previous rampage to unlock.'}</div><div class="mr">${rec && rec.done ? '<span class="done">✔ COMPLETE</span>' : m.reward ? '+' + m.reward.toLocaleString() + ' ◆ bonus' : 'Endless'}</div>`;
+      c.innerHTML = `<div class="mn">${m.name.toUpperCase()}</div><div class="mm">${m.sandbox ? 'Any city · any hour' : CITIES[m.city] + ' · ' + TIMES[m.time]}</div><div class="mb" title="${ok ? m.brief : ''}">${ok ? m.brief : 'Complete the previous rampage to unlock.'}</div><div class="mr">${rec && rec.done ? '<span class="done">✔ COMPLETE</span>' : m.reward ? '+' + m.reward.toLocaleString() + ' ◆ bonus' : 'Endless'}</div>`;
       if (ok) c.onclick = () => { this.selMission = m.id; this.renderLab(); app.audio.ui('click'); };
       M.appendChild(c);
     }
@@ -199,8 +199,9 @@ export class UI {
         input.onchange = () => { s[k] = input.value; this.app.saveSettings(); if (k === 'quality') this.app.renderer.setQuality(s.quality); };
       } else if (type === 'range') {
         input = document.createElement('input'); input.type = 'range'; [input.min, input.max, input.step] = opt; input.value = s[k];
-        const val = document.createElement('span'); val.className = 'val'; val.textContent = (+s[k]).toFixed(2);
-        input.oninput = () => { s[k] = +input.value; val.textContent = (+input.value).toFixed(2); this.app.saveSettings(); };
+        const dp = +opt[2] >= 1 ? 0 : 2;
+        const val = document.createElement('span'); val.className = 'val'; val.textContent = (+s[k]).toFixed(dp);
+        input.oninput = () => { s[k] = +input.value; val.textContent = (+input.value).toFixed(dp); this.app.saveSettings(); };
         wrap.appendChild(input); wrap.appendChild(val); F.appendChild(wrap); continue;
       } else {
         input = document.createElement('input'); input.type = 'checkbox'; input.checked = !!s[k];
@@ -217,15 +218,21 @@ export class UI {
 
   // ------------------------------------------------------------------ HUD
 
-  missionStart(play) {
+  // identity and move list: set as soon as the mission loads, so the intro shows the right kaiju
+  hudSetup(play) {
     $('h-name').textContent = play.def.name;
     document.documentElement.style.setProperty('--accent', play.def.color);
-    this.banner(play.mission.name.toUpperCase(), play.mission.brief, 5);
     const k = { attack: 'LMB', heavy: 'RMB', special: 'Q', stomp: 'SPC', roar: 'E' };
     const mv = play.def.moves;
     $('h-moves').innerHTML = [['special', mv.special.name], ['heavy', mv.heavy.name], ['stomp', mv.stomp.name], ['roar', 'Roar']]
       .map(([n, label]) => `<div class="mv"><span class="key" id="mv-${n}">${k[n]}<i></i></span>${label}</div>`).join('');
     $('h-hint').textContent = 'WASD move · Shift run · LMB attack · RMB heavy · Hold Q special · Space ' + mv.stomp.name.toLowerCase() + ' · Esc pause';
+  }
+
+  missionStart(play) {
+    this.hudSetup(play);
+    this.banner(play.mission.name.toUpperCase(), play.mission.brief, 5);
+    $('h-hint').style.opacity = '';
     setTimeout(() => { $('h-hint').style.opacity = 0; }, 14000);
   }
 

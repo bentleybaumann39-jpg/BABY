@@ -24,7 +24,7 @@ if (!ok || errShown || !(await page.evaluate(() => !!(window.__kj && window.__kj
   for (const e of errors.slice(0, 12)) console.log(e);
   await browser.close(); server.close(); process.exit(1);
 }
-const shot = async (name) => { await page.screenshot({ path: `${outdir}/${name}.png`, timeout: 200000 }); console.log('shot', name, ((Date.now() - t0) / 1000).toFixed(0) + 's'); };
+const shot = async (name) => { await page.screenshot({ path: `${outdir}/${name}.png`, timeout: 600000 }); console.log('shot', name, ((Date.now() - t0) / 1000).toFixed(0) + 's'); };
 // drive the game by stepping simulated time with fixed dt (independent of SwiftShader speed)
 const step = async (sec, keys = {}, fn = '') => page.evaluate(async ({ sec, keys, fn }) => {
   const app = window.__kj.app, p = app.play, I = app.input;
@@ -131,6 +131,12 @@ if (script === 'army') {
   await shot('42_walk');
   const u = await page.evaluate(() => window.__kj.play.military.units.map((u) => [u.kind, Math.round(u.pos.x), Math.round(u.pos.y), Math.round(u.pos.z), Math.round(u.hp)]));
   console.log(JSON.stringify(u));
+}
+if (script === 'plow') {
+  // walking into dense blocks: speed should settle well above a crawl (no screenshots: fast)
+  log(await step(0.5));
+  for (let i = 0; i < 4; i++) log(await step(2.5, { hold: ['KeyW'] }));
+  await shot('60_plow');
 }
 if (script === 'moves') {
   // every move of the loaded kaiju, with a frame of each

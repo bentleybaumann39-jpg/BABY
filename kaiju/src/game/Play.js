@@ -488,8 +488,9 @@ export class Play {
       if (B.hp[id] <= 0) B.breakChunk(id, push, 0.9, 'body');
     }
     for (const bi of touched) B.checkSupport(this.world.city.buildings[bi]);
-    // buildings resist: lose momentum in proportion to what is in the way
-    k.speed *= Math.max(0.6, 1 - hit.size * 0.004 * dt * 60 / charge);
+    // buildings resist in proportion to what is in the way, up to a cap: against the kaiju's
+    // acceleration (rate 0.85) a full wall of blocks settles it at ~45% of its intended speed
+    k.speed *= Math.exp(-1.05 * Math.min(1, hit.size / 60) * dt / charge);
     if (Math.random() < dt * 6) this.app.audio && this.app.audio.crumble(_v.copy(k.pos).setY(20), 0.5);
   }
 

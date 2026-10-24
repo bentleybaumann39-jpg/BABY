@@ -124,6 +124,7 @@ class App {
     this.play = play;
     this.state = 'play';
     this.paused = false;
+    this.ui.hudSetup(play);
     this.ui.show('hud');
     this.input.lock();
     window.__kj.play = play;

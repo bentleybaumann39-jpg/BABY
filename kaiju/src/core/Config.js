@@ -28,7 +28,7 @@ export const KAIJU = {
     },
   },
   thornback: {
-    name: 'THORNBACK', title: 'The Living Fortress', asset: 'thornback', height: 40, quadruped: true, unlock: 2, cost: 3200, color: '#c9b37a',
+    name: 'THORNBACK', title: 'The Living Fortress', asset: 'thornback', height: 40, quadruped: true, menuGlow: 0.2, unlock: 2, cost: 3200, color: '#c9b37a',
     blurb: 'An armoured quadruped the size of a stadium. Slow to start, impossible to stop once it charges.',
     base: { hp: 1700, armor: 0.45, regen: 6, energy: 100, energyRegen: 6, melee: 320, heavy: 480, stomp: 300, special: 700, speed: 0.8, scale: 1.6 },
     moves: {

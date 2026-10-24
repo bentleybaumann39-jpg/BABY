@@ -74,7 +74,7 @@ export class MenuStage {
         const model = skelClone(gltf.scene);
         model.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map((x) => x.clone()) : o.material.clone(); });
         patchTree(model, 'menu-' + id);
-        model.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const mm of ms) { mm.side = THREE.FrontSide; if (/plate|vein|glow|shard/.test(mm.name)) { mm.emissive = new THREE.Color(...KAIJU[id].moves.special.color); mm.emissiveIntensity = 1.5; } } } });
+        model.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const mm of ms) { mm.side = THREE.FrontSide; if (/plate|vein|glow|shard/.test(mm.name)) { mm.emissive = new THREE.Color(...KAIJU[id].moves.special.color); mm.emissiveIntensity = KAIJU[id].menuGlow ?? 1.5; } } } });
         const mixer = new THREE.AnimationMixer(model);
         const clip = gltf.animations.find((c) => c.name === 'idle');
         if (clip) mixer.clipAction(clip).play();

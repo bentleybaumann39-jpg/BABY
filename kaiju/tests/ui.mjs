@@ -15,7 +15,7 @@ const errors = [];
 page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text().slice(0, 400)); });
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 const t0 = Date.now();
-const shot = async (name) => { await page.screenshot({ path: `${outdir}/${name}.png`, timeout: 200000 }); console.log('shot', name, ((Date.now() - t0) / 1000).toFixed(0) + 's'); };
+const shot = async (name) => { await page.screenshot({ path: `${outdir}/${name}.png`, timeout: 600000 }); console.log('shot', name, ((Date.now() - t0) / 1000).toFixed(0) + 's'); };
 const screen = () => page.evaluate(() => document.querySelector('.screen.show')?.id);
 const wait = (ms) => page.waitForTimeout(ms);
 // the menu stage loads each kaiju asynchronously; wait until the shown one is in the scene
@@ -50,7 +50,7 @@ await wait(1500);
 await shot('ui_03_scyllax_grown');
 const prof = await page.evaluate(() => { const p = window.__kj.app.profile; return { biomass: p.biomass, unlocked: p.unlocked, levels: p.levels, selected: p.selected }; });
 console.log(JSON.stringify(prof));
-await page.click('[data-act="settings"]');
+await page.click('#lab [data-act="settings"]');
 await wait(500);
 await shot('ui_04_settings');
 await page.click('#settings [data-act="back"]');
@@ -59,7 +59,7 @@ await page.waitForFunction(() => window.__kj.play && window.__kj.play.state !== 
 console.log('screen', await screen(), 'kaiju', await page.evaluate(() => window.__kj.play.kaiju.id));
 await wait(3000);
 await shot('ui_05_mission');
-await page.evaluate(() => { const p = window.__kj.play; p.score.extraValue = 12e9; p.finish(true); });
+await page.evaluate(() => { const p = window.__kj.play; p.score.extraValue = 12e9; p.update(1 / 30); p.finish(true); });
 await wait(1500);
 console.log('screen', await screen());
 await shot('ui_06_results');
