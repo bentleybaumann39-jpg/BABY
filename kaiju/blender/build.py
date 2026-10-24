@@ -216,9 +216,25 @@ def hi_material(spec):
     rm.inputs['B'].default_value = 0.28
     nt.links.new(rm.outputs['Result'], bsdf.inputs['Roughness'])
     if L.get('emit'):
-        # emissive veins in deep grooves (masked by the Mask.G channel)
-        ve = math_node('MULTIPLY', math_node('SUBTRACT', 1.0, crag2, (300, -500)), sep.outputs[1], (450, -500))
-        ve = math_node('POWER', ve, 2.0, (600, -500))
+        # emissive veins: thin, branching cracks from a coarse voronoi, masked by Mask.G
+        vv = node(nt, 'ShaderNodeTexVoronoi', (-900, -950))
+        vv.feature = 'DISTANCE_TO_EDGE'
+        vv.inputs['Scale'].default_value = L.get('vein', 0.16)
+        vv.inputs['Randomness'].default_value = 1.0
+        warp = node(nt, 'ShaderNodeTexNoise', (-1100, -950))
+        warp.inputs['Scale'].default_value = 0.35
+        warp.inputs['Detail'].default_value = 4
+        mixv = nt.nodes.new('ShaderNodeMix')
+        mixv.data_type = 'VECTOR'
+        mixv.location = (-1000, -1100)
+        mixv.inputs['Factor'].default_value = 0.25
+        nt.links.new(tc.outputs['Object'], mixv.inputs[4])
+        nt.links.new(warp.outputs['Color'], mixv.inputs[5])
+        nt.links.new(mixv.outputs[1], vv.inputs['Vector'])
+        w = L.get('veinw', 0.04)
+        ve = math_node('SUBTRACT', 1.0, math_node('MULTIPLY', vv.outputs['Distance'], 1.0 / w, (300, -950), clamp=True), (450, -950))
+        ve = math_node('POWER', ve, 3.0, (600, -950))
+        ve = math_node('MULTIPLY', ve, sep.outputs[1], (750, -950))
         nt.links.new(ve, bsdf.inputs['Emission Strength'])
         bsdf.inputs['Emission Color'].default_value = (*L['emit'], 1)
     return m

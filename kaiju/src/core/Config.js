@@ -4,8 +4,8 @@
 export const KAIJU = {
   gorvax: {
     name: 'GORVAX', title: 'The Thermal Apex', asset: 'gorvax', unlock: 0, color: '#5fd0ff',
-    blurb: 'A 58-metre saurian from the abyssal trench. Bark-black hide, crystalline dorsal plates and a breath that cuts steel.',
-    base: { hp: 1100, armor: 0.25, regen: 4, energy: 100, energyRegen: 5, melee: 300, heavy: 380, stomp: 240, special: 950, speed: 1.0, scale: 1.0 },
+    blurb: 'A 93-metre saurian from the abyssal trench. Bark-black hide, crystalline dorsal plates and a breath that cuts steel.',
+    base: { hp: 1100, armor: 0.25, regen: 4, energy: 100, energyRegen: 5, melee: 300, heavy: 380, stomp: 240, special: 950, speed: 0.85, scale: 1.6 },
     moves: {
       attack1: { name: 'Raking Claw', bone: 'handR', radius: 9, reach: 4, window: [0.38, 0.66] },
       attack2: { name: 'Crushing Bite', bone: 'jaw', radius: 9, reach: 6, window: [0.48, 0.62] },
@@ -17,7 +17,7 @@ export const KAIJU = {
   kragmaw: {
     name: 'KRAGMAW', title: 'The Magma Primate', asset: 'kragmaw', unlock: 1, cost: 1800, color: '#ff7a33',
     blurb: 'A volcanic megaprimate with basalt skin and magma in its veins. Fast, brutal and fond of throwing things.',
-    base: { hp: 950, armor: 0.18, regen: 5, energy: 100, energyRegen: 7, melee: 360, heavy: 430, stomp: 300, special: 900, speed: 1.15, scale: 1.0 },
+    base: { hp: 950, armor: 0.18, regen: 5, energy: 100, energyRegen: 7, melee: 360, heavy: 430, stomp: 300, special: 900, speed: 0.95, scale: 1.6 },
     moves: {
       attack1: { name: 'Haymaker', bone: 'handR', radius: 9, reach: 3, window: [0.3, 0.55] },
       attack2: { name: 'Hammer Fist', bone: 'handL', radius: 10, reach: 3, window: [0.32, 0.58] },
@@ -29,7 +29,7 @@ export const KAIJU = {
   thornback: {
     name: 'THORNBACK', title: 'The Living Fortress', asset: 'thornback', unlock: 2, cost: 3200, color: '#c9b37a',
     blurb: 'An armoured quadruped the size of a stadium. Slow to start, impossible to stop once it charges.',
-    base: { hp: 1700, armor: 0.45, regen: 6, energy: 100, energyRegen: 6, melee: 320, heavy: 480, stomp: 300, special: 700, speed: 0.85, scale: 1.0 },
+    base: { hp: 1700, armor: 0.45, regen: 6, energy: 100, energyRegen: 6, melee: 320, heavy: 480, stomp: 300, special: 700, speed: 0.8, scale: 1.6 },
     moves: {
       attack1: { name: 'Horn Gore', bone: 'head', radius: 11, reach: 10, window: [0.35, 0.6] },
       attack2: { name: 'Shield Bash', bone: 'head', radius: 13, reach: 6, window: [0.36, 0.56] },
@@ -41,7 +41,7 @@ export const KAIJU = {
   scyllax: {
     name: 'SCYLLAX', title: 'The Abyssal Reaver', asset: 'scyllax', unlock: 3, cost: 4800, color: '#7dff9a',
     blurb: 'An eight-legged crustacean reaver. Pincers that shear girders and acid that melts what they miss.',
-    base: { hp: 900, armor: 0.32, regen: 4, energy: 100, energyRegen: 8, melee: 280, heavy: 400, stomp: 260, special: 520, speed: 1.3, scale: 1.0 },
+    base: { hp: 900, armor: 0.32, regen: 4, energy: 100, energyRegen: 8, melee: 280, heavy: 400, stomp: 260, special: 520, speed: 1.05, scale: 1.7 },
     moves: {
       attack1: { name: 'Pincer Snap', bone: 'clawR', radius: 9, reach: 6, window: [0.28, 0.5] },
       attack2: { name: 'Twin Shear', bone: 'clawL', radius: 10, reach: 6, window: [0.3, 0.52] },
@@ -68,6 +68,7 @@ export function kaijuStats(id, levels = {}) {
   const lv = (k) => levels[k] || 0;
   const scale = b.scale * (1 + 0.08 * lv('growth'));
   const grow = scale / b.scale;
+  // damage scales with how much mass is behind each blow
   return {
     hp: b.hp * (1 + 0.16 * lv('vitality')) * (0.75 + 0.25 * grow * grow),
     armor: Math.min(0.75, b.armor + 0.06 * lv('hide')),

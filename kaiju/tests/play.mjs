@@ -42,7 +42,7 @@ const step = async (sec, keys = {}, fn = '') => page.evaluate(async ({ sec, keys
     I.endFrame();
   }
   const k = p.kaiju;
-  return { state: p.state, pos: k.pos.toArray().map((v) => +v.toFixed(1)), speed: +k.speed.toFixed(1), hp: Math.round(k.hp), alive: p.world.buildings.aliveCount, dmg: Math.round(p.score.damage / 1e6), debris: p.debris.active, parts: p.particles.lit.n + p.particles.add.n, groups: p.world.buildings.groups.length };
+  return { cars: p.traffic && p.traffic.cars.length, units: p.military && p.military.units.length, shots: p.military && p.military.shots.length, kills: p.score.kills, veh: p.score.vehicles, state: p.state, pos: k.pos.toArray().map((v) => +v.toFixed(1)), speed: +k.speed.toFixed(1), hp: Math.round(k.hp), alive: p.world.buildings.aliveCount, dmg: Math.round(p.score.damage / 1e6), debris: p.debris.active, parts: p.particles.lit.n + p.particles.add.n, groups: p.world.buildings.groups.length };
 }, { sec, keys, fn });
 const log = (r) => console.log(JSON.stringify(r));
 if (script === 'default') {
@@ -119,6 +119,18 @@ if (script === 'beam') {
   await shot('32_nolights');
   await page.evaluate(() => { const p = window.__kj.play; p.app.renderer.grade.uniforms.uHaze.value = 0; p.fx.haze = 0; p.update = () => {}; });
   await shot('33_nohaze');
+}
+if (script === 'army') {
+  log(await step(0.5));
+  await shot('40_start');
+  log(await step(2, { fn: 'p.threat = 4; p.military.spawnT = 0;' }));
+  log(await step(6, { fn: 'p.threat = 4;' }));
+  log(await step(12, { fn: 'p.threat = 4;' }));
+  await shot('41_army');
+  log(await step(6, { hold: ['KeyW'], fn: 'p.threat = 4;' }));
+  await shot('42_walk');
+  const u = await page.evaluate(() => window.__kj.play.military.units.map((u) => [u.kind, Math.round(u.pos.x), Math.round(u.pos.y), Math.round(u.pos.z), Math.round(u.hp)]));
+  console.log(JSON.stringify(u));
 }
 console.log('errors:', errors.length);
 for (const e of errors.slice(0, 12)) console.log(e);

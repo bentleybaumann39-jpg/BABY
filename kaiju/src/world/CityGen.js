@@ -4,7 +4,7 @@
 import { Rng, clamp } from '../core/Rng.js';
 
 export const STYLE = {
-  GLASS: 0, OFFICE: 1, BRICK: 2, DARKGLASS: 3, DECO: 4, INDUSTRIAL: 5, HOUSE: 6, STUCCO: 7,
+  GLASS: 0, OFFICE: 1, BRICK: 2, DARKGLASS: 3, DECO: 4, INDUSTRIAL: 5, HOUSE: 6, STUCCO: 7, CONCRETE: 8,
 };
 
 export const CITY_PRESETS = {
@@ -124,7 +124,23 @@ export function generateCity(presetName = 'harbor', quality = 1) {
       continue;
     }
     if (b.kind === 'plaza') {
-      if (b.landmark) city.landmarks.push({ kind: 'tower', x: (b.x0 + b.x1) / 2, z: (b.z0 + b.z1) / 2, h: 330 });
+      if (b.landmark) {
+        // broadcast tower: a concrete shaft with a glazed observation pod near the top
+        const cx = (b.x0 + b.x1) / 2, cz = (b.z0 + b.z1) / 2;
+        const t = addBuilding({ x0: cx - 22, z0: cz - 22, w: 44, d: 44, h: 300, style: STYLE.CONCRETE, floorH: 4.5, bayW: 3.2, kind: 'landmark', roof: 'mast' });
+        const ny = t.ny, nx = t.nx, nz = t.nz;
+        t.voids = new Uint8Array(nx * ny * nz);
+        const podA = Math.floor(ny * 0.74), podB = podA + 2;
+        for (let y = 0; y < ny; y++) for (let z = 0; z < nz; z++) for (let x = 0; x < nx; x++) {
+          const core = x >= 1 && x <= nx - 2 && z >= 1 && z <= nz - 2;
+          const pod = y >= podA && y <= podB;
+          const base = y < 2 && x >= 0 && z >= 0;
+          if (!(core || pod || base)) t.voids[(y * nz + z) * nx + x] = 1;
+        }
+        t.pod = [podA, podB];
+        t.landmark = true;
+        city.landmarks.push({ kind: 'tower', x: cx, z: cz, h: t.h, id: t.id });
+      }
       for (let k = 0; k < 10; k++) {
         const t = k / 10 * Math.PI * 2;
         city.trees.push({ x: (b.x0 + b.x1) / 2 + Math.cos(t) * Math.min(bw, bd) * 0.38, z: (b.z0 + b.z1) / 2 + Math.sin(t) * Math.min(bw, bd) * 0.38, s: 0.8, t: 1 });

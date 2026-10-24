@@ -9,7 +9,8 @@ import { CameraRig } from '../kaiju/CameraRig.js';
 import { Abilities } from '../kaiju/Abilities.js';
 import { patch, G as SG } from '../render/Shading.js';
 import { KAIJU, MISSIONS, kaijuStats, MILITARY } from '../core/Config.js';
-import { loadKaiju } from '../core/Assets.js';
+import { loadKaiju, loadGLB } from '../core/Assets.js';
+import { Props } from '../world/Props.js';
 import { clamp, damp } from '../core/Rng.js';
 
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3();
@@ -58,6 +59,8 @@ export class Play {
     this.particles = new Particles(this.scene, R.q.particles);
     this.decals = new Decals(this.scene);
     this.particles.setLighting(this.world.keyIntensity, this.world.sky.ambient);
+    this.propsReady = loadGLB('props').then((g) => { this.props = new Props(this, g); return g; }).catch((e) => { console.warn('props unavailable', e); return null; });
+    await this.propsReady;
     progress(0.6, 'Waking the ' + this.def.name.toLowerCase());
     const asset = await loadKaiju(this.def.asset, (f) => progress(0.6 + f * 0.3, 'Waking ' + this.def.name));
     this.kaiju = new Kaiju(this.cfg.kaijuId, this.def, asset.gltf, this.stats, asset.meta);
@@ -215,6 +218,7 @@ export class Play {
     this._fires(dt);
     this._pending(dt);
     this.particles.update(dt);
+    if (this.props) this.props.update(dt);
     for (const s of ['traffic', 'military', 'crowds']) if (this[s]) this[s].update(dt);
     // ---- score, threat, objectives
     const bs = this.world.buildings.stats;
@@ -410,6 +414,7 @@ export class Play {
     this.damageVolume(new THREE.Vector3(p.x, p.y + radius * 0.25, p.z), radius * 0.75, dmg, new THREE.Vector3(0, 14, 0), 'stomp');
     this.hitUnitsSphere(p, radius * 1.4, dmg * 0.8, 'stomp');
     if (this.traffic) this.traffic.blast(p, radius * 1.6);
+    if (this.props) this.props.knock(p, radius);
     if (this.crowds) this.crowds.scare(p, radius * 6);
     this.particles.surge(p, radius, 26, { color: [0.5, 0.47, 0.43], speed: radius * 0.9, life: 12, grow: 0.8 });
     this.particles.dust(p, radius * 0.3, 10, { up: 1.2, speed: radius * 0.5 });
@@ -429,6 +434,8 @@ export class Play {
 
   explode(p, r, dmg, push) {
     this.damageVolume(p, r, dmg, push, 'explosion');
+    if (this.props && p.y < 20) this.props.knock(p, r);
+    if (this.traffic && p.y < 20) this.traffic.blast(p, r * 1.5);
     this.hitUnitsSphere(p, r * 1.5, dmg, 'explosion');
     this.world.buildings.ignite(p, r, 0.5);
     this.particles.fireball(p, r * 0.35);
@@ -451,6 +458,8 @@ export class Play {
     if (sp < 1) return;
     const B = this.world.buildings;
     const caps = k.bodyCapsules();
+    if (this.props) for (const [a, b, r] of caps) if (b.y - r < 12) this.props.knock(b, r * 1.2);
+    if (this.crowds) for (const [a, b, r] of caps) if (b.y - r < 3) this.crowds.crush(b, r);
     const hit = new Map();
     for (const [a, b, r] of caps) {
       const steps = Math.max(1, Math.ceil(a.distanceTo(b) / r));
@@ -498,7 +507,8 @@ export class Play {
     this.debris.shatter(e.info, e.center, e.rot, e.vel, e.push, e.strength);
     const big = Math.cbrt(vol);
     this.particles.dust(e.center, big * 0.8, e.src === 'collapse' ? 2 : 4, { life: 10, grow: 2.2, speed: big * 0.4 });
-    if (e.info.style[0] === 0 || e.info.style[0] === 3) this.particles.glints(e.center, 10, big);
+    if (e.info.style[0] === 0 || e.info.style[0] === 3) { this.particles.glints(e.center, 10, big); this.app.audio && this.app.audio.glassAt(e.center); }
+    if (this.app.audio && e.src !== 'collapse') this.app.audio.crumble(e.center, Math.min(1.2, big / 12));
     if (e.src === 'beam' || e.src === 'explosion' || e.info.state[2] > 0.3) { this.particles.fire(e.center, big * 0.7); }
     this.lastCrumble += 1;
   }
@@ -602,6 +612,7 @@ export class Play {
       this.world.env.ripple(p.x, p.z, 0.5 * s);
     }
     this.rig.impulse(p, 0.22 * s, 420 * S);
+    if (this.props) this.props.knock(p, 12 * S);
     if (this.traffic) this.traffic.blast(p, 30 * S);
     if (this.crowds) this.crowds.scare(p, 300);
     this.app.audio && this.app.audio.footstep(p, s, g < -0.5);

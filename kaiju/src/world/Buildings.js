@@ -162,7 +162,7 @@ export class Buildings {
     A.aCenter.setXYZ(s, (ix + 0.5) * b.cw, (iy + 0.5) * b.ch, (iz + 0.5) * b.cd);
     A.aSize.setXYZ(s, b.cw, b.ch, b.cd);
     A.aDims.setXYZ(s, b.w, b.h, b.d);
-    A.aStyle.setXYZW(s, b.style, b.seed, b.floorH, b.bayW);
+    A.aStyle.setXYZW(s, this.styleOf(b, iy), b.seed, b.floorH, b.bayW);
     A.aState.setXYZW(s, this.face[id], this.dmgv[id], this.burn[id], this.dust[id]);
     A.aTint.setXYZ(s, b.tint[0], b.tint[1], b.tint[2]);
   }
@@ -172,10 +172,12 @@ export class Buildings {
     const [b, ix, iy, iz] = this.chunkCoords(id);
     return {
       center: [(ix + 0.5) * b.cw, (iy + 0.5) * b.ch, (iz + 0.5) * b.cd], size: [b.cw, b.ch, b.cd], dims: [b.w, b.h, b.d],
-      style: [b.style, b.seed, b.floorH, b.bayW], state: [this.face[id], Math.max(0.6, this.dmgv[id]), this.burn[id], this.dust[id]],
+      style: [this.styleOf(b, iy), b.seed, b.floorH, b.bayW], state: [this.face[id], Math.max(0.6, this.dmgv[id]), this.burn[id], this.dust[id]],
       tint: b.tint, b,
     };
   }
+
+  styleOf(b, iy) { return b.pod && iy >= b.pod[0] && iy <= b.pod[1] ? 3 : b.style; }
 
   _setState(id) {
     const t = this.tiles[this.tileOf[id]], s = this.slot[id];

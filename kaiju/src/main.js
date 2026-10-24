@@ -8,6 +8,7 @@ import { UI } from './ui/UI.js';
 import { Audio } from './audio/Audio.js';
 import { Military } from './game/Military.js';
 import { Traffic } from './game/Traffic.js';
+import { Crowds } from './game/Crowds.js';
 import { KAIJU, UPGRADES, MISSIONS } from './core/Config.js';
 import { loadProfile, saveProfile, loadSettings, saveSettings, missionUnlocked } from './core/Save.js';
 
@@ -25,7 +26,7 @@ class App {
     this.applySettings();
     this.audio = new Audio(this);
     this.ui = new UI(this);
-    this.systems = { military: Military, traffic: Traffic };
+    this.systems = { military: Military, traffic: Traffic, crowds: Crowds };
     this.play = null;
     this.menu = null;
     this.state = 'boot';
