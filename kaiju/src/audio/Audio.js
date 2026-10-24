@@ -265,6 +265,10 @@ export class Audio {
     if (kind === 'landfall') { this._braam(t, 38, 5); this.flat('taiko', { gain: 0.9, bus: this.music }); this.flat('taiko', { gain: 0.8, bus: this.music, delay: 0.6 }); }
     if (kind === 'victory') this._chord(t, [50, 57, 62, 66], 6, 0.12);
     if (kind === 'defeat') this._braam(t, 31, 7, 0.6);
+    if (kind === 'surge') { this._braam(t, 33, 4.5, 0.9); this.flat('taiko', { gain: 1, bus: this.music }); this.flat('taikoHi', { gain: 0.6, bus: this.music, delay: 0.15 }); this.musicKick = 1; }
+    if (kind === 'rival') { this._braam(t, 29, 6, 1); this._braam(t + 1.4, 30, 5, 0.8); this.flat('taiko', { gain: 1, bus: this.music, delay: 0.4 }); this.flat('taiko', { gain: 1, bus: this.music, delay: 1.0 }); this.musicKick = 1; }
+    if (kind === 'cataclysm') { this._braam(t, 26, 8, 1.1); this._braam(t + 0.7, 38, 6, 0.9); this.musicKick = 1; }
+    if (kind === 'rank') { this.flat('taikoHi', { gain: 0.7, bus: this.music }); this.flat('taiko', { gain: 0.6, bus: this.music, delay: 0.12 }); }
   }
 
   // ------------------------------------------------------------------ ambience and music
@@ -294,7 +298,9 @@ export class Audio {
     this._lastChunks = play.world.buildings.stats.chunksDestroyed;
     this.recent = this.recent * Math.exp(-dt / 6) + act * 0.5;
     const combat = Math.min(1, this.recent * 0.6 + (k.special.on ? 0.4 : 0) + (k.hurtT > 0 ? 0.3 : 0));
-    this.musicTarget = Math.min(1, 0.22 + 0.45 * combat + 0.08 * play.threat + (this.musicKick || 0) * 0.3);
+    // a rival on the field or a surge keeps the drums going
+    const boss = (play.rival && play.rival.k && !play.rival.k.dead ? 0.55 : 0) + k.surgeAmt * 0.4;
+    this.musicTarget = Math.min(1, 0.22 + 0.45 * combat + 0.08 * play.threat + (this.musicKick || 0) * 0.3 + boss);
     this.musicKick = Math.max(0, (this.musicKick || 0) - dt * 0.15);
     // retire loops nobody refreshed this frame
     for (const [key, l] of this.loops) {

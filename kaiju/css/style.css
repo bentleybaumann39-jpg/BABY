@@ -199,12 +199,34 @@ button { font-family: inherit; }
 #popups { position: fixed; inset: 0; pointer-events: none; z-index: 11; }
 .pop { position: absolute; font-weight: 800; color: var(--gold); font-size: 20px; letter-spacing: 0.05em; text-shadow: 0 2px 8px #000; transform: translate(-50%, -50%); white-space: nowrap; }
 
+/* rivals, chains, ranks */
+.boss { position: absolute; left: 50%; top: 84px; transform: translateX(-50%); width: min(560px, 60vw); text-align: center; opacity: 0; transition: opacity 0.4s; }
+.boss.on { opacity: 1; }
+.boss .bn { font-size: 13px; font-weight: 800; letter-spacing: 0.32em; text-shadow: 0 1px 6px #000; margin-bottom: 5px; color: var(--rc, #fff); }
+.boss .bn small { font-weight: 400; color: var(--dim); letter-spacing: 0.2em; margin-left: 8px; font-size: 11px; }
+.boss .bb { height: 9px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.2); position: relative; }
+.boss .bb div { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #5a0d0a, var(--rc, #ff4a3d)); box-shadow: 0 0 10px var(--rc, #ff4a3d); transition: width 0.2s; }
+.boss.enraged .bb { animation: mutpulse 0.6s ease-in-out infinite; border-color: var(--rc, #ff4a3d); }
+.chain { position: absolute; right: 26px; bottom: 112px; text-align: right; opacity: 0; transition: opacity 0.3s; text-shadow: 0 1px 8px #000; }
+.chain.on { opacity: 1; }
+.chain .cl { font-size: 10px; letter-spacing: 0.3em; color: var(--dim); }
+.chain .cv { font-size: 26px; font-weight: 800; color: var(--gold); letter-spacing: 0.04em; }
+.chain .cr { font-size: 12px; font-weight: 800; letter-spacing: 0.28em; color: var(--mut, var(--accent)); min-height: 15px; }
+.chain .ct { width: 140px; height: 3px; background: rgba(255,255,255,0.12); margin: 4px 0 0 auto; position: relative; }
+.chain .ct i { position: absolute; right: 0; top: 0; bottom: 0; background: var(--gold); }
+.rank { position: absolute; left: 0; right: 0; top: 19%; text-align: center; font-size: 46px; font-weight: 900; letter-spacing: 0.35em; color: #fff; opacity: 0; pointer-events: none;
+  text-shadow: 0 0 24px var(--mut, var(--accent)), 0 4px 18px #000; }
+.rank.on { animation: rankpop 1.8s ease-out forwards; }
+.rank.r3, .rank.r4 { color: var(--mut, var(--accent)); font-size: 56px; }
+@keyframes rankpop { 0% { opacity: 0; transform: scale(1.8); letter-spacing: 0.6em; } 12% { opacity: 1; transform: scale(1); letter-spacing: 0.35em; } 70% { opacity: 1; } 100% { opacity: 0; transform: scale(0.96); } }
+
 /* results */
 .res-label { letter-spacing: 0.4em; color: var(--dim); font-size: 13px; }
-.res-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 8px 0 20px; }
+.res-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 8px 0 20px; }
 .res-stats div { border: 1px solid var(--line); padding: 12px; }
 .res-stats span { display: block; font-size: 11px; letter-spacing: 0.22em; color: var(--dim); }
 .res-stats b { font-size: 24px; letter-spacing: 0.04em; }
+.res-stats b small { display: block; font-size: 10px; letter-spacing: 0.24em; color: var(--mut, var(--accent)); font-weight: 700; }
 .res-reward { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--line); padding-top: 14px; }
 .res-reward span { letter-spacing: 0.3em; color: var(--dim); }
 .res-reward b { font-size: 36px; color: var(--gold); }
@@ -223,4 +245,7 @@ pre { white-space: pre-wrap; font-size: 12px; color: #ff9b8f; max-height: 50vh; 
   .vitals { width: 220px; left: 12px; }
   .objectives { top: 70px; min-width: 0; width: 90%; }
   .money { font-size: 24px; }
+  .boss { top: 120px; }
+  .rank { font-size: 28px; }
+  .res-stats { grid-template-columns: repeat(2, 1fr); }
 }

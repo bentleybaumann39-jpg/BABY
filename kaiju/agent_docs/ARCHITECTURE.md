@@ -87,6 +87,34 @@ flowchart LR
   - The rig's `uMutSurge` uniform drives the seams and the rim.
 - `Military.freeze` stops units dead and doubles the damage they take. Frozen gunships sink and crash.
 
+**Rivals, the Cataclysm and the chain** (`src/game/Rival.js`, `Play.js`)
+- A `Rival` owns a second `Kaiju` and a second `Abilities`, with `abilities.owner` set to the rival. Its AI:
+  - closes in and turns to face
+  - throws a weighted choice of attack1, attack2 or heavy
+  - leaps to close a gap, if its stomp is a leap
+  - runs its signature power through a small state machine of its own (beam, spray, spit, mortar, pulse, charge)
+  - enrages below `RIVAL.enrage` health and blends into a surge
+- Its health is derived from `RIVAL.ehp` so that every species takes about as long to kill.
+- Shared combat paths take the acting kaiju instead of assuming the player: `_moveHits(dt, k)`, `slam(k, …)`, `_bodyContact(dt, k)`, `_element(…, k)`, `onFootstep(k, …)`.
+- Every blow goes through `foeOf(k)`:
+  - `hitKaijuSphere` and `hitKaiju` measure the target with `Kaiju.surfaceDist` against its collision capsules.
+  - Damage is scaled by `RIVAL.kvk`.
+  - Discrete blows add knockback (`Kaiju.knock`), flinch, sparks, a hit-stop and a colour-split kick.
+  - Continuous sources (beam, spray, acid) pass `tick` and land once per frame.
+  - A beam stops on the rival's hide.
+- `hitUnitsSphere(…, att)` damages the military only for the player's blows.
+- A rival's arrival and death are `Play.cinematic()` shots. Controls lock and Enter or Esc skips. `cineFocus` moves the building cutaway onto the rival.
+- The rival's body is kept as `corpse` until the next one arrives. `mission.rival` sets when rivals arrive (`at`, `tier`, `every`).
+- Slow motion: `Play.slowmo(scale, realSeconds)` scales the simulation's `dt`. The camera, HUD, post effects and audio stay on real time.
+- The Cataclysm is a `dots` entry with this timeline:
+  - 0.75 s: energy drawn in
+  - then: the flash
+  - then: three blast waves of growing radius
+  - for 6 s: a mushroom cloud
+- The cloud spawns into `Particles.big`, a pool reserved for set pieces, so the dust of thousands of broken chunks cannot evict it. `surge.lockT` stops the blast's own damage refilling the meter.
+- The rampage chain sums damage until `CHAIN.window` seconds pass without any. `ui.rank()` announces each new rank.
+- Post effects: `uCA` is kicked by `fx.ca`, and `uTint`/`uTintCol` wash the frame edges in the strain colour during a surge or slow motion.
+
 **City** (`src/world/`)
 - `CityGen` lays out roads, blocks and buildings for each preset.
 - `Buildings` splits every building into a grid of chunks, one floor band per layer. The chunks are drawn as instanced boxes in spatial tiles, with a facade shader (`BuildingShader.js`) that works in building-local coordinates.

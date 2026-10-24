@@ -192,6 +192,8 @@ class App {
     const m = play.mission;
     const s = play.score;
     let reward = Math.round(s.damage / 1e9 * 22 + s.kills * 6 + s.towers * 40);
+    // rival bounties and a bonus for the longest rampage chain
+    reward += (play.bounty || 0) + Math.round(play.chain.best / 1e9 * 6);
     if (result.complete) reward += m.reward;
     if (result.died) reward = Math.round(reward * 0.5);
     this.profile.biomass += reward;

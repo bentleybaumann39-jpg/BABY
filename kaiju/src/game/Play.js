@@ -8,10 +8,11 @@ import { Kaiju } from '../kaiju/Kaiju.js';
 import { CameraRig } from '../kaiju/CameraRig.js';
 import { Abilities } from '../kaiju/Abilities.js';
 import { patch, G as SG } from '../render/Shading.js';
-import { KAIJU, MISSIONS, kaijuStats, MILITARY, FORMS, SURGE } from '../core/Config.js';
+import { KAIJU, MISSIONS, kaijuStats, MILITARY, FORMS, SURGE, CHAIN, RIVAL } from '../core/Config.js';
+import { Rival } from './Rival.js';
 import { loadKaiju, loadGLB } from '../core/Assets.js';
 import { Props } from '../world/Props.js';
-import { clamp, damp, smooth } from '../core/Rng.js';
+import { clamp, damp, smooth, angleDiff } from '../core/Rng.js';
 
 const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _f = new THREE.Vector3(), _r = new THREE.Vector3();
 
@@ -35,10 +36,20 @@ export class Play {
     this.ventT = 0;
     this._lastDmg = 0;
     this._lastKills = 0;
+    this.frame = 0;
+    this.timeScale = 1; this.slowT = 0; this.slowScale = 1;
+    this.cineLock = false;
+    this.chain = { v: 0, t: 0, best: 0, rank: -1, bestRank: -1 };
+    // rival kaiju: when the first one arrives, and how many have come
+    const rv = this.mission.rival;
+    this.rival = null;
+    this.rivalNext = rv ? rv.at : Infinity;
+    this.rivalCount = 0;
+    this.toppleT = 0;
     this.time = 0;
     this.state = 'loading';
-    this.fx = { haze: 0, hazeAt: new THREE.Vector3(), flash: 0, hurt: 0 };
-    this.score = { damage: 0, towers: 0, buildings: 0, kills: 0, vehicles: 0, people: 0, landmark: 0, peak: 0 };
+    this.fx = { haze: 0, hazeAt: new THREE.Vector3(), flash: 0, hurt: 0, ca: 0 };
+    this.score = { damage: 0, towers: 0, buildings: 0, kills: 0, vehicles: 0, people: 0, landmark: 0, peak: 0, rivals: 0 };
     this.feed = [];
     this.threat = 0;
     this.combo = 0;
@@ -86,6 +97,7 @@ export class Play {
     };
     this.scene.add(this.kaiju.root);
     this.abilities = new Abilities(this);
+    this.abilities.owner = this.kaiju;
     this.abilities.tint(this.def.moves.special.color);
     this.rig = new CameraRig(this.camera);
     this.rig.shakeScale = app.settings.shake ?? 1;
@@ -191,14 +203,44 @@ export class Play {
     this.rig.addTrauma(0.6);
     if (this.military) this.military.suppressT = Math.max(this.military.suppressT, 3);
     this.feedPush('Mutation surge');
-    this.app.ui && this.app.ui.banner('MUTATION SURGE', (this.form.tint ? this.form.name + ' strain · ' : '') + 'stronger, faster, tougher for ' + S.dur + ' seconds', 2.5);
+    this.app.ui && this.app.ui.banner('MUTATION SURGE', (this.form.tint ? this.form.name + ' strain · ' : '') + 'press T again to unleash the Cataclysm', 2.5);
+    this.app.audio && this.app.audio.sting('surge');
+    this.fx.ca = 1;
+    // the camera swings round in front to watch it happen, in slow motion
+    this.slowmo(0.35, 1.7);
+    const H = k.height, yaw0 = k.yaw;
+    const at = (a, d, h) => _v.set(k.pos.x + Math.sin(yaw0 + a) * H * d, k.pos.y + H * h, k.pos.z + Math.cos(yaw0 + a) * H * d).clone();
+    this.cinematic({
+      from: () => at(0.5, 1.5, 0.22), to: () => at(-0.7, 2.0, 0.5),
+      lookFrom: () => _v.copy(k.pos).setY(k.pos.y + H * 0.75).clone(), lookTo: () => _v.copy(k.pos).setY(k.pos.y + H * 0.6).clone(),
+      dur: 2.3, fov: 46,
+      done: () => { this.rig.yaw = k.yaw + Math.PI; },
+    });
+  }
+
+  // Cataclysm: spend what is left of a surge in one blast that flattens the district.
+  cataclysm() {
+    const S = this.surge, k = this.kaiju;
+    // an ultimate: it cuts through whatever the body is doing, short of a leap or a power
+    if (!S.on || S.t < 1.0 || k.dead || k.special.on || this.abilities.leap) return;
+    S.t = S.dur; // the surge is spent; the body shrinks back as the blast goes off
+    S.lockT = 12;  // and what the blast destroys does not feed the next one
+    k.play('roar', { full: true });
+    this.app.audio && this.app.audio.roar(k, 1.5);
+    this.app.audio && this.app.audio.sting('cataclysm');
+    const p = k.pos.clone();
+    p.y = Math.max(0, this.world.groundAt(p.x, p.z));
+    this.dots.push({ kind: 'cataclysm', owner: k, p, t: 0, wave: 0, R: k.height * 1.15 * (1 + 0.4 * k.surgeAmt), dmg: k.stats.special * 1.4 });
+    this.feedPush('CATACLYSM');
+    this.app.ui && this.app.ui.banner('CATACLYSM', '', 2.2);
   }
 
   _surge(dt, dDamage, dKills) {
     const S = this.surge, k = this.kaiju;
     if (k.dead) S.on = false;
+    S.lockT = Math.max(0, (S.lockT || 0) - dt);
     if (!S.on) {
-      S.meter = Math.min(1, S.meter + (dDamage / SURGE.fill + dKills * SURGE.perKill) * S.gain);
+      if (S.lockT <= 0) S.meter = Math.min(1, S.meter + (dDamage / SURGE.fill + dKills * SURGE.perKill) * S.gain);
       if (S.meter >= 1 && !S.ready && !k.dead) {
         S.ready = true;
         this.app.ui && this.app.ui.toast('Mutation surge ready · press T');
@@ -216,24 +258,24 @@ export class Play {
   // ------------------------------------------------------------------ elements and genes
 
   // A connecting blow carries the strain's element.
-  _element(p, r, dmg) {
-    const el = this.form.element;
+  _element(p, r, dmg, k = this.kaiju) {
+    const el = k.form.element;
     if (!el) return;
-    const ps = this.particles, c = this.kaiju.mutRig.glow;
+    const ps = this.particles, c = k.mutRig.glow;
     if (el === 'fire') {
       this.world.buildings.ignite(p, r * 2, 0.45); // the blow has already broken what it hit: the fire takes the rest
       for (let i = 0; i < 6; i++) ps.fire(_v.copy(p).add(_v2.set(Math.random() - 0.5, Math.random() * 0.5, Math.random() - 0.5).multiplyScalar(r)), r * 0.35, { rise: 10, life: 1.8 });
       ps.sparks(p, Math.ceil(30 * ps.q), r * 1.2, [6, 2, 0.4]);
     } else if (el === 'ice') {
-      if (this.military) this.military.freeze(p, r * 2.2, 6);
+      if (this.military && k === this.kaiju) this.military.freeze(p, r * 2.2, 6);
       this.damageVolume(p, r * 0.9, dmg * 0.25, null, 'ice'); // frozen masonry shatters
       ps.surge(p, r * 0.9, 14, { color: [0.8, 0.88, 0.96], speed: r * 0.6, life: 5, grow: 0.6, alpha: 0.5 });
       ps.sparks(p, Math.ceil(30 * ps.q), r, [2.5, 3.5, 4.5]);
     } else if (el === 'acid') {
-      this.dots.push({ kind: 'acid', p: p.clone(), r: r * 1.15, dmg: dmg * 0.1, t: 0, n: 0 });
+      this.dots.push({ kind: 'acid', owner: k, p: p.clone(), r: r * 1.15, dmg: dmg * 0.1, t: 0, n: 0 });
       ps.sparks(p, Math.ceil(40 * ps.q), r * 0.8, [c[0] * 3, c[1] * 3, c[2] * 3]);
     } else if (el === 'void') {
-      this.dots.push({ kind: 'rift', p: p.clone(), r: r * 1.2, dmg: dmg * 0.6, t: 0 });
+      this.dots.push({ kind: 'rift', owner: k, p: p.clone(), r: r * 1.2, dmg: dmg * 0.6, t: 0 });
       ps.add.spawn({ p: p.toArray(), life: 0.5, size: r * 1.6, size1: r * 0.2, color: [c[0] * 3, c[1] * 3, c[2] * 3], alpha: 1, tile: 4, drag: 0, fadeIn: 0.05 });
     }
   }
@@ -249,15 +291,17 @@ export class Play {
         while (d.n < 4 && d.t >= 0.5 + d.n * 0.5) {
           d.n++;
           this.damageVolume(d.p, d.r, d.dmg, null, 'acid');
-          this.hitUnitsSphere(d.p, d.r * 1.3, d.dmg, 'acid');
+          this.hitUnitsSphere(d.p, d.r * 1.3, d.dmg, 'acid', null, d.owner);
+          this.hitKaijuSphere(d.owner, d.p, d.r, d.dmg * 2, { tick: true });
         }
         if (Math.random() < dt * 12) ps.smoke(d.p, d.r * 0.4, { dark: 0.2, rise: 4, life: 5, grow: 2, alpha: 0.35 });
         if (Math.random() < dt * 25) ps.add.spawn({ p: [d.p.x + (Math.random() - 0.5) * d.r, d.p.y + Math.random() * d.r * 0.5, d.p.z + (Math.random() - 0.5) * d.r], v: [0, 2, 0], life: 0.8, size: 1.5, size1: 3, color: [1, 3, 0.3], alpha: 0.8, drag: 1, tile: 4, fadeIn: 0.1 });
         done = d.n >= 4;
       } else if (d.kind === 'rift' && d.t >= 0.45) {
-        const c = k.mutRig.glow;
+        const c = d.owner.mutRig.glow;
         this.damageVolume(d.p, d.r, d.dmg, null, 'void');
-        this.hitUnitsSphere(d.p, d.r * 1.5, d.dmg, 'void');
+        this.hitUnitsSphere(d.p, d.r * 1.5, d.dmg, 'void', null, d.owner);
+        this.hitKaijuSphere(d.owner, d.p, d.r * 1.2, d.dmg * 1.5, { push: 0.6 });
         ps.add.spawn({ p: d.p.toArray(), life: 0.35, size: d.r * 0.3, size1: d.r * 2.2, color: [c[0] * 4, c[1] * 4, c[2] * 4], alpha: 1, tile: 4, drag: 0, fadeIn: 0.02 });
         ps.sparks(d.p, Math.ceil(50 * ps.q), d.r * 1.5, [c[0] * 5, c[1] * 5, c[2] * 5]);
         this.app.audio && this.app.audio.impact(d.p, 0.6);
@@ -265,18 +309,22 @@ export class Play {
       } else if (d.kind === 'quake' && d.t >= 0.3) {
         // the aftershock: a wider, weaker ring
         this.damageVolume(new THREE.Vector3(d.p.x, d.p.y + d.r * 0.15, d.p.z), d.r, d.dmg, new THREE.Vector3(0, 10, 0), 'stomp');
-        this.hitUnitsSphere(d.p, d.r * 1.2, d.dmg, 'stomp');
+        this.hitUnitsSphere(d.p, d.r * 1.2, d.dmg, 'stomp', null, d.owner);
+        this.hitKaijuSphere(d.owner, d.p, d.r * 0.9, d.dmg, { push: 1.2 });
         ps.surge(d.p, d.r, 22, { color: [0.5, 0.45, 0.38], speed: d.r * 0.8, life: 10, grow: 0.8 });
         if (this.world.groundAt(d.p.x, d.p.z) > -0.5) this.decals.add(DECAL.CRACK, d.p.x, d.p.y, d.p.z, d.r * 1.6);
         this.rig.impulse(d.p, 0.5, d.r * 10);
         this.app.audio && this.app.audio.slam(d.p, 0.6);
         done = true;
+      } else if (d.kind === 'cataclysm') {
+        done = this._cataclysm(d, dt);
       } else if (d.kind === 'echo' && d.t >= 0.55) {
         // Echo Chamber: the roar breaks things in front of the jaws and silences every gun
         const f = k.forward.clone();
         const p = k.pos.clone().addScaledVector(f, k.height * 0.7).setY(k.pos.y + k.height * 0.4);
         this.damageVolume(p, k.height * 0.75, k.stats.special * 0.5, f.multiplyScalar(18), 'roar');
         this.hitUnitsSphere(k.pos, 500, 80, 'roar');
+        this.hitKaijuSphere(k, p, k.height * 0.9, k.stats.special * 0.6, { push: 2 });
         if (this.military) this.military.suppressT = Math.max(this.military.suppressT, 8);
         this.abilities.shock(k.pos.clone().setY(this.world.groundAt(k.pos.x, k.pos.z)), k.height * 4, k.mutRig.glow);
         ps.surge(k.pos.clone().setY(0), k.height * 0.9, 24, { speed: k.height, life: 8, grow: 0.7 });
@@ -285,6 +333,77 @@ export class Play {
       }
       if (done) this.dots.splice(i, 1);
     }
+  }
+
+  // The Cataclysm's timeline: a charge-up, the flash, three blast waves, then the mushroom cloud.
+  _cataclysm(d, dt) {
+    const ps = this.particles, k = d.owner, c = k.mutRig.glow, p = d.p, R = d.R;
+    const B = this.world.buildings;
+    if (d.t < 0.75) {
+      // energy drawn in to the body
+      if (Math.random() < dt * 60) {
+        const a = Math.random() * Math.PI * 2, r = R * (1.2 + Math.random());
+        ps.add.spawn({ p: [p.x + Math.cos(a) * r, p.y + Math.random() * R * 0.6, p.z + Math.sin(a) * r], v: [-Math.cos(a) * r * 1.4, R * 0.3, -Math.sin(a) * r * 1.4], life: 0.7, size: 3 * k.scale, size1: 0.5, color: [c[0] * 6, c[1] * 6, c[2] * 6], alpha: 1, drag: 0, tile: 4, stretch: 1, fadeIn: 0.05 });
+      }
+      return false;
+    }
+    if (d.wave === 0) {
+      d.wave = 1;
+      this.fx.flash = this.app.settings.reducedMotion ? 0.2 : 1.2;
+      this.fx.ca = 1;
+      this.slowmo(0.3, 1.6);
+      this.rig.addTrauma(1);
+      this.abilities.shock(p, R * 5, c);
+      ps.fireball(p.clone().setY(p.y + R * 0.2), R * 0.35);
+      ps.add.spawn({ p: [p.x, p.y + R * 0.3, p.z], life: 0.9, size: R * 0.8, size1: R * 3, color: [c[0] * 9 + 3, c[1] * 9 + 3, c[2] * 9 + 3], alpha: 1, tile: 4, drag: 0, fadeIn: 0.01 });
+      this.decals.add(DECAL.SCORCH, p.x, p.y, p.z, R * 3);
+      this.decals.add(DECAL.CRACK, p.x, p.y, p.z, R * 3.4);
+      this.hitUnitsSphere(p, 1100, 9999, 'explosion', null, k);
+      this.app.audio && this.app.audio.explosion(p, 1);
+      this.app.audio && this.app.audio.slam(p, 1);
+      if (this.app.audio) this.app.audio.musicKick = 1;
+    }
+    // three expanding waves of destruction
+    const waves = [[0.75, 0.75, 1.0], [1.0, 1.35, 0.6], [1.3, 1.9, 0.35]];
+    while (d.wave <= waves.length && d.t >= waves[d.wave - 1][0]) {
+      const [, rr, f] = waves[d.wave - 1];
+      const r = R * rr;
+      this.damageVolume(new THREE.Vector3(p.x, p.y + r * 0.3, p.z), r, d.dmg * f, new THREE.Vector3(0, 18, 0), 'explosion');
+      B.ignite(p, r * 1.1, 0.35);
+      if (this.traffic) this.traffic.blast(p, r * 1.4);
+      if (this.props) this.props.knock(p, r);
+      if (this.crowds) this.crowds.crush(p, r);
+      this.hitKaijuSphere(k, p, r, d.dmg * f * 1.5, { push: 3 });
+      ps.surge(p, r * 1.1, 40, { color: [0.5, 0.44, 0.38], speed: r * 0.9, life: 16, grow: 0.9 });
+      B.dustAround(p, r * 2, 0.6);
+      this.rig.impulse(p, 0.6, r * 10);
+      d.wave++;
+    }
+    // the mushroom cloud: a narrow burning stem and a wide cap that climbs and rolls outward
+    const age = d.t - 0.75;
+    if (age < 6) {
+      const capY = p.y + R * (0.7 + 2.2 * (1 - Math.exp(-age * 0.6)));
+      const heat = Math.max(0, 1 - age / 1.8);
+      const n = Math.ceil(dt * 100 * Math.max(0.6, ps.q));
+      for (let i = 0; i < n; i++) {
+        const a = Math.random() * Math.PI * 2, rr = Math.random();
+        if (i % 3 === 0) {
+          // stem: a column of smoke dragged up into the cap
+          const y = p.y + Math.random() * (capY - p.y) * 0.9;
+          ps.big.spawn({ p: [p.x + Math.cos(a) * R * 0.12 * rr, y, p.z + Math.sin(a) * R * 0.12 * rr], v: [Math.cos(a) * 1.5, R * 0.3, Math.sin(a) * 1.5],
+            life: 6 + Math.random() * 3, size: R * 0.14, size1: R * 0.3, color: [0.3, 0.26, 0.23], alpha: 0.8, drag: 0.9, buoy: 0.4, heat: heat * 0.9 + 0.08, fadeIn: 0.08 });
+        } else {
+          // cap: puffs on a ring that roll out and over, lit from inside while it is young
+          const ring = R * (0.25 + 0.75 * Math.sqrt(rr));
+          const up = (1 - rr) * R * 0.25;
+          ps.big.spawn({ p: [p.x + Math.cos(a) * ring * 0.8, capY + up + (Math.random() - 0.5) * R * 0.15, p.z + Math.sin(a) * ring * 0.8],
+            v: [Math.cos(a) * ring * 0.32, R * 0.05 - rr * R * 0.06, Math.sin(a) * ring * 0.32],
+            life: 10 + Math.random() * 5, size: R * 0.32, size1: R * 0.8, color: [0.36, 0.31, 0.28], alpha: 0.85, drag: 0.55, buoy: 0.1, heat: heat * (1 - rr) * 0.9 + 0.12 * (1 - rr), fadeIn: 0.06 });
+        }
+      }
+      if (age < 1.2 && Math.random() < dt * 30) ps.fire(new THREE.Vector3(p.x + (Math.random() - 0.5) * R * 0.3, p.y + Math.random() * R * 0.4, p.z + (Math.random() - 0.5) * R * 0.3), R * 0.22, { rise: R * 0.4, life: 1.4 });
+    }
+    return d.t > 7;
   }
 
   // Volatile Blood: what the military does to you comes back at them.
@@ -299,6 +418,7 @@ export class Play {
     const c = k.mutRig.glow;
     this.damageVolume(p, k.height * 0.55, 260 * k.scale, new THREE.Vector3(0, 12, 0), 'explosion');
     this.hitUnitsSphere(p, 420, 300, 'explosion');
+    this.hitKaijuSphere(k, p, k.height * 0.7, 400 * k.scale, { push: 1.5 });
     this.world.buildings.ignite(p, k.height * 0.5, 0.4);
     this.particles.fireball(p, k.height * 0.18);
     this.particles.sparks(p, Math.ceil(160 * this.particles.q), k.height * 0.6, [c[0] * 7, c[1] * 7, c[2] * 7]);
@@ -308,15 +428,22 @@ export class Play {
     this.feedPush('Volatile blood');
   }
 
-  clipFor(name) { return this.kaiju.clips[name] ? name : 'attack1'; }
+  clipFor(name, k = this.kaiju) { return k.clips[name] ? name : 'attack1'; }
 
-  _startMove(name) {
-    const k = this.kaiju;
-    k.play(this.clipFor(name), { full: name === 'stomp' || name === 'heavy' });
+  _startMove(name, k = this.kaiju) {
+    // a blow thrown near a rival snaps round to meet it
+    const foe = this.foeOf(k);
+    if (foe && !foe.dead) {
+      const dx = foe.pos.x - k.pos.x, dz = foe.pos.z - k.pos.z;
+      const d = Math.hypot(dx, dz), want = Math.atan2(dx, dz);
+      if (d < (k.radius + foe.radius) * 1.3 + 60 * k.scale && Math.abs(angleDiff(k.yaw, want)) < 1.2) k.yaw = want;
+    }
+    k.play(this.clipFor(name, k), { full: name === 'stomp' || name === 'heavy' });
     k.action.hitDone = false;
     k.action.move = name;
-    this.swingHit.clear();
-    this.swingPrev = null;
+    k.swing.hit.clear();
+    k.swing.prev = null;
+    k.swing.foe = false;
     this.app.audio && this.app.audio.swing(k, name);
   }
 
@@ -325,14 +452,21 @@ export class Play {
   update(dt) {
     const app = this.app, inp = app.input;
     const k = this.kaiju;
+    // slow motion: the world runs on scaled time, the camera, HUD and music on real time
+    const rdt = dt;
+    this.frame++;
+    this.slowT = Math.max(0, this.slowT - rdt);
+    this.timeScale = damp(this.timeScale, this.slowT > 0 ? this.slowScale : 1, this.slowT > 0 ? 14 : 2.5, rdt);
+    dt *= this.timeScale;
     this.time += dt;
     // ---- controls
     const ctl = { moveDir: new THREE.Vector3(), sprint: false, aimPoint: null, aiming: false };
-    const playing = this.state === 'play' && !k.dead;
+    const playing = this.state === 'play' && !k.dead && !this.cineLock;
     if (this.state === 'intro') {
       ctl.moveDir.set(0, 0, -0.55);
       if (inp.attack || inp.hit('Space') || inp.hit('Enter') || inp.hit('Escape')) this.endIntro();
     }
+    if (this.cineLock && (inp.hit('Enter') || inp.hit('Escape'))) this.rig.cine && (this.rig.cine.t = this.rig.cine.dur);
     if (playing) {
       const m = inp.move;
       _f.set(-Math.sin(this.rig.yaw), 0, -Math.cos(this.rig.yaw));
@@ -345,11 +479,11 @@ export class Play {
       if (inp.heavy) this.request('heavy');
       if (inp.stomp) this.request('stomp');
       if (inp.roar) this.request('roar');
-      if (inp.mutate) this.startSurge();
+      if (inp.mutate) { if (this.surge.on) this.cataclysm(); else this.startSurge(); }
       this._special(dt, inp.special);
       ctl.aiming = this.kaiju.special.on;
       this.rig.aiming = inp.special || this.kaiju.special.on;
-    }
+    } else if (this.state === 'play' && !k.dead) this._special(dt, false);
     this.comboT -= dt;
     if (this.comboT <= 0) this.combo = 0;
     // ---- kaiju (a brief hit-stop sells the weight of a connecting blow)
@@ -357,15 +491,18 @@ export class Play {
     this.hitstop = Math.max(0, (this.hitstop || 0) - dt);
     if (!this.abilities.updateLeap(kdt, k)) k.update(kdt, ctl, this.world);
     else { k.root.rotation.y = k.yaw; k.mixer.update(kdt); k.model.updateMatrixWorld(true); }
-    this._moveHits(dt);
-    this._bodyContact(dt);
+    this._moveHits(dt, k);
+    this._bodyContact(dt, k);
     this._water(dt);
+    // ---- rival kaiju
+    this._rivals(dt);
     // ---- camera
-    this.rig.update(dt, k, playing ? inp.look : { x: 0, y: 0 }, playing ? inp.zoom : 0, this.world);
+    this.rig.update(rdt, k, playing ? inp.look : { x: 0, y: 0 }, playing ? inp.zoom : 0, this.world);
     // ---- occlusion cutaway between camera and kaiju
     SG.uCutA.value.copy(this.camera.position);
-    SG.uCutB.value.copy(k.pos).setY(k.pos.y + k.height * 0.55);
-    SG.uCutR.value = k.height * 0.55;
+    const focus = this.cineFocus || k;
+    SG.uCutB.value.copy(focus.pos).setY(focus.pos.y + focus.height * 0.55);
+    SG.uCutR.value = focus.height * 0.55;
     // ---- world + effects
     this.world.update(dt);
     this.debris.update(dt);
@@ -381,7 +518,7 @@ export class Play {
     const dDamage = this.score.damage - this._lastDmg, dKills = this.score.kills - this._lastKills;
     this._lastDmg = this.score.damage;
     this._lastKills = this.score.kills;
-    if (this.state === 'play') this._surge(dt, dDamage, dKills);
+    if (this.state === 'play') { this._surge(dt, dDamage, dKills); this._chain(rdt, dDamage); }
     if (dKills > 0 && this.genes.has('frenzy') && !k.dead) {
       k.hp = Math.min(k.maxHp, k.hp + k.maxHp * 0.03 * dKills);
       k.energy = Math.min(k.maxEnergy, k.energy + 8 * dKills);
@@ -393,18 +530,139 @@ export class Play {
     this._objectives(dt);
     // ---- post fx
     const g = app.renderer.grade.uniforms;
-    this.fx.hurt = damp(this.fx.hurt, k.hurtT > 0.9 ? 0.6 : 0, 5, dt);
+    this.fx.hurt = damp(this.fx.hurt, k.hurtT > 0.9 ? 0.6 : 0, 5, rdt);
     g.uHurt.value = this.fx.hurt * (app.settings.reducedMotion ? 0.4 : 1);
-    this.fx.flash = Math.max(0, this.fx.flash - dt * 4);
+    this.fx.flash = Math.max(0, this.fx.flash - rdt * 4);
     g.uFlash.value = this.fx.flash;
     g.uHaze.value = this.fx.haze;
     if (this.fx.haze > 0.01) {
       _v.copy(this.fx.hazeAt).project(this.camera);
       g.uHazeCenter.value.set(_v.x * 0.5 + 0.5, _v.y * 0.5 + 0.5);
     }
-    g.uLetter.value = damp(g.uLetter.value, this.state === 'intro' || this.state === 'outro' ? 0.11 : 0, 3, dt);
-    if (app.audio) app.audio.update(dt, this);
+    // big blows split the colour channels for an instant; a surge tints the frame's edges
+    this.fx.ca = Math.max(0, this.fx.ca - rdt * 2.5);
+    g.uCA.value = 0.0012 + this.fx.ca * (app.settings.reducedMotion ? 0.002 : 0.009);
+    const sc = k.mutRig.glow;
+    g.uTintCol.value.setRGB(sc[0], sc[1], sc[2]);
+    g.uTint.value = k.surgeAmt * 0.45 + (this.slowT > 0 ? 0.15 : 0);
+    g.uLetter.value = damp(g.uLetter.value, this.state === 'intro' || this.state === 'outro' || this.cineLock ? 0.11 : 0, 3, rdt);
+    if (app.audio) app.audio.update(rdt, this);
     if (app.ui) app.ui.hud(this);
+  }
+
+  // Slow the world down for a moment (real seconds).
+  slowmo(scale, dur) {
+    if (this.app.params && this.app.params.get('noslow')) return;
+    this.slowScale = this.slowT > 0 ? Math.min(this.slowScale, scale) : scale;
+    this.slowT = Math.max(this.slowT, dur);
+  }
+
+  // A scripted camera shot; controls are locked until it ends (Enter or Esc skips it).
+  cinematic(shot) {
+    if (this.app.settings.cinematics === false) { shot.done && shot.done(); return; }
+    this.cineLock = true;
+    const done = shot.done;
+    this.rig.play({ ...shot, done: () => {
+      this.cineLock = false;
+      this.rig.stopCine();
+      if (done) done();
+    } });
+  }
+
+  // ------------------------------------------------------------------ rival kaiju
+
+  _rivals(dt) {
+    if (this.rival) this.rival.update(dt);
+    if (this.corpse) this.corpse.update(dt);
+    if (this.state !== 'play' || this.kaiju.dead || this.rival || this.rivalLoading) return;
+    if (this.time >= this.rivalNext) this.spawnRival();
+  }
+
+  spawnRival() {
+    const rv = this.mission.rival || { tier: 1 };
+    this.rivalLoading = true;
+    this.rivalNext = Infinity; // the next one is scheduled when this one dies
+    const r = new Rival(this, (rv.tier || 1) + this.rivalCount, rv.pick || {});
+    r.load().then(() => {
+      this.rivalLoading = false;
+      if (this.state === 'done' || !this.scene) { r.dispose(); return; }
+      if (this.corpse) { this.corpse.dispose(); this.corpse = null; } // the last one's body sinks away
+      this.rival = r;
+      this.rivalCount++;
+      this._rivalIntro(r);
+    }).catch((e) => { console.warn('rival failed to load', e); this.rivalLoading = false; this.rivalNext = Infinity; });
+  }
+
+  _rivalIntro(r) {
+    const k = r.k, H = k.height;
+    k.play('roar', { full: true });
+    this.app.audio && this.app.audio.roar(k, 1.4);
+    this.app.audio && this.app.audio.sting('rival');
+    this.feedPush('Rival kaiju sighted');
+    this.app.ui && this.app.ui.banner('RIVAL KAIJU', `${r.name} · ${r.strain} strain`, 3.5);
+    const yaw = k.yaw;
+    const at = (a, d, h) => new THREE.Vector3(k.pos.x + Math.sin(yaw + a) * H * d, k.pos.y + H * h, k.pos.z + Math.cos(yaw + a) * H * d);
+    this.cineFocus = k;
+    this.cinematic({
+      from: () => at(0.25, 1.7, 0.15), to: () => at(-0.35, 1.25, 0.4),
+      lookFrom: () => k.pos.clone().setY(k.pos.y + H * 0.85), lookTo: () => k.pos.clone().setY(k.pos.y + H * 0.7),
+      dur: 3.4, fov: 40,
+      done: () => {
+        this.cineFocus = null;
+        r.state = 'fight';
+        // put the camera behind the player, looking at the newcomer
+        const pk = this.kaiju;
+        this.rig.yaw = Math.atan2(pk.pos.x - k.pos.x, pk.pos.z - k.pos.z);
+      },
+    });
+  }
+
+  onRivalDown(r) {
+    const k = r.k, H = k.height;
+    this.score.rivals++;
+    this.score.extraValue = (this.score.extraValue || 0) + 3e9 * r.tier;
+    this.feedPush(r.name + ' slain');
+    this.app.ui && this.app.ui.banner(r.name + ' FALLS', 'Rival slain · +' + (RIVAL.bounty * r.tier).toLocaleString() + ' biomass bounty', 4);
+    this.app.audio && this.app.audio.sting('victory');
+    this.slowmo(0.25, 2.8);
+    this.fx.ca = 1;
+    this.rival = null;
+    this.corpse = r;
+    this.bounty = (this.bounty || 0) + RIVAL.bounty * r.tier;
+    const rv = this.mission.rival;
+    if (rv && rv.every) this.rivalNext = this.time + rv.every;
+    // the finisher: circle the falling body
+    const c = k.pos.clone();
+    const a0 = Math.atan2(this.camera.position.x - c.x, this.camera.position.z - c.z);
+    const at = (a, d, h) => new THREE.Vector3(c.x + Math.sin(a) * H * d, c.y + H * h, c.z + Math.cos(a) * H * d);
+    this.cineFocus = k;
+    this.cinematic({
+      from: () => at(a0, 1.9, 0.5), to: () => at(a0 + 1.2, 1.6, 0.3),
+      lookFrom: () => c.clone().setY(c.y + H * 0.5), lookTo: () => c.clone().setY(c.y + H * 0.3),
+      dur: 3.2, fov: 44,
+      done: () => { this.cineFocus = null; this.rig.yaw = this.kaiju.yaw + Math.PI; },
+    });
+  }
+
+  // ------------------------------------------------------------------ rampage chain
+
+  _chain(rdt, dDamage) {
+    const C = this.chain;
+    if (dDamage > 0) { C.v += dDamage; C.t = CHAIN.window; } else C.t -= rdt;
+    if (C.t <= 0 && C.v > 0) {
+      C.best = Math.max(C.best, C.v);
+      C.v = 0; C.rank = -1;
+    }
+    let r = -1;
+    for (let i = 0; i < CHAIN.ranks.length; i++) if (C.v >= CHAIN.ranks[i][0]) r = i;
+    if (r > C.rank) {
+      C.rank = r;
+      C.bestRank = Math.max(C.bestRank, r);
+      this.app.ui && this.app.ui.rank(CHAIN.ranks[r][1], r);
+      this.app.audio && this.app.audio.sting('rank');
+      if (this.app.audio) this.app.audio.musicKick = Math.max(this.app.audio.musicKick || 0, 0.5 + r * 0.1);
+    }
+    C.best = Math.max(C.best, C.v);
   }
 
   // ------------------------------------------------------------------ specials
@@ -510,7 +768,7 @@ export class Play {
       S.glow = S.on ? 1 : Math.max(0, S.glow - dt);
     } else if (mv.kind === 'charge') {
       if (held && !S.on && canStart) {
-        S.on = true; S.kind = 'charge'; S.t = 0;
+        S.on = true; S.kind = 'charge'; S.t = 0; S.rammed = false;
         S.phase = k.clips.special_in ? 'in' : 'loop';
         k.energy -= mv.cost * k.stats.specialCost;
         if (k.clips.special_in) k.play('special_in', { full: true });
@@ -554,10 +812,10 @@ export class Play {
     return n;
   }
 
-  _moveHits(dt) {
-    const k = this.kaiju, A = k.action;
+  _moveHits(dt, k = this.kaiju) {
+    const A = k.action;
     if (!A || !A.move) return;
-    const mv = this.def.moves[A.move];
+    const mv = k.def.moves[A.move];
     if (!mv) return;
     const ct = A.t * (k.clips[A.name].duration / A.dur); // clip seconds, whatever the play rate
     const S = k.scale;
@@ -566,7 +824,7 @@ export class Play {
         A.hitDone = true;
         const foot = k.bonePos(mv.foot || 'toeR', new THREE.Vector3());
         foot.y = this.world.groundAt(foot.x, foot.z);
-        this.slam(k, foot, mv.radius * S * (this.genes.has('seismic') ? 1.25 : 1), k.stats.stomp);
+        this.slam(k, foot, mv.radius * S * (k === this.kaiju && this.genes.has('seismic') ? 1.25 : 1), k.stats.stomp);
       }
       return;
     }
@@ -588,10 +846,16 @@ export class Play {
       }
       return;
     }
-    const prev = this.swingPrev || pts;
+    const prev = k.swing.prev || pts;
     const R = mv.radius * S;
     let broke = 0;
     const touched = new Set();
+    // the rival's body: one blow per swing, from whichever striking point reaches it first
+    const foe = this.foeOf(k);
+    if (foe && !foe.dead && !k.swing.foe) {
+      const caps = foe.bodyCapsules();
+      for (const p of pts) if (foe.surfaceDist(p, caps) < R) { k.swing.foe = true; this.hitKaiju(k, foe, dmg, p); break; }
+    }
     for (let i = 0; i < pts.length; i++) {
       const a = prev[i], b = pts[i];
       const vel = _v2.subVectors(b, a).multiplyScalar(1 / Math.max(dt, 1e-3));
@@ -600,8 +864,8 @@ export class Play {
       for (let s = 0; s <= steps; s++) {
         const p = _v.lerpVectors(a, b, s / steps).clone();
         B.forChunksInSphere(p, R, (id, d) => {
-          if (this.swingHit.has(id)) return;
-          this.swingHit.add(id);
+          if (k.swing.hit.has(id)) return;
+          k.swing.hit.add(id);
           const f = 1 - 0.5 * d / R;
           B.hp[id] -= dmg * f;
           B.dmgv[id] = Math.min(1, B.dmgv[id] + 0.6);
@@ -609,15 +873,15 @@ export class Play {
           if (B.hp[id] <= 0) { B.breakChunk(id, push, 1.2, 'melee'); broke++; }
           else B._setState(id);
         });
-        this.hitUnitsSphere(p, R * 1.2, dmg * 0.5, 'melee', push);
+        this.hitUnitsSphere(p, R * 1.2, dmg * 0.5, 'melee', push, k);
         if (this.traffic) this.traffic.crushSphere(p, R, push);
       }
       // a single segment between consecutive bones (tail) also sweeps
       if (i > 0 && mv.bones) {
         const mid = _v.lerpVectors(pts[i - 1], pts[i], 0.5).clone();
         B.forChunksInSphere(mid, R, (id) => {
-          if (this.swingHit.has(id)) return;
-          this.swingHit.add(id);
+          if (k.swing.hit.has(id)) return;
+          k.swing.hit.add(id);
           B.hp[id] -= dmg;
           touched.add(B.bid[id]);
           if (B.hp[id] <= 0) { B.breakChunk(id, push, 1.2, 'melee'); broke++; } else B._setState(id);
@@ -630,15 +894,17 @@ export class Play {
       this.rig.addTrauma(0.35);
       this.hitstop = 0.06;
       this.app.audio && this.app.audio.impact(pts[0], Math.min(1, broke / 6));
-      this._element(pts[0], R, dmg);
+      this._element(pts[0], R, dmg, k);
     }
-    this.swingPrev = pts;
+    k.swing.prev = pts;
   }
 
   slam(k, p, radius, dmg) {
     const B = this.world.buildings;
     this.damageVolume(new THREE.Vector3(p.x, p.y + radius * 0.25, p.z), radius * 0.75, dmg, new THREE.Vector3(0, 14, 0), 'stomp');
-    this.hitUnitsSphere(p, radius * 1.4, dmg * 0.8, 'stomp');
+    this.hitUnitsSphere(p, radius * 1.4, dmg * 0.8, 'stomp', null, k);
+    this.hitKaijuSphere(k, p, radius * 0.9, dmg, { push: 1.6 });
+    this.fx.ca = Math.min(1, this.fx.ca + 0.35);
     if (this.traffic) this.traffic.blast(p, radius * 1.6);
     if (this.props) this.props.knock(p, radius);
     if (this.crowds) this.crowds.scare(p, radius * 6);
@@ -656,8 +922,8 @@ export class Play {
     this.fx.flash = 0.05;
     this.app.audio && this.app.audio.slam(p, 1);
     B.dustAround(p, radius * 2.5, 0.3);
-    this._element(p, radius * 0.75, dmg);
-    if (this.form.element === 'quake') this.dots.push({ kind: 'quake', p: p.clone(), r: radius * 1.7, dmg: dmg * 0.35, t: 0 });
+    this._element(p, radius * 0.75, dmg, k);
+    if (k.form.element === 'quake') this.dots.push({ kind: 'quake', owner: k, p: p.clone(), r: radius * 1.7, dmg: dmg * 0.35, t: 0 });
   }
 
   explode(p, r, dmg, push) {
@@ -673,15 +939,61 @@ export class Play {
     this.app.audio && this.app.audio.explosion(p, Math.min(1, r / 30));
   }
 
-  hitUnitsSphere(p, r, dmg, src, push) {
-    if (this.military) this.military.damageSphere(p, r, dmg, src, push);
+  // att: whose blow it is. The military answers to the player; a rival only tramples crowds.
+  hitUnitsSphere(p, r, dmg, src, push, att = this.kaiju) {
+    if (this.military && att === this.kaiju) this.military.damageSphere(p, r, dmg, src, push);
     if (this.crowds) this.crowds.crush(p, r);
   }
 
+  // ------------------------------------------------------------------ kaiju against kaiju
+
+  foeOf(k) {
+    if (k === this.kaiju) return this.rival && this.rival.k && !this.rival.k.dead ? this.rival.k : null;
+    return this.kaiju;
+  }
+
+  hitKaijuSphere(att, p, r, dmg, o = {}) {
+    const foe = this.foeOf(att);
+    if (!foe || foe.dead) return 0;
+    if (foe.surfaceDist(p) > r) return 0;
+    return this.hitKaiju(att, foe, dmg, p, o);
+  }
+
+  // A blow from one kaiju lands on the other. Continuous sources (beams, sprays) pass tick and
+  // count once per frame; discrete blows shove, flinch and spark.
+  hitKaiju(att, foe, dmg, at, o = {}) {
+    if (!foe || foe.dead || att === foe) return 0;
+    if (o.tick) {
+      if (foe._tickFrame === this.frame) return 0;
+      foe._tickFrame = this.frame;
+    }
+    const dealt = foe.damage(dmg * RIVAL.kvk);
+    if (att === this.kaiju) this.score.kaijuDamage = (this.score.kaijuDamage || 0) + dealt;
+    if (o.tick || !at) return dealt;
+    const dir = _v.copy(foe.pos).sub(att.pos).setY(0);
+    if (dir.lengthSq() < 1e-4) dir.set(Math.sin(att.yaw), 0, Math.cos(att.yaw));
+    dir.normalize();
+    foe.knock.addScaledVector(dir, Math.min(40, 8 + dealt * 0.09) * (o.push || 1));
+    // the rival reels from most blows; the player only from heavy ones, so a fight never stun-locks you
+    const flinch = foe === this.kaiju ? dealt > 90 && Math.random() < 0.4 : Math.random() < 0.7;
+    if (flinch && !foe.action && !foe.special.on && !foe.dead) foe.play('hit', { full: false });
+    const c = att.mutRig.glow;
+    this.particles.sparks(at, Math.ceil(50 * this.particles.q), 30 + dealt * 0.2, [c[0] * 5 + 2, c[1] * 5 + 1, c[2] * 5 + 0.5]);
+    this.particles.add.spawn({ p: at.toArray(), life: 0.18, size: 14 * att.scale, size1: 30 * att.scale, color: [c[0] * 6, c[1] * 6, c[2] * 6], alpha: 1, tile: 4, drag: 0, fadeIn: 0.01 });
+    this.particles.dust(at, 10 * foe.scale, 4, { life: 6, grow: 2, speed: 12, up: 0.5 });
+    this.hitstop = Math.max(this.hitstop || 0, 0.09);
+    this.rig.addTrauma(0.3 + Math.min(0.4, dealt / 400));
+    this.fx.ca = Math.min(1, this.fx.ca + 0.5);
+    this.app.audio && this.app.audio.impact(at, 1);
+    this.app.audio && this.app.audio.slam(at, 0.5);
+    if (foe === this.kaiju) this.fx.hurt = Math.max(this.fx.hurt, 0.4);
+    return dealt;
+  }
+
   // The kaiju's body plows through whatever it walks into.
-  _bodyContact(dt) {
-    const k = this.kaiju;
+  _bodyContact(dt, k = this.kaiju) {
     if (k.dead) return;
+    this._shove(dt, k);
     const sp = k.speed + (k.special.kind === 'charge' && k.special.on ? k.runSpeed : 0);
     if (sp < 1) return;
     const B = this.world.buildings;
@@ -699,7 +1011,7 @@ export class Play {
     }
     if (!hit.size) return;
     const charge = k.special.on && k.special.kind === 'charge' ? 4 : 1;
-    const thorns = this.genes.has('thorns');
+    const thorns = k === this.kaiju && this.genes.has('thorns');
     const dmg = 220 * (sp / Math.max(1, k.walkSpeed)) * k.scale * charge * dt * (thorns ? 2 : 1);
     if (thorns) for (const [a, b, r] of caps) if (b.y - r < 8) this.hitUnitsSphere(b, r * 1.1, 400 * dt, 'body');
     const push = k.vel.clone().multiplyScalar(1.1).add(_v2.set(0, 3, 0));
@@ -710,10 +1022,33 @@ export class Play {
       if (B.hp[id] <= 0) B.breakChunk(id, push, 0.9, 'body');
     }
     for (const bi of touched) B.checkSupport(this.world.city.buildings[bi]);
+    if (k !== this.kaiju && this.rig) this.rig.impulse(k.pos, dt * 0.6, 900);
     // buildings resist in proportion to what is in the way, up to a cap: against the kaiju's
     // acceleration (rate 0.85) a full wall of blocks settles it at ~45% of its intended speed
     k.speed *= Math.exp(-1.05 * Math.min(1, hit.size / 60) * dt / charge);
     if (Math.random() < dt * 6) this.app.audio && this.app.audio.crumble(_v.copy(k.pos).setY(20), 0.5);
+  }
+
+  // Two kaiju never pass through each other; a charge that connects is a battering ram.
+  _shove(dt, k) {
+    const foe = this.foeOf(k);
+    if (!foe || foe.dead || k !== this.kaiju) return;
+    const dx = foe.pos.x - k.pos.x, dz = foe.pos.z - k.pos.z;
+    const d = Math.hypot(dx, dz) || 1;
+    const min = (k.radius + foe.radius) * 0.42;
+    if (d < min) {
+      const push = (min - d) * 0.5, nx = dx / d, nz = dz / d;
+      k.pos.x -= nx * push; k.pos.z -= nz * push;
+      foe.pos.x += nx * push; foe.pos.z += nz * push;
+    }
+    for (const [a, b] of [[k, foe], [foe, k]]) {
+      const S = a.special;
+      if (!(S.on && S.kind === 'charge' && S.phase !== 'in') || S.rammed) continue;
+      if (Math.hypot(b.pos.x - a.pos.x, b.pos.z - a.pos.z) < (a.radius + b.radius) * 0.55) {
+        S.rammed = true;
+        this.hitKaiju(a, b, a.stats.special * 0.9, b.pos.clone().setY(b.pos.y + b.height * 0.45), { push: 2.5 });
+      }
+    }
   }
 
   _water(dt) {
@@ -749,6 +1084,12 @@ export class Play {
     this.app.audio && this.app.audio.collapse(c, Math.min(1, g.height / 120));
     this.rig.impulse(c, 0.35, 900);
     this.feedPush(g.mode === 'topple' ? 'Toppling!' : 'Collapse!');
+    // a skyscraper going over is worth watching: a moment of slow motion, rationed
+    if (g.mode === 'topple' && g.height > 90 && this.time > this.toppleT && this.state === 'play') {
+      this.toppleT = this.time + 20;
+      this.slowmo(0.4, 1.1);
+      this.fx.ca = Math.min(1, this.fx.ca + 0.4);
+    }
   }
 
   onGroupImpact(p, speed, g) {
@@ -826,6 +1167,7 @@ export class Play {
       case 'percent': return Math.min(1, this.world.buildings.destroyedFraction / g.value);
       case 'survive': return Math.min(1, this.time / g.value);
       case 'landmark': return Math.min(1, this.score.landmark / g.value);
+      case 'rival': return Math.min(1, this.score.rivals / g.value);
       default: return 0;
     }
   }
@@ -835,7 +1177,7 @@ export class Play {
     const g = this.world.groundAt(p.x, p.z);
     p.y = g;
     const S = k.scale;
-    const seis = this.genes.has('seismic') ? 1.5 : 1;
+    const seis = k === this.kaiju && this.genes.has('seismic') ? 1.5 : 1;
     if (g > -0.5) {
       this.decals.add(DECAL.FOOT, p.x, g, p.z, 13 * S, k.yaw + Math.PI, 1.1);
       this.particles.dust(p, 8 * S * seis, 3, { life: 6, grow: 1.8, speed: 6, up: 0.3 });
@@ -849,6 +1191,7 @@ export class Play {
     if (this.props) this.props.knock(p, 12 * S);
     if (this.traffic) this.traffic.blast(p, 30 * S * seis);
     if (seis > 1 && g > -0.5) this.hitUnitsSphere(p, 14 * S * seis, 60, 'foot');
+    if (k !== this.kaiju) this.rig.impulse(p, 0.25 * s, 700 * S);
     if (this.crowds) this.crowds.scare(p, 300);
     this.app.audio && this.app.audio.footstep(p, s, g < -0.5);
   }

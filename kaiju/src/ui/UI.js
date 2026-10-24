@@ -1,6 +1,6 @@
 // DOM screens and HUD. Screens are plain divs toggled by show(); the HUD updates at ~20 Hz.
 import * as THREE from 'three';
-import { KAIJU, UPGRADES, MISSIONS, CITIES, TIMES, FORMS, GENES, GENE_SLOTS, kaijuStats } from '../core/Config.js';
+import { KAIJU, UPGRADES, MISSIONS, CITIES, TIMES, FORMS, GENES, GENE_SLOTS, CHAIN, kaijuStats } from '../core/Config.js';
 import { missionUnlocked, SETTINGS_DEF } from '../core/Save.js';
 import { fmtMoney } from '../game/Play.js';
 
@@ -16,6 +16,9 @@ const TIPS = [
   'Destruction fills the mutagen meter. When it is full, press T to surge: bigger, faster and far harder to stop.',
   'A Glacial strain freezes tanks where they stand and drops gunships out of the sky.',
   'Genes can be moved between kaiju for free. Buy each one once, slot it anywhere.',
+  'Press T again during a surge to unleash the Cataclysm. It ends the surge, and most of the district.',
+  'Rival kaiju enrage when they are losing. Save your surge for that moment.',
+  'Keep the destruction going without a pause and the rampage chain climbs the ranks. The best chain pays out.',
 ];
 const ELEMENT = { fire: 'Fire', ice: 'Frost', acid: 'Acid', quake: 'Aftershock', void: 'Rift' };
 
@@ -256,6 +259,7 @@ export class UI {
       ['sfx', 'Effects volume', 'range', [0, 1, 0.05]],
       ['shake', 'Camera shake', 'range', [0, 1.5, 0.05]],
       ['reducedMotion', 'Reduced motion and flashes', 'check'],
+      ['cinematics', 'Cinematic camera moments', 'check'],
       ['showFps', 'Show frame rate', 'check'],
     ];
     F.innerHTML = '';
@@ -322,12 +326,21 @@ export class UI {
     this.toastT = 1.6;
   }
 
+  // A rampage chain rank: big, brief, centre screen.
+  rank(name, r) {
+    const e = $('h-rank');
+    e.textContent = name;
+    e.className = 'rank';
+    void e.offsetWidth; // restart the animation
+    e.className = 'rank on r' + r;
+  }
+
   objectiveComplete(play) {
     this.banner('OBJECTIVE COMPLETE', 'Keep going, or retreat to the sea (Esc) to bank your biomass.', 5);
   }
 
   popup(worldPos, text) {
-    if (this.pops.length > 14) return;
+    if (this.pops.length > 8) return;
     const el = document.createElement('div');
     el.className = 'pop';
     el.textContent = text;
@@ -373,6 +386,25 @@ export class UI {
     $('h-obj').innerHTML = goals.map((g) => `<div class="obj ${g.progress >= 1 ? 'done' : ''}">${g.progress >= 1 ? '✔ ' : ''}${g.label}<span class="pb"><i style="width:${Math.round((g.progress || 0) * 100)}%"></i></span></div>`).join('')
       || '<div class="obj">FREE RAMPAGE</div>';
     $('h-cross').classList.toggle('on', k.special.on || this.app.input.special);
+    // rival health
+    const R = play.rival, bossEl = $('h-boss');
+    const showBoss = !!(R && R.k && R.state !== 'loading');
+    bossEl.classList.toggle('on', showBoss);
+    if (showBoss) {
+      const c = R.def.moves.special.color;
+      bossEl.style.setProperty('--rc', `rgb(${c.map((x) => Math.round(Math.min(1, x) * 255)).join(',')})`);
+      $('h-boss-n').innerHTML = `${R.name}<small>${R.strain.toUpperCase()} STRAIN${R.enraged ? ' · ENRAGED' : ''}</small>`;
+      $('h-boss-hp').style.width = Math.max(0, R.k.hp / R.k.maxHp * 100) + '%';
+      bossEl.classList.toggle('enraged', R.enraged);
+    }
+    // rampage chain
+    const C = play.chain, ch = $('h-chain');
+    ch.classList.toggle('on', C.v > 0);
+    if (C.v > 0) {
+      $('h-chain-v').textContent = '$' + fmtMoney(C.v);
+      $('h-chain-r').textContent = C.rank >= 0 ? CHAIN.ranks[C.rank][1] : '';
+      $('h-chain-t').style.width = Math.max(0, C.t / CHAIN.window * 100) + '%';
+    }
     const fd = $('h-feed');
     fd.innerHTML = play.feed.filter((f) => play.time - f.t < 6).map((f) => `<div style="opacity:${Math.max(0, 1 - (play.time - f.t - 4) / 2)}">${f.text}</div>`).join('');
     const sp = $('mv-special');
@@ -397,6 +429,7 @@ export class UI {
     const cells = [
       ['DAMAGE', '$' + fmtMoney(s.damage)], ['BUILDINGS', s.buildings], ['SKYSCRAPERS', s.towers],
       ['CITY DESTROYED', (play.world.buildings.destroyedFraction * 100).toFixed(1) + '%'], ['MILITARY', s.kills], ['TIME', Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0')],
+      ['RIVALS SLAIN', s.rivals || 0], ['BEST CHAIN', '$' + fmtMoney(play.chain.best) + (play.chain.bestRank >= 0 ? `<small>${CHAIN.ranks[play.chain.bestRank][1]}</small>` : '')],
     ];
     $('r-stats').innerHTML = cells.map(([a, b]) => `<div><span>${a}</span><b>${b}</b></div>`).join('');
     $('r-reward').textContent = '+' + reward.toLocaleString() + (res.died ? '  (halved: defeated)' : '');

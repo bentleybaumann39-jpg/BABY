@@ -21,7 +21,7 @@ You need a desktop browser with WebGL2 (Chrome, Edge or Firefox) and a dedicated
 | Q, F, middle mouse / LT | Signature power. Hold to channel; it aims where you look. |
 | Space / A | Stomp, or leap for the agile kaiju |
 | E / B | Roar: panics the city and rattles the military |
-| T / right stick click | Mutation Surge, once the mutagen meter is full |
+| T / right stick click | Mutation Surge, once the mutagen meter is full. Press again mid-surge for the Cataclysm. |
 | Esc / Start | Pause, settings, retreat |
 
 ## The roster
@@ -76,9 +76,19 @@ In a rampage, destruction, kills and roars fill the **mutagen** meter under your
 
 It also gets a quarter of its health and all of its energy back, and its seams blaze.
 
+## Rivals, the Cataclysm and the rampage chain
+
+- **Rival kaiju.** Other titans come for the city. A rival is one of the other five kaiju in a random strain, at about twice its normal health. It arrives in a cinematic, hunts you through the blocks and fights with its own moves and signature power. At a third of its health it enrages and surges.
+  - Your claws, beams, sprays, acid globs, pulses, charges and strain elements all land on it. Its land on you.
+  - Kill it for a biomass bounty and a slow-motion finisher.
+  - **Clash** is a duel mission, and **Apex** sends a rival at you halfway through. In **Free Rampage**, rivals keep coming, each one tougher.
+- **Cataclysm.** Press T again during a surge. The kaiju draws the energy in, then releases it in a flash, three expanding blast waves and a mushroom cloud. It flattens the district, clears the sky of the military and ends the surge.
+- **Rampage chain.** Destruction without a pause of more than three seconds adds up. The total climbs through five ranks: Destructive, Devastating, Cataclysmic, Apocalyptic and Extinction Event. Your best chain pays out in biomass at the end of the rampage.
+- **Cinematic moments.** Slow motion and camera moves mark a toppling skyscraper, a surge, a rival's arrival and its death. During a surge and in slow motion the edges of the frame take your strain's colour. Turn the camera moves off in **Settings → Cinematic camera moments**; Enter or Esc skips one.
+
 ## Missions
 
-Five story missions run across three cities (Harbor City, Metro Bay, Capital District) and six times of day (dawn, midday, golden hour, dusk, night, storm). The goals are damage totals, toppling a landmark, collapsing towers, surviving a storm under heavy fire, and levelling a share of the city. **Free Rampage** lets you pick any city and any hour with no objective.
+Six story missions run across three cities (Harbor City, Metro Bay, Capital District) and six times of day (dawn, midday, golden hour, dusk, night, storm). The goals are damage totals, toppling a landmark, killing a rival kaiju, collapsing towers, surviving a storm under heavy fire, and levelling a share of the city. **Free Rampage** lets you pick any city and any hour with no objective.
 
 ## What makes it tick
 
@@ -118,6 +128,7 @@ kaiju/
   - `plow`: walking through dense blocks
   - `surge`: a Mutation Surge
   - `elements`: strain elements and genes against live units
+  - `rival`: a rival's arrival, the fight, its enraged surge and its death, then a surge and a Cataclysm
 - **Strain look-dev:** `node kaiju/tests/forms.mjs <outdir> <kaiju>` renders every strain on the lab stage from the front and the back.
 - **Menu flow:** `node kaiju/tests/ui.mjs <outdir> [Landfall.html]` walks the title, lab, awakening, evolution, mutation, genes, a deploy and the results.
 - **URL parameters:**
@@ -128,5 +139,6 @@ kaiju/
   - `nointro=1` skips the intro.
   - `form=<strain>` and `genes=a,b,c` override the saved mutation (with `auto`).
   - `bloom=0` turns off bloom.
+  - `noslow=1` turns off slow motion.
 
 The vendored three.js (r186) is MIT licensed.

@@ -256,6 +256,82 @@ if (script === 'elements') {
   });
   console.log('elements', JSON.stringify(r));
 }
+if (script === 'rival') {
+  // a rival arrives, the two fight, the rival enrages and dies; then a surge and a Cataclysm
+  const st = () => page.evaluate(() => {
+    const p = window.__kj.play, k = p.kaiju, R = p.rival || p.corpse;
+    return { t: +p.time.toFixed(1), ts: +p.timeScale.toFixed(2), cine: p.cineLock, hp: Math.round(k.hp), rival: R && R.k ? { id: R.id, form: R.mut.form, state: R.state, hp: Math.round(R.k.hp), max: Math.round(R.k.maxHp), dist: Math.round(Math.hypot(R.k.pos.x - k.pos.x, R.k.pos.z - k.pos.z)), act: R.k.action && R.k.action.name, sp: R.sp && R.sp.kind, enraged: R.enraged, dead: R.k.dead } : null,
+      rivals: p.score.rivals, chain: Math.round(p.chain.v / 1e6), rank: p.chain.rank, best: Math.round(p.chain.best / 1e6), dmg: Math.round(p.score.damage / 1e6) };
+  });
+  log(await step(13));
+  console.log('arrival', JSON.stringify(await st()));
+  log(await step(1.2));
+  await shot('90_rival_intro');
+  log(await step(3));
+  console.log('fight on', JSON.stringify(await st()));
+  // fight: face the rival and swing; it comes to us
+  const fight = (sec, extra = '') => step(sec, {}, `const k = p.kaiju, R = p.rival; if (R && R.k && !R.k.dead) { const dx = R.k.pos.x - k.pos.x, dz = R.k.pos.z - k.pos.z; p.rig.yaw = Math.atan2(-dx, -dz); if (Math.hypot(dx, dz) < 160) { if (k.canAct()) p.request(Math.random() < 0.6 ? 'attack' : 'heavy'); } else { app.input.keys.add('KeyW'); } } ${extra}`);
+  for (let i = 0; i < 4; i++) { log(await fight(3)); console.log('fight', JSON.stringify(await st())); }
+  await shot('91_fight');
+  await page.evaluate(() => { const R = window.__kj.play.rival; R.k.hp = R.k.maxHp * 0.3; });
+  log(await fight(2.5));
+  console.log('enraged', JSON.stringify(await st()));
+  await shot('92_enraged');
+  await page.evaluate(() => { const R = window.__kj.play.rival; R.k.damage(1e6); });
+  log(await step(1.0));
+  console.log('slain', JSON.stringify(await st()));
+  await shot('93_finisher');
+  log(await step(4));
+  console.log('after', JSON.stringify(await st()));
+  // surge, then the Cataclysm
+  await page.evaluate(() => { window.__kj.play.surge.meter = 1; });
+  log(await step(0.3, { tap: ['KeyT'] }));
+  log(await step(3.0));
+  const t0 = await page.evaluate(() => { const p = window.__kj.play; p.app.input.pressed.add('KeyT'); const a = performance.now(); for (let i = 0; i < 30; i++) { p.update(1 / 30); p.app.input.endFrame(); } return Math.round(performance.now() - a); });
+  console.log('cataclysm 1s of updates took ms', t0, 'blast', await page.evaluate(() => window.__kj.play.dots.some((d) => d.kind === 'cataclysm')), JSON.stringify(await st()));
+  log(await step(1.0));
+  await shot('94_cataclysm');
+  log(await step(3.0));
+  await shot('95_mushroom');
+  console.log('end', JSON.stringify(await st()));
+}
+if (script === 'cataclysm') {
+  // downtown: surge, then the Cataclysm, watched from a distance; measure what it costs
+  console.log(JSON.stringify(await page.evaluate(() => {
+    const p = window.__kj.play, k = p.kaiju;
+    const bs = p.world.city.buildings.filter((b) => b.h > 80);
+    bs.sort((a, b) => b.h - a.h);
+    const b = bs[Math.min(4, bs.length - 1)];
+    k.pos.set(b.x0 + b.w / 2, 0, b.z0 + b.d + 30);
+    k.groundY = p.world.groundAt(k.pos.x, k.pos.z);
+    return { at: k.pos.toArray().map(Math.round), towers: bs.length };
+  })));
+  log(await step(0.5));
+  const c0 = await page.evaluate(() => window.__kj.play.world.buildings.stats.chunksDestroyed);
+  await page.evaluate(() => { window.__kj.play.surge.meter = 1; });
+  log(await step(0.2, { tap: ['KeyT'] }));
+  log(await step(2.6));
+  const ms = await page.evaluate(() => {
+    const p = window.__kj.play; p.app.input.pressed.add('KeyT');
+    let worst = 0; const a = performance.now();
+    for (let i = 0; i < 45; i++) { const t = performance.now(); p.update(1 / 30); p.app.input.endFrame(); worst = Math.max(worst, performance.now() - t); }
+    return { total: Math.round(performance.now() - a), worst: Math.round(worst) };
+  });
+  console.log('cataclysm frames', JSON.stringify(ms));
+  const far = () => page.evaluate(() => { const p = window.__kj.play, k = p.kaiju; p.rig.yaw = k.yaw + 2.4; p.rig.zoom = 1.8; p.rig.pitch = 0.35; });
+  await far();
+  log(await step(1.0));
+  await shot('96_blast');
+  // a fixed shot from well outside the blast for the cloud
+  await page.evaluate(() => {
+    const p = window.__kj.play, k = p.kaiju, T = window.__kj.THREE;
+    const eye = new T.Vector3(k.pos.x + 900, 160, k.pos.z + 900), at = new T.Vector3(k.pos.x, 260, k.pos.z);
+    p.rig.play({ from: eye, to: eye, lookFrom: at, lookTo: at, dur: 1e9 });
+  });
+  log(await step(3.5));
+  await shot('97_cloud');
+  console.log('chunks destroyed', await page.evaluate((c0) => window.__kj.play.world.buildings.stats.chunksDestroyed - c0, c0), 'dmg', await page.evaluate(() => Math.round(window.__kj.play.score.damage / 1e6)));
+}
 if (script === 'plow') {
   // walking into dense blocks: speed should settle well above a crawl (no screenshots: fast)
   log(await step(0.5));

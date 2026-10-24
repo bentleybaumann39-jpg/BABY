@@ -243,13 +243,17 @@ export class Particles {
     this.atlas = puffAtlas(128);
     this.lit = new Pool(scene, Math.round(5000 * quality), 'alpha', FRAG_LIT, this.atlas);
     this.add = new Pool(scene, Math.round(3500 * quality), 'add', FRAG_ADD, this.atlas);
+    // a small reserved pool for set pieces (the Cataclysm cloud) that ordinary dust must not evict
+    this.big = new Pool(scene, Math.round(900 * Math.max(0.6, quality)), 'alpha', FRAG_LIT, this.atlas);
     this.wind = new THREE.Vector3(2.5, 0, -1.2);
     this.q = quality;
   }
 
   setLighting(sunI, amb) {
-    this.lit.uniforms.uSunI.value = sunI;
-    this.lit.uniforms.uAmb.value.copy(amb);
+    for (const pool of [this.lit, this.big]) {
+      pool.uniforms.uSunI.value = sunI;
+      pool.uniforms.uAmb.value.copy(amb);
+    }
   }
 
   // ---- presets
@@ -358,5 +362,6 @@ export class Particles {
   update(dt) {
     this.lit.update(dt, this.wind);
     this.add.update(dt, this.wind);
+    this.big.update(dt, this.wind);
   }
 }

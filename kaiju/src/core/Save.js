@@ -7,7 +7,7 @@ export const VERSION = 2; // 2: the alien roster replaced the four original kaij
 
 export const SETTINGS_DEF = {
   quality: 'high', sensitivity: 1, invertY: false, fov: 55, master: 0.9, music: 0.6, sfx: 0.9,
-  shake: 1, reducedMotion: false, captions: true, showFps: false,
+  shake: 1, reducedMotion: false, captions: true, showFps: false, cinematics: true,
 };
 const SETTINGS_RULE = {
   quality: (v) => ['low', 'medium', 'high', 'ultra'].includes(v),
@@ -16,6 +16,7 @@ const SETTINGS_RULE = {
   master: (v) => typeof v === 'number' && v >= 0 && v <= 1, music: (v) => typeof v === 'number' && v >= 0 && v <= 1,
   sfx: (v) => typeof v === 'number' && v >= 0 && v <= 1, shake: (v) => typeof v === 'number' && v >= 0 && v <= 1.5,
   reducedMotion: (v) => typeof v === 'boolean', captions: (v) => typeof v === 'boolean', showFps: (v) => typeof v === 'boolean',
+  cinematics: (v) => typeof v === 'boolean',
 };
 
 function store() {

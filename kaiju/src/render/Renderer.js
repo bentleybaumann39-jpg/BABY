@@ -23,12 +23,12 @@ const GradeShader = {
     uSat: { value: 1.05 }, uContrast: { value: 1.06 }, uShadowTint: { value: new THREE.Color(0.96, 1.0, 1.06) },
     uHighTint: { value: new THREE.Color(1.04, 1.0, 0.95) }, uVignette: { value: 0.32 }, uGrain: { value: 0.035 },
     uCA: { value: 0.0012 }, uHurt: { value: 0 }, uLetter: { value: 0 }, uHaze: { value: 0 }, uHazeCenter: { value: new THREE.Vector2(0.5, 0.5) },
-    uFlash: { value: 0 }, uFade: { value: 0 },
+    uFlash: { value: 0 }, uFade: { value: 0 }, uTint: { value: 0 }, uTintCol: { value: new THREE.Color(1, 1, 1) },
   },
   vertexShader: /* glsl */`varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse; uniform float uTime, uSat, uContrast, uVignette, uGrain, uCA, uHurt, uLetter, uHaze, uFlash, uFade;
-    uniform vec2 uRes, uHazeCenter; uniform vec3 uShadowTint, uHighTint;
+    uniform sampler2D tDiffuse; uniform float uTime, uSat, uContrast, uVignette, uGrain, uCA, uHurt, uLetter, uHaze, uFlash, uFade, uTint;
+    uniform vec2 uRes, uHazeCenter; uniform vec3 uShadowTint, uHighTint, uTintCol;
     varying vec2 vUv;
     float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
     void main() {
@@ -58,6 +58,8 @@ const GradeShader = {
       float vig = 1.0 - uVignette * smoothstep(0.15, 0.85, sqrt(r2) * 1.25);
       col *= vig;
       col = mix(col, col * vec3(1.6, 0.35, 0.3), uHurt * smoothstep(0.1, 0.7, sqrt(r2)));
+      // a surge or a slow-motion moment washes the frame's edges in the strain's colour
+      if (uTint > 0.0) col = mix(col, (col + 0.04) * uTintCol * 1.8, uTint * smoothstep(0.15, 0.75, sqrt(r2)));
       float g = h(uv * uRes + fract(uTime * 37.0) * 100.0) - 0.5;
       col *= 1.0 + g * uGrain * 2.0;
       col *= 1.0 - uFade;

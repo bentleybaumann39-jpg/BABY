@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { clone as skelClone } from '../../vendor/addons/utils/SkeletonUtils.js';
 import { patchTree, G } from '../render/Shading.js';
 import { MutationRig } from './Mutation.js';
+import { FORMS } from '../core/Config.js';
 import { clamp, damp, dampAngle, angleDiff, smooth } from '../core/Rng.js';
 
 const LEG_BONES = ['root', 'hips', 'thighL', 'thighR', 'shinL', 'shinR', 'footL', 'footR', 'toeL', 'toeR',
@@ -62,7 +63,10 @@ export class Kaiju {
     });
     // the strain's growths are added after the material scan: they manage their own glow
     this.mutRig.setForm(mut ? mut.form : 'prime');
+    this.form = FORMS[mut && mut.form] || FORMS.prime;
     this.surgeAmt = 0;
+    this.knock = new THREE.Vector3(); // shove from a rival's blows, metres per second
+    this.swing = { hit: new Set(), prev: null, foe: false }; // per-swing hit bookkeeping
     this.bones = {};
     this.model.traverse((o) => { if (o.isBone) this.bones[o.name] = o; });
     // animation layers
@@ -198,6 +202,8 @@ export class Kaiju {
     const f = this.forward;
     this.vel.copy(f).multiplyScalar(this.speed);
     this.pos.addScaledVector(this.vel, dt);
+    // knockback from a heavy blow slides the whole body and dies away
+    if (this.knock.lengthSq() > 0.01) { this.pos.addScaledVector(this.knock, dt); this.knock.multiplyScalar(Math.exp(-2.5 * dt)); }
     // stay inside the playable area
     const B = world.bounds;
     this.pos.x = clamp(this.pos.x, B.x0, B.x1);
@@ -398,6 +404,18 @@ export class Kaiju {
       caps.push([this.bonePos(a, new THREE.Vector3()), this.bonePos(b, new THREE.Vector3()), rad * r]);
     }
     return caps;
+  }
+
+  // Distance from p to the body's surface (negative inside), from the collision capsules.
+  surfaceDist(p, caps = this.bodyCapsules()) {
+    let best = Infinity;
+    for (const [a, b, r] of caps) {
+      const ab = _v2.subVectors(b, a);
+      const t = clamp(_v.subVectors(p, a).dot(ab) / Math.max(ab.lengthSq(), 1e-6), 0, 1);
+      const d = _v.copy(a).addScaledVector(ab, t).distanceTo(p) - r;
+      if (d < best) best = d;
+    }
+    return best;
   }
 
   damage(amount, dir) {

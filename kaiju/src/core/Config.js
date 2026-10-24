@@ -179,6 +179,18 @@ export const SURGE = {
   armor: 0.15, scale: 1.15,
 };
 
+// Rampage chain: damage dealt without a pause of more than `window` seconds adds up; the running
+// total earns a rank.
+export const CHAIN = {
+  window: 3,
+  ranks: [[0.5e9, 'DESTRUCTIVE'], [2e9, 'DEVASTATING'], [6e9, 'CATACLYSMIC'], [15e9, 'APOCALYPTIC'], [40e9, 'EXTINCTION EVENT']],
+};
+
+// Rival kaiju. kvk scales any blow one kaiju lands on another (city-levelling numbers would end a
+// fight in two swings). A rival's health is set so its effective health (health over what its
+// armour lets through) is ehp, whatever the species, and grows by tierGrow per tier.
+export const RIVAL = { ehp: 4200, tierGrow: 0.35, kvk: 0.35, enrage: 0.35, attackGap: [1.5, 2.9], specialGap: 7, bounty: 600 };
+
 export function kaijuStats(id, levels = {}, mut = null) {
   const b = KAIJU[id].base;
   const lv = (k) => levels[k] || 0;
@@ -231,6 +243,11 @@ export const MISSIONS = [
     goals: [{ kind: 'landmark', value: 1, label: 'Topple the broadcast tower' }, { kind: 'damage', value: 60e9, label: 'Cause $60B in damage' }], military: 2, reward: 1400,
   },
   {
+    id: 'clash', name: 'Clash', city: 'metro', time: 'night', requires: 'landfall',
+    brief: 'Something else has come ashore in Metro Bay, and it wants the city for itself. Kill it.',
+    goals: [{ kind: 'rival', value: 1, label: 'Defeat the rival kaiju' }], military: 1, reward: 1800, rival: { at: 12, tier: 1 },
+  },
+  {
     id: 'skyline', name: 'Skyline', city: 'metro', time: 'dusk', requires: 'blackout',
     brief: 'Metro Bay has the tallest skyline on the coast. Bring 20 of its towers down.',
     goals: [{ kind: 'towers', value: 20, label: 'Collapse 20 skyscrapers' }], military: 3, reward: 2200,
@@ -242,13 +259,13 @@ export const MISSIONS = [
   },
   {
     id: 'apex', name: 'Apex', city: 'metro', time: 'day', requires: 'stormfront',
-    brief: 'Broad daylight, full military response. Level 35% of Metro Bay.',
-    goals: [{ kind: 'percent', value: 0.35, label: 'Destroy 35% of the city' }], military: 5, reward: 5000,
+    brief: 'Broad daylight, full military response, and a rival titan that wants the prize. Level 35% of Metro Bay.',
+    goals: [{ kind: 'percent', value: 0.35, label: 'Destroy 35% of the city' }], military: 5, reward: 5000, rival: { at: 40, tier: 3 },
   },
   {
     id: 'rampage', name: 'Free Rampage', city: 'harbor', time: 'golden', sandbox: true,
-    brief: 'No objective. Any city, any hour. The military escalates until you leave or fall.',
-    goals: [], military: 3, reward: 0,
+    brief: 'No objective. Any city, any hour. The military escalates and rival kaiju come for you until you leave or fall.',
+    goals: [], military: 3, reward: 0, rival: { at: 100, tier: 1, every: 140 },
   },
 ];
 

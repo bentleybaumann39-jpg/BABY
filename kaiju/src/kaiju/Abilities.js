@@ -5,7 +5,7 @@ import { G as SG } from '../render/Shading.js';
 import { clamp, damp } from '../core/Rng.js';
 import { DECAL } from '../render/Decals.js';
 
-const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion();
+const _v = new THREE.Vector3(), _v2 = new THREE.Vector3(), _q = new THREE.Quaternion(), _q2 = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
 
 const BEAM_VERT = /* glsl */`
@@ -63,6 +63,7 @@ export class Abilities {
     this.boulder.visible = false;
     this.scene.add(this.boulder);
     this.projectiles = [];
+    this.owner = null; // the kaiju these powers belong to (the play session sets it)
     this.sprayT = 0;
     this.leap = null;
     this.orbGeo = new THREE.IcosahedronGeometry(1, 2);
@@ -115,9 +116,14 @@ export class Abilities {
     // march until the beam meets something solid
     let len = range;
     const step = 6;
+    // a rival in the way stops the beam on its hide
+    const foe = P.foeOf(k);
+    const caps = foe && !foe.dead ? foe.bodyCapsules() : null;
+    let onFoe = false;
     for (let s = 6; s < range; s += step) {
       const x = mouth.x + dir.x * s, y = mouth.y + dir.y * s, z = mouth.z + dir.z * s;
       if (y <= P.world.solidHeightAt(x, z)) { len = s; break; }
+      if (caps && s % 12 === 0 && foe.surfaceDist(_q2.set(x, y, z), caps) < 2) { len = s; onFoe = true; break; }
     }
     const end = this.beamEnd.copy(mouth).addScaledVector(dir, len);
     const R = k.def.moves.special.radius * k.scale;
@@ -137,8 +143,9 @@ export class Abilities {
     const dps = k.stats.special * (I * I);
     P.damageVolume(end, R * 1.6, dps * dt * 2.2, dir.clone().multiplyScalar(20), 'beam');
     P.world.buildings.ignite(end, R * 2.2, dt * 1.2);
-    P.hitUnitsSphere(end, R * 3, dps * dt * 0.8, 'beam');
-    for (let s = 0; s < len; s += 40) P.hitUnitsSphere(_v.copy(mouth).addScaledVector(dir, s), R, dps * dt * 0.5, 'beam');
+    P.hitUnitsSphere(end, R * 3, dps * dt * 0.8, 'beam', null, k);
+    for (let s = 0; s < len; s += 40) P.hitUnitsSphere(_v.copy(mouth).addScaledVector(dir, s), R, dps * dt * 0.5, 'beam', null, k);
+    if (onFoe) P.hitKaiju(k, foe, dps * dt * 0.6, end, { tick: true });
     const ps = P.particles;
     if (Math.random() < dt * 30) ps.fireball(end, R * 0.9);
     if (Math.random() < dt * 20) ps.smoke(end, R * 1.2, { dark: 0.1, rise: 10, heat: 0.8, life: 14 });
@@ -204,7 +211,8 @@ export class Abilities {
       if (p.y < g) p.y = g + 2;
       const R = 8 + s * 0.12;
       P.damageVolume(p, R * k.scale, k.stats.special * dt, null, 'acid');
-      P.hitUnitsSphere(p, R * k.scale * 1.3, k.stats.special * dt * 0.8, 'acid');
+      P.hitUnitsSphere(p, R * k.scale * 1.3, k.stats.special * dt * 0.8, 'acid', null, k);
+      P.hitKaijuSphere(k, p, R * k.scale, k.stats.special * dt * 0.7, { tick: true });
       P.world.buildings.forChunksInSphere(p, R * k.scale, (id) => {
         const B = P.world.buildings;
         B.dmgv[id] = Math.min(1, B.dmgv[id] + dt * 0.6);
@@ -240,15 +248,16 @@ export class Abilities {
     m.scale.setScalar(size);
     m.position.copy(from);
     this.scene.add(m);
-    this.projectiles.push({ mesh: m, vel, t: 0, T: T + 0.5, kind: 'orb', color: mv.color, r: mv.radius * k.scale * (flat ? 0.7 : 1.0),
+    this.projectiles.push({ mesh: m, vel, t: 0, T: T + 0.5, kind: 'orb', owner: k, color: mv.color, r: mv.radius * k.scale * (flat ? 0.7 : 1.0),
       dmg: k.stats.special * (flat ? 0.55 : 0.9), spin: new THREE.Vector3(Math.random(), Math.random(), Math.random()) });
     this.play.audio && this.play.audio.whoosh(from, flat ? 0.5 : 0.8);
   }
 
-  splash(p, r, dmg, c) {
+  splash(p, r, dmg, c, owner = this.owner) {
     const P = this.play;
     P.damageVolume(p, r, dmg, new THREE.Vector3(0, 6, 0), 'acid');
-    P.hitUnitsSphere(p, r * 1.4, dmg, 'acid');
+    P.hitUnitsSphere(p, r * 1.4, dmg, 'acid', null, owner);
+    P.hitKaijuSphere(owner, p, r * 0.9, dmg, { push: 0.5 });
     P.world.buildings.forChunksInSphere(p, r * 1.4, (id) => {
       const B = P.world.buildings;
       B.dmgv[id] = Math.min(1, B.dmgv[id] + 0.5);
@@ -277,7 +286,8 @@ export class Abilities {
     const R = mv.radius * k.scale;
     P.slam(k, p, R * 0.45, k.stats.special * 1.3);
     P.damageVolume(new THREE.Vector3(p.x, p.y + 60 * k.scale, p.z), R * 0.42, k.stats.special * 0.7, new THREE.Vector3(0, 10, 0), 'pulse');
-    P.hitUnitsSphere(p, R * 1.8, k.stats.special * 4, 'pulse');  // the pulse fries every machine in reach
+    P.hitUnitsSphere(p, R * 1.8, k.stats.special * 4, 'pulse', null, k);  // the pulse fries every machine in reach
+    P.hitKaijuSphere(k, p, R * 0.9, k.stats.special * 1.2, { push: 2 });
     const c = mv.color;
     P.particles.sparks(new THREE.Vector3(p.x, p.y + 30 * k.scale, p.z), Math.ceil(260 * P.particles.q), R * 0.5, [c[0] * 8, c[1] * 8, c[2] * 8]);
     this.ringMat.color.setRGB(c[0] * 5, c[1] * 5, c[2] * 5);
@@ -343,7 +353,7 @@ export class Abilities {
       } else if (Math.random() < dt * 30) P.particles.smoke(p, 5, { dark: 0.15, rise: 2, life: 4, heat: 0.7 });
       const g = P.world.solidHeightAt(p.x, p.z);
       if (p.y <= g + 4 || pr.t > pr.T + 3) {
-        if (pr.kind === 'orb') this.splash(p.clone(), pr.r, pr.dmg, pr.color);
+        if (pr.kind === 'orb') this.splash(p.clone(), pr.r, pr.dmg, pr.color, pr.owner);
         else P.explode(p.clone(), pr.r, pr.dmg, pr.vel.clone().normalize().multiplyScalar(30));
         this.scene.remove(pr.mesh);
         this.projectiles.splice(i, 1);
