@@ -115,7 +115,7 @@ export class UI {
     h += bar('ARMOUR', st.armor, 0.75, Math.round(st.armor * 100) + '%');
     h += bar('POWER', st.melee, 900, Math.round(st.melee));
     h += bar('SPEED', st.speed, 1.7, Math.round(st.speed * 100) + '%');
-    h += bar('SIZE', st.scale, 1.4, Math.round(st.scale * 100) + '%');
+    h += bar('HEIGHT', d.height * st.scale, 130, Math.round(d.height * st.scale) + ' m');
     h += `<div class="sect">MOVES</div><div class="movelist">`;
     const keys = { attack1: 'LMB', attack2: 'LMB ×2', heavy: 'RMB', stomp: 'SPACE', special: 'Q / F' };
     for (const [k, m] of Object.entries(d.moves)) h += `<span class="k">${keys[k]}</span><span>${m.name}</span>`;

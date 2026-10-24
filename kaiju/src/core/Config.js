@@ -1,51 +1,52 @@
 // Game data: the kaiju roster, upgrade tracks, missions and military tiers.
 // Every tunable lives here so balancing never touches logic.
+// Move windows are in seconds of clip time (the Blender anim functions' t).
 
 export const KAIJU = {
   gorvax: {
-    name: 'GORVAX', title: 'The Thermal Apex', asset: 'gorvax', unlock: 0, color: '#5fd0ff',
+    name: 'GORVAX', title: 'The Thermal Apex', asset: 'gorvax', height: 58, unlock: 0, color: '#5fd0ff',
     blurb: 'A 93-metre saurian from the abyssal trench. Bark-black hide, crystalline dorsal plates and a breath that cuts steel.',
     base: { hp: 1100, armor: 0.25, regen: 4, energy: 100, energyRegen: 5, melee: 300, heavy: 380, stomp: 240, special: 950, speed: 0.85, scale: 1.6 },
     moves: {
-      attack1: { name: 'Raking Claw', bone: 'handR', radius: 9, reach: 4, window: [0.38, 0.66] },
-      attack2: { name: 'Crushing Bite', bone: 'jaw', radius: 9, reach: 6, window: [0.48, 0.62] },
-      heavy: { name: 'Tail Sweep', bones: ['tail3', 'tail4', 'tail5', 'tail6', 'tail7'], radius: 7.5, window: [0.78, 1.3] },
+      attack1: { name: 'Raking Claw', bone: 'handR', radius: 9, reach: 4, window: [0.36, 0.66] },
+      attack2: { name: 'Crushing Bite', bone: 'jaw', radius: 9, reach: 6, window: [0.4, 0.6] },
+      heavy: { name: 'Tail Sweep', bones: ['tail3', 'tail4', 'tail5', 'tail6', 'tail7'], radius: 7.5, window: [0.55, 1.2] },
       stomp: { name: 'Quake Stomp', foot: 'toeR', radius: 46, time: 0.85 },
       special: { name: 'Thermal Breath', kind: 'beam', cost: 22, range: 900, radius: 7, color: [0.45, 0.85, 1.0] },
     },
   },
   kragmaw: {
-    name: 'KRAGMAW', title: 'The Magma Primate', asset: 'kragmaw', unlock: 1, cost: 1800, color: '#ff7a33',
+    name: 'KRAGMAW', title: 'The Magma Primate', asset: 'kragmaw', height: 46, unlock: 1, cost: 1800, color: '#ff7a33',
     blurb: 'A volcanic megaprimate with basalt skin and magma in its veins. Fast, brutal and fond of throwing things.',
     base: { hp: 950, armor: 0.18, regen: 5, energy: 100, energyRegen: 7, melee: 360, heavy: 430, stomp: 300, special: 900, speed: 0.95, scale: 1.6 },
     moves: {
-      attack1: { name: 'Haymaker', bone: 'handR', radius: 9, reach: 3, window: [0.3, 0.55] },
-      attack2: { name: 'Hammer Fist', bone: 'handL', radius: 10, reach: 3, window: [0.32, 0.58] },
-      heavy: { name: 'Ground Slam', bones: ['handL', 'handR'], radius: 40, window: [0.62, 0.7], aoe: true },
+      attack1: { name: 'Haymaker', bone: 'handR', radius: 9, reach: 3, window: [0.3, 0.56] },
+      attack2: { name: 'Hammer Fist', bone: 'handL', radius: 10, reach: 3, window: [0.36, 0.62] },
+      heavy: { name: 'Ground Slam', bones: ['handL', 'handR'], radius: 40, window: [0.95, 1.1], aoe: true },
       stomp: { name: 'Seismic Leap', kind: 'leap', radius: 50, time: 1.0 },
       special: { name: 'Tectonic Hurl', kind: 'throw', cost: 26, range: 700, radius: 34, color: [1.0, 0.45, 0.12] },
     },
   },
   thornback: {
-    name: 'THORNBACK', title: 'The Living Fortress', asset: 'thornback', unlock: 2, cost: 3200, color: '#c9b37a',
+    name: 'THORNBACK', title: 'The Living Fortress', asset: 'thornback', height: 40, quadruped: true, unlock: 2, cost: 3200, color: '#c9b37a',
     blurb: 'An armoured quadruped the size of a stadium. Slow to start, impossible to stop once it charges.',
     base: { hp: 1700, armor: 0.45, regen: 6, energy: 100, energyRegen: 6, melee: 320, heavy: 480, stomp: 300, special: 700, speed: 0.8, scale: 1.6 },
     moves: {
-      attack1: { name: 'Horn Gore', bone: 'head', radius: 11, reach: 10, window: [0.35, 0.6] },
-      attack2: { name: 'Shield Bash', bone: 'head', radius: 13, reach: 6, window: [0.36, 0.56] },
-      heavy: { name: 'Tail Mace', bones: ['tail4', 'tail5', 'tail6'], radius: 11, window: [0.7, 1.15] },
+      attack1: { name: 'Horn Gore', bone: 'head', radius: 11, reach: 10, window: [0.38, 0.62] },
+      attack2: { name: 'Shield Bash', bone: 'head', radius: 13, reach: 6, window: [0.4, 0.6] },
+      heavy: { name: 'Tail Mace', bones: ['tail4', 'tail5', 'tail6'], radius: 11, window: [0.55, 1.15] },
       stomp: { name: 'Earthshaker', foot: 'handR', radius: 56, time: 0.9 },
       special: { name: 'Juggernaut Charge', kind: 'charge', cost: 30, duration: 6, color: [1.0, 0.85, 0.5] },
     },
   },
   scyllax: {
-    name: 'SCYLLAX', title: 'The Abyssal Reaver', asset: 'scyllax', unlock: 3, cost: 4800, color: '#7dff9a',
+    name: 'SCYLLAX', title: 'The Abyssal Reaver', asset: 'scyllax', height: 34, unlock: 3, cost: 4800, color: '#7dff9a',
     blurb: 'An eight-legged crustacean reaver. Pincers that shear girders and acid that melts what they miss.',
     base: { hp: 900, armor: 0.32, regen: 4, energy: 100, energyRegen: 8, melee: 280, heavy: 400, stomp: 260, special: 520, speed: 1.05, scale: 1.7 },
     moves: {
-      attack1: { name: 'Pincer Snap', bone: 'clawR', radius: 9, reach: 6, window: [0.28, 0.5] },
-      attack2: { name: 'Twin Shear', bone: 'clawL', radius: 10, reach: 6, window: [0.3, 0.52] },
-      heavy: { name: 'Stinger Lance', bones: ['tail5', 'tail6'], radius: 8, window: [0.55, 0.8] },
+      attack1: { name: 'Pincer Snap', bone: 'clawR', radius: 9, reach: 6, window: [0.3, 0.52] },
+      attack2: { name: 'Twin Shear', bone: 'clawL', radius: 10, reach: 6, window: [0.32, 0.55] },
+      heavy: { name: 'Stinger Lance', bones: ['tail5', 'tail6'], radius: 8, window: [0.5, 0.75] },
       stomp: { name: 'Pounce', kind: 'leap', radius: 42, time: 1.0 },
       special: { name: 'Acid Torrent', kind: 'spray', cost: 18, range: 260, radius: 30, color: [0.5, 1.0, 0.35] },
     },

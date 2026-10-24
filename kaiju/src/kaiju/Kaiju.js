@@ -2,7 +2,7 @@
 // collisions with buildings, attacks sampled from the actual bone paths, and health/energy.
 import * as THREE from 'three';
 import { clone as skelClone } from '../../vendor/addons/utils/SkeletonUtils.js';
-import { patchTree } from '../render/Shading.js';
+import { patchTree, G } from '../render/Shading.js';
 import { clamp, damp, dampAngle, angleDiff, smooth } from '../core/Rng.js';
 
 const LEG_BONES = ['root', 'hips', 'thighL', 'thighR', 'shinL', 'shinR', 'footL', 'footR', 'toeL', 'toeR',
@@ -27,10 +27,14 @@ export class Kaiju {
     this.root.add(this.model);
     this.scale = stats.scale;
     this.height = (meta.height || 50) * stats.scale;
+    // horizontal half-extent: a crab-legged kaiju is far wider than it is tall
+    const bb = new THREE.Box3().setFromObject(this.model);
+    this.radius = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z) * 0.5 || this.height * 0.5;
     // private material copies: the menu stage and the game patch shaders differently
     this.model.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); });
     patchTree(this.model, 'kaiju-' + id);
     this.glowMats = [];
+    this.veinMats = []; // baked emissive veins/eyes: kept legible whatever the exposure
     this.model.traverse((o) => {
       if (o.isMesh) {
         o.castShadow = true;
@@ -39,10 +43,13 @@ export class Kaiju {
         const mats = Array.isArray(o.material) ? o.material : [o.material];
         for (const m of mats) {
           m.side = THREE.FrontSide;
-          if (/plate|vein|glow/.test(m.name)) {
+          if (/plate|vein|glow|shard/.test(m.name)) {
             m.emissive = new THREE.Color(...def.moves.special.color);
             m.emissiveIntensity = 0;
             this.glowMats.push(m);
+          } else if (m.emissiveMap || (m.emissiveIntensity > 0 && m.emissive && m.emissive.getHex() !== 0)) {
+            m.userData.baseEmit = m.emissiveIntensity;
+            this.veinMats.push(m);
           }
           if (/skin/.test(m.name)) { m.envMapIntensity = 0.9; }
         }
@@ -54,7 +61,10 @@ export class Kaiju {
     this.mixer = new THREE.AnimationMixer(this.model);
     this.clips = {};
     for (const c of asset.animations) this.clips[c.name] = c;
-    const isLeg = (n) => LEG_BONES.includes(n);
+    // bones locomotion keeps while an action plays: hind legs always, crab legs, and the
+    // forelimbs of true quadrupeds (whose attacks come from the head and tail)
+    const isLeg = (n) => LEG_BONES.includes(n) || /^(leg\d+(lo)?|foot\d+)[LR]$/.test(n) ||
+      (!!def.quadruped && /^(upperarm|forearm|hand)[LR]$/.test(n));
     this.act = {};
     for (const [name, clip] of Object.entries(this.clips)) {
       const a = this.mixer.clipAction(clip);
@@ -210,7 +220,12 @@ export class Kaiju {
     if (!this.special.on) this.energy = Math.min(this.maxEnergy, this.energy + s.energyRegen * dt);
     // glow plates: charge, sustain, fade
     const g = this.special.glow;
-    for (const m of this.glowMats) m.emissiveIntensity = g * g * 9;
+    const ex = Math.max(0.05, G.uExposure.value);
+    const glowK = Math.min(1, 0.3 / ex);
+    for (const m of this.glowMats) m.emissiveIntensity = g * g * 9 * glowK;
+    // veins aim for a fixed on-screen brightness by day and run hotter while the special charges
+    const veinK = Math.max(1, 0.6 / ex) * (1 + 1.5 * g);
+    for (const m of this.veinMats) m.emissiveIntensity = m.userData.baseEmit * veinK;
   }
 
   _locomotion(dt) {

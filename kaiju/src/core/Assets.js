@@ -4,7 +4,9 @@ import { GLTFLoader } from '../../vendor/addons/loaders/GLTFLoader.js';
 
 const cache = new Map();
 const loader = new GLTFLoader();
-const BASE = new URL('../../assets/', import.meta.url).href;
+// module builds resolve assets next to the source tree; the bundled single file has no
+// import.meta.url (and embeds its assets anyway)
+const BASE = (() => { try { return new URL('../../assets/', import.meta.url).href; } catch (e) { return 'assets/'; } })();
 
 function embedded(name) {
   const E = typeof window !== 'undefined' && window.__KJ_ASSETS__;

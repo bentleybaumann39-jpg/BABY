@@ -19,6 +19,8 @@ export const G = {
   uCutA: { value: new THREE.Vector3(0, -1e5, 0) },
   uCutB: { value: new THREE.Vector3(0, -1e5, 0) },
   uCutR: { value: 0 },
+  // current tone-mapping exposure, for emitters that must read at any time of day
+  uExposure: { value: 1 },
 };
 
 let csm = null;

@@ -141,8 +141,8 @@ export class Play {
       if (mv.kind === 'leap') {
         if (k.energy < 15) return this.app.ui && this.app.ui.toast('Not enough energy');
         k.energy -= 15;
-        this.abilities.startLeap(k, this.aim.clone());
-        k.play(this.clipFor('stomp'), { full: true });
+        const rate = this.abilities.startLeap(k, this.aim.clone());
+        k.play(this.clipFor('stomp'), { full: true, speed: rate });
         this.app.audio && this.app.audio.roar(k, 0.5);
       } else this._startMove('stomp');
     } else if (a === 'roar') {
@@ -285,9 +285,17 @@ export class Play {
       }
       if (S.on) {
         S.t += dt;
-        if (S.phase === 'in') {
-          this.abilities.holdBoulder(k, S.t);
-          if (S.t > 0.7 && !held) { S.phase = 'out'; S.t = 0; k.play('special_out', { full: true }); }
+        if (S.phase === 'in' || S.phase === 'hold') {
+          this.abilities.holdBoulder(k, S.phase === 'in' ? S.t : 1);
+          const tIn = k.clips.special_in ? k.clips.special_in.duration : 1.0;
+          if (S.phase === 'in' && S.t >= tIn && held) {
+            // keep the rock overhead while the button stays down
+            S.phase = 'hold';
+            k.play('special_loop', { full: true, loop: true, fade: 0.12 });
+          } else if ((S.phase === 'hold' && !held) || (S.phase === 'in' && S.t >= tIn)) {
+            S.phase = 'out'; S.t = 0;
+            k.play('special_out', { full: true, fade: 0.08 });
+          }
         } else if (S.phase === 'out') {
           if (S.t > 0.25 && !S.thrown) { S.thrown = true; this.abilities.throwBoulder(k, this.aim.clone()); }
           if (S.t > 0.8) { S.on = false; S.thrown = false; S.phase = null; }
@@ -334,10 +342,10 @@ export class Play {
     if (!A || !A.move) return;
     const mv = this.def.moves[A.move];
     if (!mv) return;
-    const u = A.t / A.dur;
+    const ct = A.t * (k.clips[A.name].duration / A.dur); // clip seconds, whatever the play rate
     const S = k.scale;
     if (A.move === 'stomp') {
-      if (!A.hitDone && A.t >= (mv.time || 0.85) * (A.dur / (k.clips[A.name].duration))) {
+      if (!A.hitDone && ct >= (mv.time || 0.85)) {
         A.hitDone = true;
         const foot = k.bonePos(mv.foot || 'toeR', new THREE.Vector3());
         foot.y = this.world.groundAt(foot.x, foot.z);
@@ -345,7 +353,7 @@ export class Play {
       }
       return;
     }
-    if (u < mv.window[0] || u > mv.window[1]) return;
+    if (ct < mv.window[0] || ct > mv.window[1]) return;
     const bones = mv.bones || [mv.bone];
     const dmg = A.move === 'heavy' ? k.stats.heavy : k.stats.melee;
     const B = this.world.buildings;

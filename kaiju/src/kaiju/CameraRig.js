@@ -69,8 +69,10 @@ export class CameraRig {
     let hitAt = clear(this.pitch, want);
     if (hitAt >= 0) {
       let ok = false;
-      for (let p = this.pitch + 0.08; p <= 1.2; p += 0.08) { if (clear(p, want) < 0) { pitchFix = p; ok = true; break; } }
-      if (!ok) { pitchFix = this.pitch; allowed = Math.max(H * 0.9, hitAt - want / 12); }
+      for (let p = this.pitch + 0.08; p <= 1.38; p += 0.08) { if (clear(p, want) < 0) { pitchFix = p; ok = true; break; } }
+      // boxed in on every side: stay high and far enough to frame the whole body and let the
+      // building cutaway clear the line of sight, rather than diving into the kaiju
+      if (!ok) { pitchFix = 1.0; allowed = Math.max(H * 1.3, (k.radius || H * 0.5) * 1.6, hitAt - want / 12); }
     }
     this.pitchEff = damp(this.pitchEff ?? this.pitch, pitchFix, pitchFix > (this.pitchEff ?? 0) ? 6 : 1.5, dt);
     _d.set(Math.sin(this.yaw) * Math.cos(this.pitchEff), Math.sin(this.pitchEff), Math.cos(this.yaw) * Math.cos(this.pitchEff));

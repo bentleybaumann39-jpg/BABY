@@ -1,0 +1,148 @@
+{
+ "name": "scyllax",
+ "height": 34.0,
+ "preview_angle": 40,
+ "close": [
+  0,
+  -14,
+  14,
+  34
+ ],
+ "speed": {
+  "walk": 10.909090909090908,
+  "run": 22.857142857142858
+ },
+ "cycle": {
+  "walk": 16.363636363636363,
+  "run": 24.0
+ },
+ "hits": {
+  "attack1": 0.42,
+  "attack2": 0.48,
+  "heavy": 0.64,
+  "stomp": 1.25
+ },
+ "feet": [
+  "foot2L",
+  "foot2R"
+ ],
+ "foot_phase": {
+  "walk": [
+   0.54,
+   0.04
+  ],
+  "run": [
+   0.54,
+   0.04
+  ]
+ },
+ "body": [
+  [
+   "hips",
+   "head",
+   12.0
+  ],
+  [
+   "upperarmL",
+   "clawL",
+   4.0
+  ],
+  [
+   "upperarmR",
+   "clawR",
+   4.0
+  ],
+  [
+   "tail1",
+   "tail4",
+   4.5
+  ],
+  [
+   "tail4",
+   "tail6",
+   3.0
+  ],
+  [
+   "leg1L",
+   "foot1L",
+   2.0
+  ],
+  [
+   "leg1R",
+   "foot1R",
+   2.0
+  ],
+  [
+   "leg4L",
+   "foot4L",
+   2.0
+  ],
+  [
+   "leg4R",
+   "foot4R",
+   2.0
+  ]
+ ],
+ "aim": {
+  "head": "head",
+  "chain": [
+   "head"
+  ],
+  "pitch0": 0.0
+ },
+ "mouth": "mouth",
+ "clips": {
+  "idle": {
+   "duration": 4.0,
+   "loop": true
+  },
+  "walk": {
+   "duration": 1.5,
+   "loop": true
+  },
+  "run": {
+   "duration": 1.05,
+   "loop": true
+  },
+  "attack1": {
+   "duration": 1.0,
+   "loop": false
+  },
+  "attack2": {
+   "duration": 1.1,
+   "loop": false
+  },
+  "heavy": {
+   "duration": 1.5,
+   "loop": false
+  },
+  "stomp": {
+   "duration": 1.5,
+   "loop": false
+  },
+  "roar": {
+   "duration": 3.0,
+   "loop": false
+  },
+  "special_in": {
+   "duration": 0.8,
+   "loop": false
+  },
+  "special_loop": {
+   "duration": 1.0,
+   "loop": true
+  },
+  "special_out": {
+   "duration": 0.6,
+   "loop": false
+  },
+  "hit": {
+   "duration": 0.6,
+   "loop": false
+  },
+  "death": {
+   "duration": 3.0,
+   "loop": false
+  }
+ }
+}

@@ -111,3 +111,8 @@ npm run validate     # map integrity, prop placement, progression solver, entity
 node tests/smoke.mjs # headless Chromium playthrough of the critical path + AI behaviours + an ending
 node tests/scenes.mjs shots   # screenshot tour of the building
 ```
+
+## Also in this repository
+
+- **[LANDFALL](kaiju/README.md)** is a kaiju destruction game. Pick one of four titans, wade ashore and level a destructible city while the military escalates. Double-click `kaiju/Landfall.html` to play.
+- **[Ward 13](ward13/)** is a first-person horror roguelite. Double-click `ward13/Ward13.html` to play.

@@ -132,6 +132,37 @@ if (script === 'army') {
   const u = await page.evaluate(() => window.__kj.play.military.units.map((u) => [u.kind, Math.round(u.pos.x), Math.round(u.pos.y), Math.round(u.pos.z), Math.round(u.hp)]));
   console.log(JSON.stringify(u));
 }
+if (script === 'moves') {
+  // every move of the loaded kaiju, with a frame of each
+  const anim = () => page.evaluate(() => { const k = window.__kj.play.kaiju; return { act: k.action && k.action.name, sp: k.special.on, phase: k.special.phase, y: +k.pos.y.toFixed(1), e: Math.round(k.energy) }; });
+  log(await step(0.5));
+  await shot('50_start');
+  log(await step(5, { hold: ['KeyW'] }));
+  await shot('51_walk');
+  log(await step(0.5, { click: 1 }));
+  await shot('52_attack1');
+  log(await step(1.0));
+  log(await step(0.55, { click: 1 }));
+  await shot('53_attack2');
+  log(await step(1.0));
+  log(await step(0.9, { click: 4 }));
+  await shot('54_heavy');
+  log(await step(1.6));
+  log(await step(0.8, { tap: ['Space'] }));
+  console.log(JSON.stringify(await anim()));
+  await shot('55_stomp');
+  log(await step(3));
+  await shot('56_stomp_after');
+  log(await step(2.2, { hold: ['KeyQ'], look: [0, -4] }));
+  console.log(JSON.stringify(await anim()));
+  await shot('57_special');
+  log(await step(1.5, { hold: ['KeyQ'] }));
+  console.log(JSON.stringify(await anim()));
+  log(await step(2.5));
+  await shot('58_special_after');
+  log(await step(1.2, { tap: ['KeyE'] }));
+  await shot('59_roar');
+}
 console.log('errors:', errors.length);
 for (const e of errors.slice(0, 12)) console.log(e);
 await browser.close();

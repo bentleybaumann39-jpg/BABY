@@ -65,6 +65,7 @@ export class World {
     this.hemi.groundColor.copy(night ? new THREE.Color(0.5, 0.45, 0.4) : this.sky.sunColor).lerp(new THREE.Color(0.8, 0.75, 0.7), 0.4);
     this.hemi.intensity = night ? 0.05 : I * el * 0.24;
     this.renderer.gl.toneMappingExposure = p.exposure;
+    G.uExposure.value = p.exposure;
   }
 
   get bounds() {

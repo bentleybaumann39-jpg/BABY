@@ -14,11 +14,11 @@ LOW_TRIS = 44000
 
 BODY_Z = 13.0
 TAILP = [(0, 9, 14.5), (0, 15.5, 19.5), (0, 19, 27), (0, 19.5, 35.5), (0, 16.5, 42.5), (0, 10.5, 46.5), (0, 4.5, 44.5)]
-TAIL_R = [5.2, 4.6, 4.0, 3.5, 3.0, 2.6, 2.2]
+TAIL_R = [4.6, 4.0, 3.5, 3.1, 2.8, 2.5, 2.2]
 # legs: attachment on the body side, foot on the ground (left side, x > 0)
 LEGS = [((7.5, -6.5, 12.5), (24, -17, 0.6)), ((8.5, -2.0, 12.5), (28, -5, 0.6)),
         ((8.5, 2.5, 12.5), (28, 6.5, 0.6)), ((7.5, 6.5, 12.5), (23, 17, 0.6))]
-ARM = dict(sho=(7.5, -9.5, 14), elb=(15.5, -17, 19), wri=(14.5, -25.5, 17.5), claw=(13.5, -36, 15.5), dac0=(15.0, -29.5, 19.6), dac1=(14.0, -38.5, 18.0))
+ARM = dict(sho=(7.5, -9.5, 14), elb=(15.5, -17, 19), wri=(14.5, -25.5, 17.5), claw=(13.0, -43.5, 16.8), dac0=(15.0, -32.0, 20.0), dac1=(13.2, -43.0, 18.0))
 
 
 def V(*a):
@@ -71,26 +71,42 @@ def sculpt():
     # eye stalks
     for sx in (1, -1):
         S.cone((sx * 2.5, -14, z + 3), (sx * 3.5, -15.5, z + 6.2), 0.8, 0.6, bone='head', k=0.6)
-    # chelae
+    # chelae: swollen palm, a fixed finger below and the hinged dactyl above, both curving in
     for sx in (1, -1):
         m = (lambda p: (p[0] * sx, p[1], p[2]))
-        S.cone(m(ARM['sho']), m(ARM['elb']), 2.6, 2.4, bone='upperarm.' + ('L' if sx > 0 else 'R'), k=0.8)
-        S.cone(m(ARM['elb']), m(ARM['wri']), 2.6, 3.2, bone='forearm.' + ('L' if sx > 0 else 'R'), k=0.8)
         side = 'L' if sx > 0 else 'R'
-        S.ell(m((14.2, -29.5, 17.0)), (4.4, 6.8, 3.8), rot=(8, 0, 0), bone='claw.' + side, k=1.0)
-        S.cone(m((14.0, -33, 16.2)), m(ARM['claw']), 2.4, 0.5, bone='claw.' + side, k=0.8)
-        S.cone(m(ARM['dac0']), m(ARM['dac1']), 1.9, 0.45, bone='pincer.' + side, k=0.4)
-    # legs: thin armoured segments, kept rigid
+        S.cone(m(ARM['sho']), m(ARM['elb']), 2.4, 2.2, bone='upperarm.' + side, k=0.8)
+        S.ell(m((15.5, -17, 19)), (2.7, 2.7, 2.7), bone='forearm.' + side, k=0.6)
+        S.cone(m(ARM['elb']), m(ARM['wri']), 2.4, 3.0, bone='forearm.' + side, k=0.8)
+        S.ell(m((14.6, -30.0, 17.6)), (4.3, 6.4, 4.0), rot=(6, 0, 0), bone='claw.' + side, k=1.2)
+        S.ell(m((16.6, -29.0, 18.2)), (1.6, 4.5, 2.6), bone='claw.' + side, k=0.8)  # outer knuckle ridge
+        S.chain([m((14.5, -34.0, 16.0)), m((14.0, -39.0, 15.4)), m(ARM['claw'])], [2.4, 1.5, 0.35], ['claw.' + side] * 2, k=0.6)
+        S.chain([m(ARM['dac0']), m((14.6, -37.5, 19.9)), m(ARM['dac1'])], [2.0, 1.35, 0.35], ['pincer.' + side] * 2, k=0.35)
+    # legs: jointed armoured segments, kept rigid between joints
     for i, (a, f) in enumerate(LEGS):
         k = knee_of(a, f)
-        S.cone(a, k, 2.0, 1.6, bone=f'leg{i + 1}.L', k=0.6, mirror=True)
-        S.cone(k, f, 1.6, 0.55, bone=f'leg{i + 1}lo.L', k=0.5, mirror=True)
+        a_, k_, f_ = V(*a), V(*k), V(*f)
+        mid = k_ + (f_ - k_) * 0.5
+        S.ell(tuple(a_ + V(1.2, 0, 0)), (2.4, 2.4, 2.2), bone=f'leg{i + 1}.L', k=0.8, mirror=True)  # coxa
+        S.cone(a, k, 2.0, 1.55, bone=f'leg{i + 1}.L', k=0.6, mirror=True)
+        S.ell(k, (1.9, 1.9, 1.9), bone=f'leg{i + 1}lo.L', k=0.3, mirror=True)  # knee knuckle
+        S.cone(k, tuple(mid), 1.5, 1.15, bone=f'leg{i + 1}lo.L', k=0.3, mirror=True)
+        S.ell(tuple(mid), (1.35, 1.35, 1.35), bone=f'leg{i + 1}lo.L', k=0.25, mirror=True)
+        S.cone(tuple(mid), f, 1.15, 0.4, bone=f'leg{i + 1}lo.L', k=0.25, mirror=True)
     # tail: segmented, swelling into the venom bulb
     for i in range(6):
         a, b = V(*TAILP[i]), V(*TAILP[i + 1])
-        S.ell(tuple((a + b) / 2), (TAIL_R[i] * 1.05, TAIL_R[i] * 0.95, np.linalg.norm(b - a) * 0.62),
-              rot=(math.degrees(math.atan2(b[1] - a[1], b[2] - a[2])), 0, 0), bone=f'tail{i + 1}', k=0.7)
-    S.ell((0, 6.5, 45.5), (3.2, 3.8, 3.4), bone='tail6', k=1.0)
+        ang = -math.degrees(math.atan2(b[1] - a[1], b[2] - a[2]))
+        ln = np.linalg.norm(b - a)
+        # each ring flares toward its rear edge and overlaps the next, like real metasoma segments
+        S.ell(tuple(a + (b - a) * 0.52), (TAIL_R[i] * 1.08, TAIL_R[i] * 0.88, ln * 0.6), rot=(ang, 0, 0), bone=f'tail{i + 1}', k=0.35)
+        S.ell(tuple(a + (b - a) * 0.8), (TAIL_R[i] * 1.12, TAIL_R[i] * 0.95, ln * 0.18), rot=(ang, 0, 0), bone=f'tail{i + 1}', k=0.3)
+        top = np.cross(b - a, [1, 0, 0])
+        top = top / (np.linalg.norm(top) + 1e-9)
+        if top[2] < 0:
+            top = -top
+        S.ell(tuple(a + (b - a) * 0.5 + top * TAIL_R[i] * 0.7), (TAIL_R[i] * 0.35, TAIL_R[i] * 0.4, ln * 0.45), rot=(ang, 0, 0), bone=f'tail{i + 1}', k=0.5)
+    S.ell((0, 6.8, 45.2), (3.4, 4.2, 3.4), rot=(30, 0, 0), bone='tail6', k=0.8)
     return S
 
 
@@ -122,7 +138,7 @@ def parts(S):
     P = Parts()
     rng = np.random.default_rng(29)
     # stinger and spines along the tail
-    P.horn((0, 4.6, 44.0), (0, -0.55, -0.6), 6.5, 1.3, bend=(0, -1.5, 1.5), bone='tail6', mat='horn', seg=8, rings=6)
+    P.horn((0, 4.4, 43.6), (0, -0.55, -0.6), 8.5, 1.7, bend=(0, -2.0, 2.0), bone='tail6', mat='horn', seg=8, rings=6)
     for i in range(1, 6):
         a, b = V(*TAILP[i]), V(*TAILP[i + 1])
         c = (a + b) / 2
@@ -132,17 +148,43 @@ def parts(S):
         if out[2] < 0:
             out = -out
         P.horn(c + out * TAIL_R[i] * 0.8, out, 2.0 - i * 0.15, 0.6, bone=f'tail{i + 1}', mat='horn', seg=6, rings=3)
-    # serrations on the claw fingers and carapace spikes
+    # serrations on the claw fingers, carapace spikes, rostrum and leg spines
     L = Parts()
-    for k in range(5):
-        tpos = V(14.0, -33.5 - k * 0.6, 17.6)
-        L.horn(tpos, (0, -0.2, 1), 0.9, 0.35, bone='claw.L', mat='horn', seg=5, rings=2)
+
+    def along(pts, radii, u):
+        pts = [V(*q) for q in pts]
+        seg = min(int(u * (len(pts) - 1)), len(pts) - 2)
+        f = u * (len(pts) - 1) - seg
+        return pts[seg] + (pts[seg + 1] - pts[seg]) * f, radii[seg] + (radii[seg + 1] - radii[seg]) * f
+
+    fixed = [(14.5, -34.0, 16.0), (14.0, -39.0, 15.4), ARM['claw']]
+    dac = [ARM['dac0'], (14.6, -37.5, 19.9), ARM['dac1']]
+    for k in range(6):
+        u = 0.18 + k * 0.12
+        c, r = along(fixed, [2.4, 1.5, 0.35], u)
+        L.horn(c + V(0, 0, r * 0.8), (0, -0.25, 1), 0.5 + 0.5 * r, 0.32 + 0.1 * r, bone='claw.L', mat='horn', seg=5, rings=2)
+        c, r = along(dac, [2.0, 1.35, 0.35], u + 0.04)
+        L.horn(c - V(0, 0, r * 0.8), (0, -0.25, -1), 0.45 + 0.45 * r, 0.3 + 0.1 * r, bone='pincer.L', mat='horn', seg=5, rings=2)
     for (x, y) in ((6, -10), (8, -4), (8, 2), (6, 8), (3, -13)):
         top = on_surface(S, x, y)
         if top is None:
             continue
         nrm = normal_at(S, top)
         L.horn(top - nrm * 0.3, nrm + np.array([0.4, 0, 0]), 2.4, 0.8, bone=bone_at(S, top - nrm), mat='horn', seg=6, rings=3)
+    shell = Sculpt()
+    shell.prims = [q for q in S.prims if q.bone in ('chest', 'hips', 'head')]
+    for y, ln in ((-12, 2.6), (-7, 3.2), (-2, 3.4), (3, 3.0), (8, 2.4)):
+        q = shell.surface((30.0, y, BODY_Z + 2.6), (-1.0, 0.0, 0.0))
+        if q is not None:
+            L.horn(q - V(0.4, 0, 0), (1, -0.25, 0.25), ln, 0.9, bend=(0, -0.4, 0.5), bone=bone_at(S, q - V(1, 0, 0)), mat='horn', seg=6, rings=3)
+    L.horn((1.4, -16.6, BODY_Z + 2.6), (0.2, -1, 0.25), 3.2, 0.8, bend=(0, 0, 0.6), bone='head', mat='horn', seg=6, rings=3)
+    for i, (a, f) in enumerate(LEGS):
+        k = V(*knee_of(a, f))
+        a_ = V(*a)
+        for u in (0.35, 0.7):
+            c = a_ + (k - a_) * u + V(0, 0, 1.7 - 0.3 * u)
+            L.horn(c, (0.3, 0, 1), 1.3, 0.45, bone=f'leg{i + 1}.L', mat='horn', seg=5, rings=2)
+        L.horn(k + V(0.3, 0, 1.4), (0.2, 0, 1), 1.6, 0.55, bone=f'leg{i + 1}lo.L', mat='horn', seg=5, rings=2)
     L.sphere((3.6, -15.6, BODY_Z + 6.6), 0.75, bone='head', mat='eye')
     L.mirrored()
     P.merge(L)
@@ -242,7 +284,7 @@ def a_snap(t, T, p, side='R'):
     sg = 1 if side == 'L' else -1
     p.loc('hips', (0, -1.5 * s, 0.6 * w))
     p.rot('chest', z=sg * (8 * w - 10 * s))
-    arms(p, side, up=20 * w + 5 * s, out=-sg * 15 * w + sg * 10 * s, fwd=-15 * w + 35 * s, open_=35 * w * (1 - s) + 35 * w, bend=-20 * w + 25 * s)
+    arms(p, side, up=20 * w + 5 * s, out=-sg * 15 * w + sg * 10 * s, fwd=-15 * w + 35 * s, open_=38 * w * (1 - s), bend=-20 * w + 25 * s)
     o = 'L' if side == 'R' else 'R'
     arms(p, o, up=10, open_=10)
     p.rot('jaw', x=3 + 10 * s)
@@ -268,8 +310,11 @@ def a_sting(t, T, p):
     legs_rest(p)
     p.loc('hips', (0, 1.5 * w - 2.5 * s, -1 * w))
     p.rot('hips', x=4 * w - 6 * s)
+    # coil back, then the base whips forward while the tip straightens to drive the stinger over the head
+    coil = (-12, -8, -4, 6, 8, 10)
+    strike = (34, 26, 16, -2, -10, -16)
     for i, b in enumerate(TAILB):
-        p.rot(b, x=8 * w - (16 + i * 4) * s)
+        p.rot(b, x=coil[i] * w + strike[i] * s)
     for s_ in ('L', 'R'):
         arms(p, s_, up=8, out=(1 if s_ == 'L' else -1) * 10 * s, open_=8)
 
@@ -343,8 +388,9 @@ def a_death(t, T, p):
     p.rot('hips', y=10 * f)
     for s in ('L', 'R'):
         arms(p, s, up=-20 * f, open_=30 * f)
+    droop = (-10, -12, -14, -10, -8, -6)
     for i, b in enumerate(TAILB):
-        p.rot(b, x=-6 * f)
+        p.rot(b, x=droop[i] * f)
 
 
 ANIMS = {
@@ -369,11 +415,11 @@ META = dict(
     close=(0, -14, 14, 34),
     speed=dict(walk=WALK['stride'] / (WALK['duty'] * WALK['T']), run=RUN['stride'] / (RUN['duty'] * RUN['T'])),
     cycle=dict(walk=WALK['stride'] / WALK['duty'], run=RUN['stride'] / RUN['duty']),
-    hits=dict(attack1=0.42, attack2=0.48, heavy=0.93, stomp=1.25),
+    hits=dict(attack1=0.42, attack2=0.48, heavy=0.64, stomp=1.25),
     feet=['foot2L', 'foot2R'],
     foot_phase=dict(walk=[0.54, 0.04], run=[0.54, 0.04]),
     body=[['hips', 'head', 12.0], ['upperarmL', 'clawL', 4.0], ['upperarmR', 'clawR', 4.0], ['tail1', 'tail4', 4.5], ['tail4', 'tail6', 3.0],
           ['leg1L', 'foot1L', 2.0], ['leg1R', 'foot1R', 2.0], ['leg4L', 'foot4L', 2.0], ['leg4R', 'foot4R', 2.0]],
-    aim=dict(head='head', chain=['chest', 'head'], pitch0=0.0),
+    aim=dict(head='head', chain=['head'], pitch0=0.0),  # front legs hang off the chest: aim with the head alone
     mouth='mouth',
 )

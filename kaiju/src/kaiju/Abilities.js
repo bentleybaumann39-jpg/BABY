@@ -196,18 +196,24 @@ export class Abilities {
     if (d.length() > maxD) d.setLength(maxD);
     const to = from.clone().add(d);
     to.y = this.play.world.groundAt(to.x, to.z);
-    this.leap = { from, to, t: 0, T: 1.0 + d.length() / 400, h: Math.max(40, d.length() * 0.35) * k.scale };
+    // leap clips crouch until 0.35 s and touch down at 1.2 s: play them at the rate that lines the
+    // airborne part up with the ballistic flight
+    const T = 0.8 + d.length() / 700;
+    const rate = 0.85 / T;
+    this.leap = { from, to, t: 0, delay: 0.35 / rate, T, h: Math.max(40, d.length() * 0.35) * k.scale };
     k.yaw = Math.atan2(d.x, d.z);
+    return rate;
   }
 
   updateLeap(dt, k) {
     const L = this.leap;
     if (!L) return false;
     L.t += dt;
-    const u = Math.min(1, L.t / L.T);
+    k.speed = 0;
+    if (L.t < L.delay) return true;
+    const u = Math.min(1, (L.t - L.delay) / L.T);
     k.pos.lerpVectors(L.from, L.to, u);
     k.pos.y += Math.sin(Math.PI * u) * L.h;
-    k.speed = 0;
     if (u >= 1) {
       this.leap = null;
       this.play.slam(k, k.pos.clone(), k.def.moves.stomp.radius * k.scale, k.stats.stomp * 1.4);
