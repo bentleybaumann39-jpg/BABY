@@ -70,7 +70,10 @@ export class Military {
     if (this.jetT <= 0 && MILITARY.jets[lvl] > 0) { this.jetT = 28 - lvl * 3; for (let i = 0; i < MILITARY.jets[lvl]; i++) setTimeout(() => this._spawnJet(i), i * 1500); }
     this.artT -= dt;
     if (this.artT <= 0 && MILITARY.artillery[lvl] > 0) { this.artT = 12 - lvl; for (let i = 0; i < MILITARY.artillery[lvl]; i++) this._artillery(i * 0.6); }
-    for (const u of this.units) this['_' + u.kind](u, dt);
+    for (const u of this.units) {
+      if (u.frozen > 0 && u.hp > 0) { this._frozen(u, dt); continue; }
+      this['_' + u.kind](u, dt);
+    }
     this._shots(dt);
     this.units = this.units.filter((u) => !u.gone);
     this._draw(dt);
@@ -303,6 +306,29 @@ export class Military {
     }
   }
 
+  // ------------------------------------------------------------------ frozen units (Glacial strain)
+
+  freeze(p, r, t) {
+    for (const u of this.units) {
+      if (u.hp <= 0 || u.pos.distanceTo(p) > r) continue;
+      if (!(u.frozen > 0)) this.play.particles.surge(u.pos, 10, 8, { color: [0.82, 0.9, 0.97], speed: 6, life: 3, grow: 0.5, alpha: 0.6 });
+      u.frozen = Math.max(u.frozen || 0, t);
+      if (u.kind === 'jet') u.fired = true;
+    }
+  }
+
+  // Frozen machines stop dead and take double damage; gunships lose lift and drop.
+  _frozen(u, dt) {
+    const P = this.play;
+    u.frozen -= dt;
+    if (Math.random() < dt * 3) P.particles.lit.spawn({ p: u.pos.toArray(), v: [0, -1, 0], life: 2, size: 3, size1: 7, color: [0.85, 0.92, 0.98], alpha: 0.35, drag: 1, fadeIn: 0.1 });
+    if (u.kind === 'heli') {
+      u.rotor += dt * 3;
+      u.pos.y -= dt * 9;
+      if (u.pos.y <= P.world.solidHeightAt(u.pos.x, u.pos.z) + 2) { u.frozen = 0; this.damageSphere(u.pos.clone(), 1, 9999, 'ice'); }
+    } else if (u.kind === 'jet') u.pos.addScaledVector(u.dir, u.speed * dt);
+  }
+
   // ------------------------------------------------------------------ damage from the kaiju
 
   damageSphere(p, r, dmg, src, push) {
@@ -311,7 +337,7 @@ export class Military {
       if (u.hp <= 0) continue;
       const d = u.pos.distanceTo(p);
       if (d > r + (u.kind === 'tank' ? 4 : 8)) continue;
-      u.hp -= dmg * (1 - 0.5 * Math.min(1, d / r)) + (src === 'stomp' || src === 'melee' || src === 'foot' ? 999 : 0);
+      u.hp -= (dmg * (1 - 0.5 * Math.min(1, d / r)) + (src === 'stomp' || src === 'melee' || src === 'foot' ? 999 : 0)) * (u.frozen > 0 ? 2 : 1);
       if (u.hp > 0) continue;
       P.score.kills++;
       P.score.extraValue = (P.score.extraValue || 0) + (u.kind === 'jet' ? 9e7 : u.kind === 'heli' ? 3e7 : 8e6);

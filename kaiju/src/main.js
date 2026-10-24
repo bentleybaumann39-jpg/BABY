@@ -9,7 +9,7 @@ import { Audio } from './audio/Audio.js';
 import { Military } from './game/Military.js';
 import { Traffic } from './game/Traffic.js';
 import { Crowds } from './game/Crowds.js';
-import { KAIJU, UPGRADES, MISSIONS } from './core/Config.js';
+import { KAIJU, UPGRADES, MISSIONS, FORMS, GENES, GENE_SLOTS } from './core/Config.js';
 import { loadProfile, saveProfile, loadSettings, saveSettings, missionUnlocked } from './core/Save.js';
 
 class App {
@@ -60,9 +60,11 @@ class App {
     window.__kj.ready = true;
     const auto = this.params.get('auto');
     if (auto) {
-      this.startMission(this.params.get('mission') || 'landfall', KAIJU[auto] ? auto : Object.keys(KAIJU)[0], {
-        time: this.params.get('time') || undefined, city: this.params.get('city') || undefined,
-      });
+      const form = this.params.get('form'), genes = this.params.get('genes');
+      const opts = { time: this.params.get('time') || undefined, city: this.params.get('city') || undefined };
+      // test hook: ?form=infernal&genes=thorns,echo overrides the saved mutation
+      if (form || genes) opts.mut = { form: FORMS[form] ? form : 'prime', genes: (genes || '').split(',').filter((g) => GENES[g]) };
+      this.startMission(this.params.get('mission') || 'landfall', KAIJU[auto] ? auto : Object.keys(KAIJU)[0], opts);
       return;
     }
     this.state = 'title';
@@ -105,6 +107,50 @@ class App {
     return true;
   }
 
+  // ------------------------------------------------------------------ mutation lab
+
+  mutState(id) { return this.profile.mut[id] || (this.profile.mut[id] = { forms: ['prime'], form: 'prime', genes: [] }); }
+
+  // Mutate into a strain (bought on first use), or switch back to one already grown.
+  mutate(id, form) {
+    const F = FORMS[form], M = this.mutState(id);
+    if (!F || !this.profile.unlocked[id]) return false;
+    if (!M.forms.includes(form)) {
+      if (this.profile.biomass < F.cost) return false;
+      this.profile.biomass -= F.cost;
+      M.forms.push(form);
+      this.audio.ui('unlock');
+    } else this.audio.ui('upgrade');
+    M.form = form;
+    this.save();
+    this.menu.showKaiju(id, false, form);
+    return true;
+  }
+
+  buyGene(g) {
+    const G = GENES[g];
+    if (!G || this.profile.genes.includes(g) || this.profile.biomass < G.cost) return false;
+    this.profile.biomass -= G.cost;
+    this.profile.genes.push(g);
+    this.save();
+    this.audio.ui('unlock');
+    return true;
+  }
+
+  // Slot an owned gene into a kaiju, or take it out again.
+  toggleGene(id, g) {
+    const M = this.mutState(id);
+    if (!this.profile.genes.includes(g)) return false;
+    const i = M.genes.indexOf(g);
+    if (i >= 0) M.genes.splice(i, 1);
+    else if (M.genes.length < GENE_SLOTS) M.genes.push(g);
+    else return false;
+    this.save();
+    this.audio.ui('upgrade');
+    if (g === 'giant') this.menu.showKaiju(id, true);
+    return true;
+  }
+
   async startMission(missionId, kaijuId, opts = {}) {
     const m = MISSIONS.find((x) => x.id === missionId);
     if (!m || (!missionUnlocked(this.profile, m) && !this.params.get('auto'))) return;
@@ -113,7 +159,7 @@ class App {
     this.ui.show('loading');
     if (this.menu) this.menu.active = false;
     if (this.play) { this.play.dispose(); this.play = null; }
-    const play = new Play(this, { missionId, kaijuId, levels: this.profile.levels[kaijuId], ...opts });
+    const play = new Play(this, { missionId, kaijuId, levels: this.profile.levels[kaijuId], mut: this.mutState(kaijuId), ...opts });
     try {
       await play.load((f, t) => this.ui.loading(f, t));
     } catch (e) {

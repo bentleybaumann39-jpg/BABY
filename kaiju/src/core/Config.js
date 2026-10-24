@@ -94,13 +94,100 @@ export const UPGRADES = [
   { id: 'power', name: 'Signature Power', desc: 'Special ability strength and efficiency', max: 5, cost: [400, 850, 1400, 2200, 3300], stat: 'special', mul: 0.2 },
 ];
 
-export function kaijuStats(id, levels = {}) {
+// Mutation strains. Any kaiju can be rewritten into any of them in the Mutation Lab: a strain
+// recolours the hide and its glow, grows crystals, spikes or sacs out of the body, wraps it in an
+// aura, shifts its stats and gives its blows an element. 'prime' is the creature as it came.
+//   tint: two hide colours mixed in patches; mix: how far the hide moves to them
+//   glow: replaces the baked glow colour; vein/veinAmt: a glowing seam network; rim: edge light
+//   surf: [roughness, metalness, amount]; growth: what erupts from the body (len is a fraction of
+//   the body height, glow scales its emissive); aura: particles
+export const FORMS = {
+  prime: { name: 'Prime', desc: 'The strain as it came out of the trench.', cost: 0, perks: ['No changes'] },
+  infernal: {
+    name: 'Infernal', cost: 1500, swatch: ['#2a1410', '#ff6a1f'],
+    desc: 'Magma runs through cracks in a charred hide and obsidian crystals erupt along the spine.',
+    tint: [[0.04, 0.03, 0.028], [0.26, 0.08, 0.035]], mix: 0.9, detail: 0.7,
+    glow: [1.0, 0.36, 0.06], vein: [1.0, 0.3, 0.04], veinAmt: 1.0, veinScale: 0.17, rim: [1.0, 0.32, 0.06], rimAmt: 0.12,
+    growth: { kind: 'crystal', n: 22, len: [0.07, 0.15], color: [0.035, 0.028, 0.03], emit: [1.0, 0.3, 0.04], glow: 0.5, rough: 0.18, metal: 0.2, where: 'dorsal' },
+    aura: 'embers', element: 'fire',
+    mul: { melee: 1.2, heavy: 1.2, stomp: 1.1 },
+    perks: ['Blows set buildings ablaze', '+20% melee and heavy damage'],
+  },
+  glacial: {
+    name: 'Glacial', cost: 1800, swatch: ['#c9dceb', '#7fd8ff'],
+    desc: 'Frost-white plates and ice spires. Its blows flash-freeze tanks and ice the rotors of gunships.',
+    tint: [[0.5, 0.6, 0.7], [0.82, 0.9, 0.97]], mix: 0.78, detail: 0.6, surf: [0.22, 0.0, 0.55],
+    glow: [0.55, 0.9, 1.0], vein: [0.45, 0.85, 1.0], veinAmt: 0.3, veinScale: 0.13, veinWarp: 0.2, rim: [0.7, 0.9, 1.0], rimAmt: 0.3,
+    growth: { kind: 'ice', n: 26, len: [0.07, 0.15], color: [0.55, 0.74, 0.9], emit: [0.4, 0.8, 1.0], glow: 0.22, rough: 0.06, metal: 0.0, where: 'dorsal' },
+    aura: 'frost', element: 'ice',
+    mul: { hp: 1.25, speed: 0.92 }, add: { armor: 0.08 },
+    perks: ['Blows freeze military units', '+25% health, +8% armour', '-8% speed'],
+  },
+  venom: {
+    name: 'Venom', cost: 1500, swatch: ['#2e4a12', '#8cff2a'],
+    desc: 'A blistered, toxic hide studded with glowing sacs. Wounds close fast and every blow leaves acid behind.',
+    tint: [[0.1, 0.17, 0.04], [0.24, 0.08, 0.26]], mix: 0.8, detail: 0.75,
+    glow: [0.55, 1.0, 0.12], vein: [0.45, 1.0, 0.1], veinAmt: 0.7, veinScale: 0.15, veinWarp: 1.1, rim: [0.4, 1.0, 0.2], rimAmt: 0.1,
+    growth: { kind: 'pustule', n: 40, len: [0.014, 0.032], color: [0.16, 0.26, 0.05], emit: [0.5, 1.0, 0.1], glow: 0.35, rough: 0.15, metal: 0.0, where: 'flank' },
+    aura: 'drip', element: 'acid',
+    mul: { regen: 1.8, special: 1.2 },
+    perks: ['Blows leave corroding acid', '+80% regeneration', '+20% signature power'],
+  },
+  titan: {
+    name: 'Titan', cost: 2600, swatch: ['#3a2c1c', '#ffc35a'],
+    desc: 'Bronze-dark armour, a crown of bone spikes and fifteen percent more of everything.',
+    tint: [[0.13, 0.1, 0.075], [0.4, 0.28, 0.13]], mix: 0.72, detail: 0.65, surf: [0.38, 0.55, 0.6],
+    glow: [1.0, 0.72, 0.26], vein: [1.0, 0.68, 0.22], veinAmt: 0.45, veinScale: 0.12, veinWarp: 0.15, rim: [1.0, 0.75, 0.35], rimAmt: 0.06,
+    growth: { kind: 'spike', n: 24, len: [0.08, 0.17], color: [0.6, 0.54, 0.44], emit: [0, 0, 0], rough: 0.55, metal: 0.0, where: 'dorsal' },
+    aura: 'motes', element: 'quake',
+    mul: { scale: 1.15, hp: 1.2, melee: 1.1, heavy: 1.1, speed: 0.9 },
+    perks: ['Slams send out a second shockwave', '15% bigger, +20% health', '-10% speed'],
+  },
+  void: {
+    name: 'Void', cost: 3000, swatch: ['#0c0614', '#a45cff'],
+    desc: 'A body like a hole in the night, edged in violet, trailing shards that should not exist.',
+    tint: [[0.022, 0.016, 0.035], [0.1, 0.045, 0.17]], mix: 0.9, detail: 0.6,
+    glow: [0.65, 0.35, 1.0], vein: [0.55, 0.3, 1.0], veinAmt: 0.8, veinScale: 0.2, veinWarp: 0.6, rim: [0.6, 0.32, 1.0], rimAmt: 0.42,
+    growth: { kind: 'shard', n: 20, len: [0.08, 0.16], color: [0.04, 0.025, 0.07], emit: [0.6, 0.3, 1.0], glow: 0.4, rough: 0.12, metal: 0.35, where: 'dorsal' },
+    aura: 'wisps', element: 'void',
+    mul: { speed: 1.12, energyRegen: 1.35, specialCost: 0.8 },
+    perks: ['Blows tear rifts that strike again', '+12% speed, +35% energy regeneration', 'Signature power costs 20% less'],
+  },
+};
+
+// Genes: traits bought once and slotted into any kaiju (GENE_SLOTS each).
+// mul/add change stats; the rest are behaviours the play session checks by id.
+export const GENE_SLOTS = 3;
+export const GENES = {
+  thorns: { name: 'Barbed Hide', cost: 900, desc: 'Walking through buildings shreds them twice as fast, and tanks in your path are crushed.', add: { armor: 0.04 } },
+  regen: { name: 'Hyper-Regeneration', cost: 1100, desc: 'Double regeneration. Every building you level heals 2.5% health.', mul: { regen: 2 } },
+  adrenal: { name: 'Adrenal Gland', cost: 1000, desc: 'The surge meter fills 50% faster and a surge lasts 6 seconds longer.' },
+  seismic: { name: 'Seismic Tread', cost: 800, desc: 'Footsteps hit three times as hard over a wider area. Stomps reach 25% further.' },
+  giant: { name: 'Gigantism', cost: 1600, desc: '10% bigger: more reach, health and damage.', mul: { scale: 1.1 } },
+  lungs: { name: 'Reservoir Lungs', cost: 900, desc: '+40% energy and +20% energy regeneration.', mul: { energy: 1.4, energyRegen: 1.2 } },
+  volatile: { name: 'Volatile Blood', cost: 1300, desc: 'Damage you take builds pressure. Past a tenth of your health, it vents in a blast.' },
+  echo: { name: 'Echo Chamber', cost: 1200, desc: 'Your roar becomes a shockwave that cracks buildings and silences the guns for 8 s.' },
+  frenzy: { name: 'Feeding Frenzy', cost: 1000, desc: 'Each military kill restores 3% health and 8 energy.' },
+};
+
+// Mutation Surge: fill the meter by destroying things, then transform for a while.
+export const SURGE = {
+  fill: 6e9,          // dollars of damage for a full meter
+  perKill: 0.04, perRoar: 0.05,
+  duration: 18,
+  mul: { melee: 1.4, heavy: 1.4, stomp: 1.4, special: 1.3, speed: 1.1, regen: 3 },
+  armor: 0.15, scale: 1.15,
+};
+
+export function kaijuStats(id, levels = {}, mut = null) {
   const b = KAIJU[id].base;
   const lv = (k) => levels[k] || 0;
-  const scale = b.scale * (1 + 0.08 * lv('growth'));
+  // mutations change size first, so health and damage scale with the extra mass like Growth does
+  const mods = mutationMods(mut);
+  const scale = b.scale * (1 + 0.08 * lv('growth')) * (mods.mul.scale || 1);
   const grow = scale / b.scale;
   // damage scales with how much mass is behind each blow
-  return {
+  const s = {
     hp: b.hp * (1 + 0.16 * lv('vitality')) * (0.75 + 0.25 * grow * grow),
     armor: Math.min(0.75, b.armor + 0.06 * lv('hide')),
     regen: b.regen * (1 + 0.3 * lv('metabolism')),
@@ -114,6 +201,22 @@ export function kaijuStats(id, levels = {}) {
     speed: b.speed * (1 + 0.07 * lv('stride')),
     scale,
   };
+  for (const [k, m] of Object.entries(mods.mul)) if (k !== 'scale' && k in s) s[k] *= m;
+  for (const [k, a] of Object.entries(mods.add)) if (k in s) s[k] += a;
+  s.armor = Math.min(0.8, s.armor);
+  return s;
+}
+
+// The combined stat changes of a kaiju's strain and slotted genes.
+export function mutationMods(mut) {
+  const out = { mul: {}, add: {} };
+  if (!mut) return out;
+  const parts = [FORMS[mut.form], ...(mut.genes || []).map((g) => GENES[g])].filter(Boolean);
+  for (const p of parts) {
+    for (const [k, m] of Object.entries(p.mul || {})) out.mul[k] = (out.mul[k] || 1) * m;
+    for (const [k, a] of Object.entries(p.add || {})) out.add[k] = (out.add[k] || 0) + a;
+  }
+  return out;
 }
 
 export const MISSIONS = [

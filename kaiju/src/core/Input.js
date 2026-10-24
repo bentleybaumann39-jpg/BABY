@@ -104,6 +104,7 @@ export class Input {
   get special() { return this.down('KeyQ') || this.down('KeyF') || !!(this.mouse.buttons & 2) || this.padDown(6); }
   get stomp() { return this.hit('Space') || this.padHit(0); }
   get roar() { return this.hit('KeyE') || this.padHit(1); }
+  get mutate() { return this.hit('KeyT') || this.padHit(11); }
   get pause() { return this.hit('Escape') || this.hit('KeyP') || this.padHit(9); }
   get zoom() { return this.mouse.wheel; }
 }

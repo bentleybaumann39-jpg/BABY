@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { clone as skelClone } from '../../vendor/addons/utils/SkeletonUtils.js';
 import { patchTree, G } from '../render/Shading.js';
+import { MutationRig } from './Mutation.js';
 import { clamp, damp, dampAngle, angleDiff, smooth } from '../core/Rng.js';
 
 const LEG_BONES = ['root', 'hips', 'thighL', 'thighR', 'shinL', 'shinR', 'footL', 'footR', 'toeL', 'toeR',
@@ -16,10 +17,11 @@ function filterClip(clip, keep, name) {
 }
 
 export class Kaiju {
-  constructor(id, def, asset, stats, meta) {
+  constructor(id, def, asset, stats, meta, mut = null) {
     this.id = id;
     this.def = def;
     this.stats = stats;
+    this.baseStats = { ...stats }; // stats before a Mutation Surge
     this.meta = meta;
     this.root = new THREE.Group();
     this.model = skelClone(asset.scene);
@@ -30,9 +32,12 @@ export class Kaiju {
     // horizontal half-extent: a crab-legged kaiju is far wider than it is tall
     const bb = new THREE.Box3().setFromObject(this.model);
     this.radius = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z) * 0.5 || this.height * 0.5;
+    this.baseRadius = this.radius;
     // private material copies: the menu stage and the game patch shaders differently
     this.model.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map((m) => m.clone()) : o.material.clone(); });
-    patchTree(this.model, 'kaiju-' + id);
+    this.mutRig = new MutationRig(this.model, meta, def.asset, def.moves.special.color);
+    patchTree(this.model, 'kaiju-' + id, (m) => this.mutRig.hookFor(m));
+    const glowCol = mut && mut.form ? this.mutRig.glowOf(mut.form) : def.moves.special.color;
     this.glowMats = [];
     this.veinMats = []; // baked emissive veins/eyes: kept legible whatever the exposure
     this.model.traverse((o) => {
@@ -44,7 +49,7 @@ export class Kaiju {
         for (const m of mats) {
           m.side = THREE.FrontSide;
           if (/plate|vein|glow|shard/.test(m.name)) {
-            m.emissive = new THREE.Color(...def.moves.special.color);
+            m.emissive = new THREE.Color(...glowCol);
             m.emissiveIntensity = 0;
             this.glowMats.push(m);
           } else if (m.emissiveMap || (m.emissiveIntensity > 0 && m.emissive && m.emissive.getHex() !== 0)) {
@@ -55,6 +60,9 @@ export class Kaiju {
         }
       }
     });
+    // the strain's growths are added after the material scan: they manage their own glow
+    this.mutRig.setForm(mut ? mut.form : 'prime');
+    this.surgeAmt = 0;
     this.bones = {};
     this.model.traverse((o) => { if (o.isBone) this.bones[o.name] = o; });
     // animation layers
@@ -229,6 +237,24 @@ export class Kaiju {
     const pulse = 0.88 + 0.12 * Math.sin(this._glowT * 1.6) * Math.sin(this._glowT * 0.37 + 1.1);
     const veinK = Math.max(1, 0.6 / ex) * (1 + 1.5 * g) * pulse;
     for (const m of this.veinMats) m.emissiveIntensity = m.userData.baseEmit * veinK;
+    this.mutRig.update(dt, ex, this.surgeAmt);
+  }
+
+  // Resize the creature in place (Mutation Surge). Everything that reads scale follows.
+  setScale(s) {
+    this.model.scale.setScalar(s);
+    this.scale = s;
+    this.height = (this.meta.height || 50) * s;
+    this.radius = this.baseRadius * s / this.baseStats.scale;
+  }
+
+  // Blend the surge in or out (a: 0..1): stronger, faster, tougher and bigger.
+  applySurge(a, cfg) {
+    this.surgeAmt = a;
+    const b = this.baseStats, s = this.stats;
+    for (const [k, m] of Object.entries(cfg.mul)) s[k] = b[k] * (1 + (m - 1) * a);
+    s.armor = Math.min(0.85, b.armor + cfg.armor * a);
+    this.setScale(b.scale * (1 + (cfg.scale - 1) * a));
   }
 
   _locomotion(dt) {
@@ -379,6 +405,7 @@ export class Kaiju {
     const dealt = amount * (1 - this.stats.armor);
     this.hp -= dealt;
     this.hurtT = 1.2;
+    if (this.events && this.events.hurt) this.events.hurt(this, dealt);
     if (this.hp <= 0) {
       this.hp = 0;
       this.dead = true;

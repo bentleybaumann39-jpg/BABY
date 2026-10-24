@@ -184,6 +184,78 @@ if (script === 'probe') {
   console.log('stomp done', JSON.stringify(await st()));
   await shot('72_stomp');
 }
+if (script === 'surge') {
+  // mutation: strain visuals, then fill the meter, surge, swing, and let it run out
+  const st = () => page.evaluate(() => {
+    const p = window.__kj.play, k = p.kaiju, S = p.surge;
+    return { form: p.mut.form, genes: [...p.genes], meter: +S.meter.toFixed(2), on: S.on, amt: +S.amt.toFixed(2), scale: +k.scale.toFixed(2), melee: Math.round(k.stats.melee),
+      armor: +k.stats.armor.toFixed(2), speed: +k.stats.speed.toFixed(2), hp: Math.round(k.hp), maxHp: Math.round(k.maxHp), dots: p.dots.length, growth: !!k.mutRig.growth,
+      frozen: p.military ? p.military.units.filter((u) => u.frozen > 0).length : 0, burning: p.world.buildings.burning.size, dmg: Math.round(p.score.damage / 1e6) };
+  });
+  console.log(JSON.stringify(await page.evaluate(() => {
+    const p = window.__kj.play, k = p.kaiju;
+    const bs = p.world.city.buildings.filter((b) => b.h > 60 && b.w > 30);
+    bs.sort((a, b) => Math.hypot(a.x0 - 100, a.z0 - 300) - Math.hypot(b.x0 - 100, b.z0 - 300));
+    const b = bs[0];
+    k.pos.set(b.x0 + b.w / 2, 0, b.z0 + b.d + 18 * k.scale);
+    k.yaw = Math.PI;
+    p.rig.yaw = k.yaw + 0.6;
+    return { building: [Math.round(b.x0), Math.round(b.z0), Math.round(b.h)] };
+  })));
+  log(await step(1.5));
+  console.log('start', JSON.stringify(await st()));
+  await shot('80_strain');
+  await page.evaluate(() => { window.__kj.play.surge.meter = 1; });
+  log(await step(0.2));
+  log(await step(0.3, { tap: ['KeyT'] }));
+  log(await step(2.2));
+  console.log('surging', JSON.stringify(await st()));
+  await page.evaluate(() => { const p = window.__kj.play; p.rig.yaw = p.kaiju.yaw + 0.6; });
+  log(await step(0.3));
+  await shot('81_surge');
+  log(await step(1.4, { click: 1 }));
+  console.log('swing', JSON.stringify(await st()));
+  log(await step(1.0));
+  console.log('after swing', JSON.stringify(await st()));
+  await shot('82_element');
+  log(await step(0.9, { tap: ['KeyE'] }));
+  log(await step(2.0));
+  console.log('roar', JSON.stringify(await st()));
+  log(await step(16));
+  console.log('spent', JSON.stringify(await st()));
+}
+if (script === 'elements') {
+  // no screenshots: call up the military, then exercise the strain's element and every gene hook
+  log(await step(0.5));
+  const r = await page.evaluate(() => {
+    const p = window.__kj.play, k = p.kaiju, M = p.military, out = {};
+    for (let i = 0; i < 3; i++) { M._spawnTank(); M._spawnHeli(); }
+    const dt = 1 / 30;
+    for (let t = 0; t < 2; t += dt) p.update(dt);
+    // bring the units close and strike each one
+    for (const u of M.units) { u.pos.x = k.pos.x + (Math.random() - 0.5) * 80; u.pos.z = k.pos.z - 60 - Math.random() * 40; if (u.kind === 'heli') u.pos.y = 60; }
+    const kills0 = p.score.kills;
+    for (const u of M.units) p._element(u.pos.clone(), 18, 300);
+    out.frozen = M.units.filter((u) => u.frozen > 0).length;
+    out.dots = p.dots.length;
+    for (let t = 0; t < 3; t += dt) p.update(dt);
+    out.dotsAfter = p.dots.length;
+    out.elementKills = p.score.kills - kills0;
+    out.helisY = M.units.filter((u) => u.kind === 'heli').map((u) => Math.round(u.pos.y));
+    // genes
+    const hp0 = k.hp;
+    for (let i = 0; i < 12; i++) k.damage(90);
+    out.vented = p.ventT > 0;
+    out.hpLost = Math.round(hp0 - k.hp);
+    p.request('roar');
+    out.echoQueued = p.dots.some((d) => d.kind === 'echo');
+    for (let t = 0; t < 1.5; t += dt) p.update(dt);
+    out.suppress = +M.suppressT.toFixed(1);
+    out.stats = { scale: +k.scale.toFixed(2), energy: Math.round(k.maxEnergy), regen: +k.stats.regen.toFixed(1), armor: +k.stats.armor.toFixed(2) };
+    return out;
+  });
+  console.log('elements', JSON.stringify(r));
+}
 if (script === 'plow') {
   // walking into dense blocks: speed should settle well above a crawl (no screenshots: fast)
   log(await step(0.5));

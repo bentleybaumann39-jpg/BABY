@@ -115,6 +115,38 @@ button { font-family: inherit; }
 .sandbox { display: flex; gap: 8px; }
 .sandbox select { flex: 1; background: #0b1015; color: var(--ink); border: 1px solid var(--line); padding: 6px; font-family: inherit; letter-spacing: 0.06em; }
 
+/* mutation lab */
+.kcard .strain { position: absolute; right: 10px; bottom: 11px; font-size: 9.5px; letter-spacing: 0.2em; color: var(--sc); border: 1px solid var(--sc); padding: 1px 5px; }
+.dstrain { color: var(--sc); }
+.tabs { display: flex; gap: 0; margin: 18px 0 10px; border-bottom: 1px solid var(--line); }
+.tabs button { flex: 1; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--dim); font-family: inherit; font-size: 12px; letter-spacing: 0.22em; padding: 8px 4px; cursor: pointer; }
+.tabs button:hover { color: var(--ink); }
+.tabs button.on { color: #fff; border-bottom-color: var(--kc, var(--accent)); }
+.forms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.fcard { border: 1px solid var(--line); background: rgba(6, 9, 12, 0.7); padding: 10px 8px 8px; cursor: pointer; text-align: center; transition: all 0.15s; position: relative; }
+.fcard:hover { border-color: rgba(255,255,255,0.35); }
+.fcard.sel { border-color: var(--f2); box-shadow: 0 0 14px -4px var(--f2); }
+.fcard.active::after { content: ''; position: absolute; top: 6px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--f2); box-shadow: 0 0 6px var(--f2); }
+.fcard .sw { display: block; width: 34px; height: 34px; margin: 0 auto 6px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--f2), var(--f1) 62%); box-shadow: 0 0 12px -2px var(--f2); }
+.fcard .fn { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; }
+.fcard .fe { font-size: 10.5px; color: var(--gold); letter-spacing: 0.08em; margin-top: 2px; }
+.fcard.active .fe { color: #7dff9a; }
+.fdesc { margin-top: 12px; border-left: 2px solid var(--kc, var(--accent)); padding: 2px 0 2px 12px; }
+.fdesc b { font-size: 14px; letter-spacing: 0.16em; }
+.fdesc b span { color: var(--dim); font-weight: 400; letter-spacing: 0.1em; font-size: 12px; }
+.fdesc p { color: #b9c3ca; font-size: 13px; line-height: 1.5; margin: 6px 0; }
+.fdesc ul { margin: 4px 0 0; padding-left: 16px; color: var(--ink); font-size: 12.5px; line-height: 1.6; }
+.fcard + .unlock, .fdesc + .unlock { margin-top: 12px; }
+.unlock:disabled { color: #5d656b; border-color: var(--line); background: transparent; cursor: default; }
+.slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.slot { border: 1px dashed var(--line); padding: 10px 6px; font-size: 10.5px; letter-spacing: 0.12em; color: #5d656b; text-align: center; min-height: 40px; display: flex; align-items: center; justify-content: center; }
+.slot.on { border: 1px solid var(--kc, var(--accent)); color: var(--ink); cursor: pointer; position: relative; background: rgba(20, 28, 34, 0.8); }
+.slot.on i { position: absolute; top: 2px; right: 5px; font-style: normal; color: var(--dim); }
+.up.gene.on .un { color: var(--kc, var(--accent)); }
+.up button.slotb { color: var(--ink); border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.05); }
+.up button.slotb:disabled { color: #5d656b; border-color: var(--line); background: transparent; }
+.up button.rm { color: var(--dim); border-color: var(--line); background: transparent; }
+
 /* HUD */
 .hud { pointer-events: none; }
 .vitals { position: absolute; left: 26px; top: 22px; width: 340px; }
@@ -127,6 +159,16 @@ button { font-family: inherit; }
 .meter span { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); font-size: 9px; letter-spacing: 0.18em; color: rgba(255,255,255,0.85); line-height: 1; }
 .meter.hp { height: 14px; }
 .meter.en span { display: none; }
+.meter.mu { height: 5px; margin-bottom: 18px; }
+.meter.mu div { background: linear-gradient(90deg, rgba(255,255,255,0.25), var(--mut, #b77dff)); }
+.meter.mu span { right: auto; left: 0; top: 13px; transform: none; font-size: 9px; color: var(--dim); }
+.meter.mu.ready { border-color: var(--mut, #b77dff); animation: mutpulse 1s ease-in-out infinite; }
+.meter.mu.ready span, .meter.mu.on span { color: var(--mut, #b77dff); }
+.meter.mu.on div { box-shadow: 0 0 12px var(--mut, #b77dff); }
+@keyframes mutpulse { 50% { box-shadow: 0 0 14px var(--mut, #b77dff); } }
+.kname small { font-size: 11px; letter-spacing: 0.26em; color: var(--mut, var(--accent)); margin-left: 8px; font-weight: 700; }
+.mv .key.ready { border-color: var(--mut, #b77dff); animation: mutpulse 1s ease-in-out infinite; }
+#mv-surge i { background: var(--mut, #b77dff); opacity: 0.45; }
 .objectives { position: absolute; left: 50%; top: 22px; transform: translateX(-50%); text-align: center; min-width: 360px; }
 .obj { font-size: 13px; letter-spacing: 0.12em; text-shadow: 0 1px 6px #000; margin: 3px 0; }
 .obj .pb { display: inline-block; vertical-align: middle; width: 120px; height: 3px; background: rgba(255,255,255,0.15); margin-left: 10px; position: relative; }
@@ -152,7 +194,7 @@ button { font-family: inherit; }
 .banner.on { opacity: 1; }
 .toast { position: absolute; left: 50%; bottom: 140px; transform: translateX(-50%); font-size: 14px; letter-spacing: 0.15em; color: #fff; background: rgba(0,0,0,0.5); padding: 6px 14px; opacity: 0; transition: opacity 0.3s; }
 .toast.on { opacity: 1; }
-.hint { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); font-size: 12px; letter-spacing: 0.15em; color: #c8d0d6; text-shadow: 0 1px 4px #000; opacity: 0.85; text-align: center; }
+.hint { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); font-size: 12px; letter-spacing: 0.15em; color: #c8d0d6; text-shadow: 0 1px 4px #000; opacity: 0.85; text-align: center; }
 .fps { position: absolute; left: 6px; bottom: 4px; font-size: 11px; color: #8a8; }
 #popups { position: fixed; inset: 0; pointer-events: none; z-index: 11; }
 .pop { position: absolute; font-weight: 800; color: var(--gold); font-size: 20px; letter-spacing: 0.05em; text-shadow: 0 2px 8px #000; transform: translate(-50%, -50%); white-space: nowrap; }

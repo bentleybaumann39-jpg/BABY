@@ -1,6 +1,6 @@
 // DOM screens and HUD. Screens are plain divs toggled by show(); the HUD updates at ~20 Hz.
 import * as THREE from 'three';
-import { KAIJU, UPGRADES, MISSIONS, CITIES, TIMES, kaijuStats } from '../core/Config.js';
+import { KAIJU, UPGRADES, MISSIONS, CITIES, TIMES, FORMS, GENES, GENE_SLOTS, kaijuStats } from '../core/Config.js';
 import { missionUnlocked, SETTINGS_DEF } from '../core/Save.js';
 import { fmtMoney } from '../game/Play.js';
 
@@ -13,7 +13,11 @@ const TIPS = [
   'Roar to scatter the crowds and rattle the gunners for a few seconds.',
   'Growth makes everything bigger: reach, health, damage. And it makes you easier to hit.',
   'Dust from a big collapse settles on everything nearby. Look for the grey neighbourhoods.',
+  'Destruction fills the mutagen meter. When it is full, press T to surge: bigger, faster and far harder to stop.',
+  'A Glacial strain freezes tanks where they stand and drops gunships out of the sky.',
+  'Genes can be moved between kaiju for free. Buy each one once, slot it anywhere.',
 ];
+const ELEMENT = { fire: 'Fire', ice: 'Frost', acid: 'Acid', quake: 'Aftershock', void: 'Rift' };
 
 export class UI {
   constructor(app) {
@@ -21,6 +25,8 @@ export class UI {
     this.screen = 'loading';
     this.prev = null;
     this.selMission = 'landfall';
+    this.tab = 'evo';     // dossier tab: evo, forms, genes
+    this.preview = null;  // { id, form } previewed on the stage in the Mutation tab
     this.sandbox = { city: 'harbor', time: 'golden' };
     this.hudT = 0;
     this.pops = [];
@@ -51,7 +57,7 @@ export class UI {
     if (el) el.classList.add('show');
     if (id !== this.screen) this.prev = this.screen;
     this.screen = id;
-    if (id === 'lab') this.renderLab();
+    if (id === 'lab') { this.preview = null; this.renderLab(); }
     if (id === 'settings') this.renderSettings();
   }
 
@@ -97,20 +103,25 @@ export class UI {
       const un = !!P.unlocked[id];
       c.className = 'kcard' + (id === (this.view || sel) ? ' sel' : '') + (un ? '' : ' locked');
       c.style.setProperty('--kc', d.color);
-      c.innerHTML = `<div class="n">${d.name}</div><div class="t">${d.title}</div>${un ? '' : `<div class="lock">${d.cost.toLocaleString()} ◆</div>`}`;
-      c.onclick = () => { this.view = id; if (un) app.selectKaiju(id); else app.menu.showKaiju(id); this.renderLab(); app.audio.ui('click'); };
+      const fm = un && P.mut[id] && P.mut[id].form !== 'prime' ? FORMS[P.mut[id].form] : null;
+      c.innerHTML = `<div class="n">${d.name}</div><div class="t">${d.title}</div>${fm ? `<div class="strain" style="--sc:${fm.swatch[1]}">${fm.name.toUpperCase()}</div>` : ''}${un ? '' : `<div class="lock">${d.cost.toLocaleString()} ◆</div>`}`;
+      c.onclick = () => { this.view = id; this.preview = null; if (un) app.selectKaiju(id); else app.menu.showKaiju(id); this.renderLab(); app.audio.ui('click'); };
       r.appendChild(c);
     }
     const id = this.view || sel;
     const d = KAIJU[id];
     const lv = P.levels[id] || {};
-    const st = kaijuStats(id, lv);
     const un = !!P.unlocked[id];
+    const MU = P.mut[id] || { forms: ['prime'], form: 'prime', genes: [] };
+    // the Mutation tab previews a strain: the stage and the stat bars show it before you buy
+    const pf = this.tab === 'forms' && this.preview && this.preview.id === id ? this.preview.form : MU.form;
+    const st = kaijuStats(id, lv, { form: pf, genes: MU.genes });
+    const F = FORMS[pf];
     const D = $('dossier');
     D.style.setProperty('--kc', d.color);
     document.documentElement.style.setProperty('--accent', d.color);
     const bar = (label, v, max, txt) => `<div class="stat"><span>${label}</span><div class="sb"><i style="width:${Math.min(100, v / max * 100)}%"></i></div><b>${txt}</b></div>`;
-    let h = `<div class="dn">${d.name}</div><div class="dt">${d.title}</div><div class="blurb">${d.blurb}</div>`;
+    let h = `<div class="dn">${d.name}</div><div class="dt">${d.title}${pf !== 'prime' ? ` · <span class="dstrain" style="--sc:${F.swatch[1]}">${F.name} strain</span>` : ''}</div><div class="blurb">${d.blurb}</div>`;
     h += bar('HEALTH', st.hp, 3200, Math.round(st.hp));
     h += bar('ARMOUR', st.armor, 0.75, Math.round(st.armor * 100) + '%');
     h += bar('POWER', st.melee, 900, Math.round(st.melee));
@@ -119,10 +130,12 @@ export class UI {
     h += `<div class="sect">MOVES</div><div class="movelist">`;
     const keys = { attack1: 'LMB', attack2: 'LMB ×2', heavy: 'RMB', stomp: 'SPACE', special: 'Q / F' };
     for (const [k, m] of Object.entries(d.moves)) h += `<span class="k">${keys[k]}</span><span>${m.name}</span>`;
-    h += `<span class="k">E</span><span>Roar</span></div>`;
+    h += `<span class="k">E</span><span>Roar</span><span class="k">T</span><span>Mutation Surge</span></div>`;
     if (un) {
-      h += `<div class="sect">EVOLUTION</div>`;
-      for (const u of UPGRADES) {
+      h += `<div class="tabs">${[['evo', 'EVOLUTION'], ['forms', 'MUTATION'], ['genes', 'GENES']].map(([t, l]) => `<button data-tab="${t}" class="${this.tab === t ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+      if (this.tab === 'forms') h += this._formsTab(id, MU, pf);
+      else if (this.tab === 'genes') h += this._genesTab(id, MU);
+      else for (const u of UPGRADES) {
         const l = lv[u.id] || 0;
         const cost = l < u.max ? u.cost[l] : null;
         const pips = Array.from({ length: u.max }, (_, i) => `<i class="${i < l ? 'on' : ''}"></i>`).join('');
@@ -135,6 +148,25 @@ export class UI {
     D.innerHTML = h;
     if (this._dossierFor !== id) { D.scrollTop = 0; this._dossierFor = id; } // a new kaiju opens at the top
     for (const b of D.querySelectorAll('[data-up]')) b.onclick = () => { if (app.buyUpgrade(id, b.dataset.up)) this.renderLab(); };
+    for (const b of D.querySelectorAll('[data-tab]')) b.onclick = () => {
+      this.tab = b.dataset.tab;
+      // leaving the Mutation tab puts the equipped strain back on the stage
+      if (this.preview) { this.preview = null; app.menu.showKaiju(id, false); }
+      this.renderLab();
+      app.audio.ui('click');
+    };
+    for (const c of D.querySelectorAll('[data-form]')) c.onclick = () => {
+      this.preview = { id, form: c.dataset.form };
+      app.menu.showKaiju(id, false, c.dataset.form);
+      this.renderLab();
+      app.audio.ui('click');
+    };
+    const mb = $('mutate');
+    if (mb) mb.onclick = () => { if (app.mutate(id, pf)) this.renderLab(); };
+    for (const b of D.querySelectorAll('[data-gene]')) b.onclick = () => {
+      const g = b.dataset.gene;
+      if (P.genes.includes(g) ? app.toggleGene(id, g) : app.buyGene(g)) this.renderLab();
+    };
     const ub = $('unlock');
     if (ub) ub.onclick = () => { if (app.unlockKaiju(id)) { this.view = id; this.renderLab(); } };
     // missions
@@ -160,6 +192,43 @@ export class UI {
     const dep = $('deploy');
     dep.disabled = !un;
     dep.textContent = un ? 'DEPLOY' : 'LOCKED';
+  }
+
+  _formsTab(id, M, pf) {
+    const P = this.app.profile;
+    let h = '<div class="forms">';
+    for (const [fid, f] of Object.entries(FORMS)) {
+      const sw = f.swatch || [KAIJU[id].color, KAIJU[id].color];
+      const own = M.forms.includes(fid);
+      h += `<div class="fcard${fid === pf ? ' sel' : ''}${fid === M.form ? ' active' : ''}" data-form="${fid}" style="--f1:${fid === 'prime' ? '#20262c' : sw[0]};--f2:${sw[1]}">
+        <i class="sw"></i><div class="fn">${f.name.toUpperCase()}</div><div class="fe">${fid === M.form ? 'ACTIVE' : own ? 'GROWN' : f.cost.toLocaleString() + ' ◆'}</div></div>`;
+    }
+    h += '</div>';
+    const F = FORMS[pf];
+    const own = M.forms.includes(pf);
+    h += `<div class="fdesc"><b>${F.name.toUpperCase()}${F.element ? ` <span>· ${ELEMENT[F.element]} blows</span>` : ''}</b><p>${F.desc}</p><ul>${F.perks.map((x) => `<li>${x}</li>`).join('')}</ul></div>`;
+    if (pf === M.form) h += `<button class="unlock" disabled>ACTIVE STRAIN</button>`;
+    else if (own) h += `<button class="unlock" id="mutate">${pf === 'prime' ? 'REVERT TO PRIME' : 'EQUIP ' + F.name.toUpperCase() + ' STRAIN'}</button>`;
+    else h += `<button class="unlock" id="mutate" ${P.biomass < F.cost ? 'disabled' : ''}>MUTATE · ${F.cost.toLocaleString()} ◆</button>`;
+    h += `<p class="note">Click a strain to see it on the stage. Each kaiju grows its own strains; once grown, switching is free.</p>`;
+    return h;
+  }
+
+  _genesTab(id, M) {
+    const P = this.app.profile;
+    let h = `<div class="slots">${Array.from({ length: GENE_SLOTS }, (_, i) => {
+      const g = M.genes[i];
+      return g ? `<div class="slot on" data-gene="${g}" title="Remove">${GENES[g].name}<i>×</i></div>` : '<div class="slot">EMPTY SLOT</div>';
+    }).join('')}</div>`;
+    for (const [gid, g] of Object.entries(GENES)) {
+      const own = P.genes.includes(gid), on = M.genes.includes(gid);
+      const full = M.genes.length >= GENE_SLOTS;
+      const btn = !own ? `<button data-gene="${gid}" ${P.biomass < g.cost ? 'disabled' : ''}>${g.cost.toLocaleString()} ◆</button>`
+        : on ? `<button data-gene="${gid}" class="rm">REMOVE</button>` : `<button data-gene="${gid}" class="slotb" ${full ? 'disabled' : ''}>${full ? 'SLOTS FULL' : 'SLOT'}</button>`;
+      h += `<div class="up gene${on ? ' on' : ''}"><div class="un">${g.name}</div>${btn}<div class="ud">${g.desc}</div></div>`;
+    }
+    h += `<p class="note">Genes are bought once and can be slotted into any kaiju, ${GENE_SLOTS} at a time.</p>`;
+    return h;
   }
 
   deploy() {
@@ -221,13 +290,15 @@ export class UI {
 
   // identity and move list: set as soon as the mission loads, so the intro shows the right kaiju
   hudSetup(play) {
-    $('h-name').textContent = play.def.name;
+    $('h-name').innerHTML = play.def.name + (play.form.tint ? ` <small>${play.form.name.toUpperCase()}</small>` : '');
     document.documentElement.style.setProperty('--accent', play.def.color);
-    const k = { attack: 'LMB', heavy: 'RMB', special: 'Q', stomp: 'SPC', roar: 'E' };
+    const c = play.def.moves.special.color;
+    document.documentElement.style.setProperty('--mut', `rgb(${c.map((x) => Math.round(Math.min(1, x) * 255)).join(',')})`);
+    const k = { attack: 'LMB', heavy: 'RMB', special: 'Q', stomp: 'SPC', roar: 'E', surge: 'T' };
     const mv = play.def.moves;
-    $('h-moves').innerHTML = [['special', mv.special.name], ['heavy', mv.heavy.name], ['stomp', mv.stomp.name], ['roar', 'Roar']]
+    $('h-moves').innerHTML = [['special', mv.special.name], ['heavy', mv.heavy.name], ['stomp', mv.stomp.name], ['roar', 'Roar'], ['surge', 'Surge']]
       .map(([n, label]) => `<div class="mv"><span class="key" id="mv-${n}">${k[n]}<i></i></span>${label}</div>`).join('');
-    $('h-hint').textContent = 'WASD move · Shift run · LMB attack · RMB heavy · Hold Q special · Space ' + mv.stomp.name.toLowerCase() + ' · Esc pause';
+    $('h-hint').textContent = 'WASD move · Shift run · LMB attack · RMB heavy · Hold Q special · Space ' + mv.stomp.name.toLowerCase() + ' · T surge · Esc pause';
   }
 
   missionStart(play) {
@@ -284,6 +355,14 @@ export class UI {
     $('h-hp').style.width = (k.hp / k.maxHp * 100) + '%';
     $('h-hp-t').textContent = Math.min(Math.ceil(k.hp), Math.round(k.maxHp)) + ' / ' + Math.round(k.maxHp);
     $('h-en').style.width = (k.energy / k.maxEnergy * 100) + '%';
+    const S = play.surge;
+    $('h-mu').style.width = (S.meter * 100) + '%';
+    const mu = $('h-mu').parentNode;
+    mu.classList.toggle('ready', S.meter >= 1 && !S.on);
+    mu.classList.toggle('on', S.on);
+    $('h-mu-t').textContent = S.on ? 'SURGE' : S.meter >= 1 ? 'SURGE READY · T' : 'MUTAGEN';
+    const su = $('mv-surge');
+    if (su) { su.querySelector('i').style.height = Math.round(S.meter * 100) + '%'; su.classList.toggle('ready', S.meter >= 1 && !S.on); }
     $('h-money').textContent = '$' + fmtMoney(play.score.damage);
     $('h-sub').textContent = `${play.score.buildings} buildings · ${play.score.towers} towers · ${play.score.kills} military`;
     const t = Math.floor(play.time);

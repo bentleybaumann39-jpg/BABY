@@ -1,5 +1,5 @@
 // Profile + settings persistence with validation and repair. Never trusts stored data.
-import { KAIJU, UPGRADES, MISSIONS, STARTER, LEGACY } from './Config.js';
+import { KAIJU, UPGRADES, MISSIONS, STARTER, LEGACY, FORMS, GENES, GENE_SLOTS } from './Config.js';
 
 const KEY = 'landfall.profile';
 const SKEY = 'landfall.settings';
@@ -22,10 +22,12 @@ function store() {
   try { return window.localStorage; } catch (e) { return null; }
 }
 
+export function newMut() { return { forms: ['prime'], form: 'prime', genes: [] }; }
+
 export function newProfile() {
-  const levels = {};
-  for (const id of Object.keys(KAIJU)) levels[id] = {};
-  return { v: VERSION, biomass: 0, unlocked: { [STARTER]: true }, levels, missions: {}, selected: STARTER, stats: { rampages: 0, damage: 0, towers: 0, kills: 0 } };
+  const levels = {}, mut = {};
+  for (const id of Object.keys(KAIJU)) { levels[id] = {}; mut[id] = newMut(); }
+  return { v: VERSION, biomass: 0, unlocked: { [STARTER]: true }, levels, mut, genes: [], missions: {}, selected: STARTER, stats: { rampages: 0, damage: 0, towers: 0, kills: 0 } };
 }
 
 export function repairProfile(p) {
@@ -55,6 +57,18 @@ export function repairProfile(p) {
         const v = L[u.id];
         if (Number.isInteger(v) && v >= 0) out.levels[id][u.id] = Math.min(u.max, v);
       }
+    }
+  }
+  // mutations: owned genes first, so slotted genes can be checked against them
+  if (Array.isArray(p.genes)) out.genes = [...new Set(p.genes.filter((g) => typeof g === 'string' && GENES[g]))];
+  if (p.mut && typeof p.mut === 'object') {
+    for (const id of Object.keys(KAIJU)) {
+      const M = p.mut[id];
+      if (!M || typeof M !== 'object') continue;
+      const forms = Array.isArray(M.forms) ? M.forms.filter((f) => typeof f === 'string' && FORMS[f]) : [];
+      out.mut[id].forms = [...new Set(['prime', ...forms])];
+      if (out.mut[id].forms.includes(M.form)) out.mut[id].form = M.form;
+      if (Array.isArray(M.genes)) out.mut[id].genes = [...new Set(M.genes.filter((g) => out.genes.includes(g)))].slice(0, GENE_SLOTS);
     }
   }
   if (p.missions && typeof p.missions === 'object') {

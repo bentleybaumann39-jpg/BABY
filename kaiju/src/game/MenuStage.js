@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { SkySystem } from '../render/Sky.js';
 import { G, setCSM, patchTree } from '../render/Shading.js';
 import { KAIJU, kaijuStats } from '../core/Config.js';
+import { MutationRig } from '../kaiju/Mutation.js';
+import { Particles } from '../render/Particles.js';
 import { loadKaiju } from '../core/Assets.js';
 import { clone as skelClone } from '../../vendor/addons/utils/SkeletonUtils.js';
 import { Environment, SEA_LEVEL } from '../world/Environment.js';
@@ -58,14 +60,20 @@ export class MenuStage {
       lights.setMatrixAt(i, m);
     }
     this.scene.add(lights);
+    // a light particle budget for the strain auras
+    this.particles = new Particles(this.scene, 0.35);
+    this.particles.setLighting(1.2, new THREE.Color(0.2, 0.23, 0.3));
     this.app.camera.position.set(0, 40, 160);
     this.app.renderer.gl.toneMappingExposure = 1.0;
     await this.showKaiju(this.app.profile.selected);
     this.active = true;
   }
 
-  async showKaiju(id, refresh = false) {
+  // form: show this strain instead of the equipped one (a preview in the Mutation Lab)
+  async showKaiju(id, refresh = false, form = null) {
     this.wantId = id;
+    const mut = this.app.profile.mut[id] || { form: 'prime', genes: [] };
+    form = form || mut.form;
     let entry = this.models[id];
     if (!entry || refresh) {
       try {
@@ -73,13 +81,15 @@ export class MenuStage {
         if (this.wantId !== id) return;
         const model = skelClone(gltf.scene);
         model.traverse((o) => { if (o.isMesh) o.material = Array.isArray(o.material) ? o.material.map((x) => x.clone()) : o.material.clone(); });
-        patchTree(model, 'menu-' + id);
-        model.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const mm of ms) { mm.side = THREE.FrontSide; if (/plate|vein|glow|shard/.test(mm.name)) { mm.emissive = new THREE.Color(...KAIJU[id].moves.special.color); mm.emissiveIntensity = KAIJU[id].menuGlow ?? 1.5; } } } });
+        const rig = new MutationRig(model, meta, KAIJU[id].asset, KAIJU[id].moves.special.color);
+        patchTree(model, 'menu-' + id, (m) => rig.hookFor(m));
+        const glowMats = [];
+        model.traverse((o) => { if (o.isMesh) { o.frustumCulled = false; const ms = Array.isArray(o.material) ? o.material : [o.material]; for (const mm of ms) { mm.side = THREE.FrontSide; if (/plate|vein|glow|shard/.test(mm.name)) { mm.emissive = new THREE.Color(); mm.emissiveIntensity = KAIJU[id].menuGlow ?? 1.5; glowMats.push(mm); } } } });
         const mixer = new THREE.AnimationMixer(model);
         const clip = gltf.animations.find((c) => c.name === 'idle');
         if (clip) mixer.clipAction(clip).play();
         if (entry) this.scene.remove(entry.model);
-        entry = { model, mixer, meta, gltf };
+        entry = { model, mixer, meta, gltf, rig, glowMats };
         this.models[id] = entry;
       } catch (e) {
         // models for locked creatures may not be shipped in a cut-down build
@@ -90,8 +100,10 @@ export class MenuStage {
     this.current = entry;
     this.currentId = entry ? id : null;
     if (!entry) return;
+    entry.rig.setForm(form);
+    for (const m of entry.glowMats) m.emissive.setRGB(...entry.rig.glow);
     const lv = this.app.profile.levels[id] || {};
-    const st = kaijuStats(id, lv);
+    const st = kaijuStats(id, lv, { form, genes: mut.genes });
     entry.model.scale.setScalar(st.scale);
     entry.model.position.set(0, -6, 0);
     entry.model.rotation.y = 0.5;
@@ -111,7 +123,12 @@ export class MenuStage {
     this.t += dt;
     G.uTime.value += dt;
     this.env.update(dt, 0.6);
-    if (this.current) this.current.mixer.update(dt);
+    if (this.current) {
+      this.current.mixer.update(dt);
+      this.current.rig.update(dt, 1, 0);
+      this.current.rig.emitAura(this.particles, dt, this.current.model.scale.x, 0, 40);
+    }
+    this.particles.update(dt);
     const H = this.height || 55;
     this.orbit += dt * 0.05;
     const r = H * 2.1;

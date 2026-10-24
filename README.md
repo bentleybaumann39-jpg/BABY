@@ -114,5 +114,5 @@ node tests/scenes.mjs shots   # screenshot tour of the building
 
 ## Also in this repository
 
-- **[LANDFALL](kaiju/README.md)** is a kaiju destruction game. Pick one of six alien kaiju, wade ashore and level a destructible city while the military escalates. Double-click `kaiju/Landfall.html` to play.
+- **[LANDFALL](kaiju/README.md)** is a kaiju destruction game. Pick one of six alien kaiju, mutate it into fire, ice, venom, titan or void strains, wade ashore and level a destructible city while the military escalates. Double-click `kaiju/Landfall.html` to play.
 - **[Ward 13](ward13/)** is a first-person horror roguelite. Double-click `ward13/Ward13.html` to play.

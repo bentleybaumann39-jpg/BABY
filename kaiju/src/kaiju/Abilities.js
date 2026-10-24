@@ -77,6 +77,24 @@ export class Abilities {
     this.ringT = -1;
   }
 
+  // The signature power's colour (a mutation strain changes it).
+  tint(c) {
+    this.beamU.uCol.value.setRGB(c[0], c[1], c[2]);
+    this.hitLight.color.setRGB(0.5 + c[0] * 0.5, 0.5 + c[1] * 0.5, 0.5 + c[2] * 0.5);
+    this.mouthLight.color.copy(this.hitLight.color);
+  }
+
+  // An expanding ring of light on the ground with a flash (surge, echo roar, vented blood).
+  shock(p, R, c) {
+    this.ringMat.color.setRGB(c[0] * 5, c[1] * 5, c[2] * 5);
+    this.ring.position.set(p.x, p.y + 3, p.z);
+    this.ringT = 0;
+    this.ringR = R;
+    this.mouthLight.color.setRGB(c[0], c[1], c[2]);
+    this.mouthLight.position.set(p.x, p.y + 40, p.z);
+    this.mouthLight.intensity = 30000;
+  }
+
   // ------------------------------------------------------------------ beam
 
   beamUpdate(dt, k, on, aim) {

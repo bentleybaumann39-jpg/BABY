@@ -2,6 +2,34 @@
 
 All runs used headless Chromium on SwiftShader (no GPU), at `q=low`, driven with a fixed 1/30 s timestep. Absolute frame rates in this environment say nothing about real hardware.
 
+## Mutation
+
+**Strains on the lab stage** (`tests/forms.mjs`). Every strain was rendered on Razormaw from the front and the back, and on Carapex and Nyxwing for the six-legged and winged bodies. Hide, seams, glow recolour, growths and aura all appear, with 0 errors. Growths stay on the back, spine and tail of every body type, and never on wings, jaws or hands.
+
+**Surge** (`play.mjs surge`, Infernal Razormaw with Barbed Hide, Echo Chamber and Volatile Blood). Pressing T with a full meter:
+- scales the kaiju from 1.55 to 1.78
+- raises melee from 384 to 538 and armour from 0.30 to 0.45
+- sets 491 building chunks burning through the Infernal element
+- drains the meter over 18 s, after which every stat and the scale return exactly to base
+
+**Elements and genes** (`play.mjs elements`, with tanks and gunships spawned at the kaiju).
+
+| Strain | Genes | Result |
+|---|---|---|
+| Glacial | Volatile Blood, Echo Chamber, Gigantism | Froze 6 of 6 units; frozen gunships sank from 60 m to 33 m. The echo roar raised suppression to 8 s. Scale was 1.76. |
+| Venom | Reservoir Lungs, Hyper-Regeneration, Seismic Tread | 6 acid patches killed 4 units. Energy 140, regeneration 21.6. |
+| Void | Feeding Frenzy, Adrenal Gland, Barbed Hide | 6 rifts killed 6 units |
+| Titan | none | Scale 1.84 (×1.15) |
+| Infernal | Volatile Blood | Vented once it had taken more than 10% of maximum health |
+
+**Menus** (`tests/ui.mjs`, run against both `index.html` and the built `Landfall.html`):
+- previewed Glacial on Carapex
+- mutated it to Infernal (−1,500)
+- bought and slotted Barbed Hide and Echo Chamber (−2,100)
+- deployed: the save state and the session's mutation matched
+
+There were 0 console errors.
+
 ## Alien roster: `tests/play.mjs ... probe`
 
 The probe stands each kaiju in front of an intact 65 m building and fires every move in turn. It records:
@@ -57,7 +85,14 @@ The run produced 0 console errors.
 - Settings fit at 720p.
 - The camera keeps a minimum distance based on the body's footprint.
 
+## Fixed during the mutation pass
+- The first seam pattern was a ridge on value noise, which glows over broad areas and turned the whole body into fire. It was replaced with Voronoi cell walls broken into runs.
+- Fire never caught, because it was applied only inside the radius the blow had already cleared. It now spreads twice as far as the hit.
+- Growths glowed so hot that bloom washed them white. Their emissive is now scaled per strain and concentrated at the root.
+- The move hint collided with the five-key move bar at 960 px. It now sits above the bar.
+
 ## Known limits
+- The Voronoi seams cost 27 cell lookups per pixel of kaiju surface. This is negligible on a desktop GPU, but it is the most expensive part of the kaiju shader.
 - Real-GPU performance is unmeasured. Dynamic resolution (`App._adapt`) drops the render scale to as low as 0.6 when frame time exceeds 24 ms.
 - Folded wings (Nyxwing at rest) bunch up on the back. Skinning a membrane sculpted spread cannot fold it neatly.
 - `Landfall.html` is about 44 MB, because it embeds six 2048-texture kaiju. The hosted build loads the same models as separate files.

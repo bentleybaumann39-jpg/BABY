@@ -1,4 +1,4 @@
-// Headless walk through the menus: title → lab → awaken and evolve kaiju → deploy → results → lab.
+// Headless walk through the menus: title → lab → awaken, evolve and mutate kaiju, slot genes → deploy → results → lab.
 // node kaiju/tests/ui.mjs outdir [page]   (page defaults to index.html; pass Landfall.html to test the build)
 import { createRequire } from 'module';
 import fs from 'fs';
@@ -50,13 +50,27 @@ await wait(1500);
 await shot('ui_03_carapex_grown');
 const prof = await page.evaluate(() => { const p = window.__kj.app.profile; return { biomass: p.biomass, unlocked: p.unlocked, levels: p.levels, selected: p.selected }; });
 console.log(JSON.stringify(prof));
+// mutation lab: preview a strain, grow one, then buy and slot genes
+await page.click('[data-tab="forms"]');
+await page.click('[data-form="glacial"]');
+await wait(2500);
+await shot('ui_03b_preview_glacial');
+await page.click('[data-form="infernal"]');
+await page.click('#mutate');
+await wait(2500);
+await shot('ui_03c_infernal');
+await page.click('[data-tab="genes"]');
+for (const g of ['thorns', 'echo']) { await page.click(`[data-gene="${g}"]`); await page.click(`[data-gene="${g}"]`); }
+await wait(500);
+await shot('ui_03d_genes');
+console.log('mutation', JSON.stringify(await page.evaluate(() => { const p = window.__kj.app.profile; return { biomass: p.biomass, mut: p.mut.carapex, genes: p.genes, stage: window.__kj.app.menu.current.rig.formId }; })));
 await page.click('#lab [data-act="settings"]');
 await wait(500);
 await shot('ui_04_settings');
 await page.click('#settings [data-act="back"]');
 await page.click('#deploy');
 await page.waitForFunction(() => window.__kj.play && window.__kj.play.state !== 'loading', null, { timeout: 400000, polling: 1000 });
-console.log('screen', await screen(), 'kaiju', await page.evaluate(() => window.__kj.play.kaiju.id));
+console.log('screen', await screen(), 'kaiju', await page.evaluate(() => window.__kj.play.kaiju.id), 'mut', await page.evaluate(() => JSON.stringify(window.__kj.play.mut)));
 await wait(3000);
 await shot('ui_05_mission');
 await page.evaluate(() => { const p = window.__kj.play; p.score.extraValue = 12e9; p.update(1 / 30); p.finish(true); });

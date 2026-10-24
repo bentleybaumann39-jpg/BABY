@@ -87,15 +87,16 @@ export function patch(mat, key = 'base', hook = null, opts = {}) {
   return mat;
 }
 
-// Patches every material of a loaded glTF scene (deduplicated).
-export function patchTree(root, key = 'gltf') {
+// Patches every material of a loaded glTF scene (deduplicated). hookFor(material) may return a
+// system hook for that material.
+export function patchTree(root, key = 'gltf', hookFor = null) {
   const seen = new Set();
   root.traverse((o) => {
     if (!o.material) return;
     for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
       if (seen.has(m)) continue;
       seen.add(m);
-      patch(m, key + '-' + m.uuid);
+      patch(m, key + '-' + m.uuid, hookFor ? hookFor(m) : null);
     }
   });
 }

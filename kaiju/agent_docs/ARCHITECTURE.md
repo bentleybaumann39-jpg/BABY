@@ -59,6 +59,34 @@ flowchart LR
 - An action plays full-body when standing. While moving it plays as `_upper`, so the locomotion keeps the leg bones.
 - `LEG_BONES` holds the leg bones. Crab legs (`legN`, `legNlo`, `footN`) count as legs, and so do the forelimbs of kaiju marked `quadruped`.
 
+**Mutation** (`src/kaiju/Mutation.js`, data in `Config.js`: `FORMS`, `GENES`, `SURGE`)
+- `MutationRig` belongs to one model instance; `Kaiju` and `MenuStage` each make one.
+- It adds a shader hook to every material through `patchTree(root, key, hookFor)`. The hook adds:
+  - a varying with the bind-pose position, so patterns ride the skin
+  - a hide recolour that mixes two tints in noise patches and keeps the baked detail as luminance
+  - a seam network along 3D Voronoi cell walls. A light domain warp gives cracks; a heavy one gives branching veins. A patch noise breaks the network into runs.
+  - the baked glow recoloured to the strain's colour
+  - a fresnel rim
+  - roughness and metalness shifts
+- How strongly a material takes the strain depends on its name: hide fully, horn and keratin partly, eyes not at all.
+- `setForm()` only changes uniform values, so switching strains never recompiles a shader.
+- Growths are generated geometry: crystals, ice, bone spikes, sacs and shards. Sites are sampled from the body mesh, weighted by facing and by distance from the spine, and spaced apart. Bones that open, grip or flap are skipped.
+  - Every growth vertex copies its root vertex's skin indices and weights.
+  - The growth `SkinnedMesh` binds to the body's own skeleton, so growths ride every animation.
+  - Geometry is cached per asset and strain.
+- `emitAura()` sheds particles from random points on the `meta.body` capsules.
+- `kaijuStats(id, levels, mut)` applies strain and gene `mul`/`add` modifiers. Scale changes come first, so health and damage follow the extra mass.
+- Behaviours live in `Play`:
+  - `_element` runs on a melee hit's first connect and on every `slam`.
+  - `_dots` holds delayed and lingering effects: acid, rifts, aftershocks, echo roars.
+  - `onHurt` handles Volatile Blood.
+  - Seismic, Barbed Hide, Hyper-Regeneration and Feeding Frenzy hook into the footstep, body-contact, building-down and kill paths.
+- Mutation Surge:
+  - `Play._surge` fills the meter from the damage and kill deltas each frame.
+  - `Kaiju.applySurge(a)` rebuilds the stats from `baseStats` and calls `setScale()`, so everything that reads `k.scale` follows.
+  - The rig's `uMutSurge` uniform drives the seams and the rim.
+- `Military.freeze` stops units dead and doubles the damage they take. Frozen gunships sink and crash.
+
 **City** (`src/world/`)
 - `CityGen` lays out roads, blocks and buildings for each preset.
 - `Buildings` splits every building into a grid of chunks, one floor band per layer. The chunks are drawn as instanced boxes in spatial tiles, with a facade shader (`BuildingShader.js`) that works in building-local coordinates.
