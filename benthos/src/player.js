@@ -370,7 +370,11 @@
   function lamp(dt) {
     const L = R.env.lamp;
     L.on = P.powered && !P.braced && P.lampMode !== 'off' && P.rebootT <= 0;
-    const tilt = 0.72, ct = Math.cos(tilt);
+    // the lamp drops toward the floor when there is one close below, and levels out in open water so
+    // things at your own depth can be found
+    const alt = H(P.x + P.aimX * 6, P.y + P.aimY * 6) - P.z, want = alt < 6 ? 0.72 : alt > 30 ? 0.3 : 0.72 - (alt - 6) / 24 * 0.42;
+    P.lampTilt = P.lampTilt === undefined ? want : M.approach(P.lampTilt, want, dt * 0.6);
+    const tilt = P.lampTilt, ct = Math.cos(tilt);
     L.x = P.x + Math.cos(P.yaw) * 0.25; L.y = P.y + Math.sin(P.yaw) * 0.25; L.z = P.z - 0.95;
     L.dx = P.aimX * ct; L.dy = P.aimY * ct; L.dz = Math.sin(tilt);
     let k = 3.4;
