@@ -681,11 +681,24 @@
   Hd.fading = () => !!fadeS;
 
   // ------------------------------------------------------------------ screens
+  // Before the first gesture (audio can't start until then): black water, snow falling through it, a sonar
+  // pulse going out from the middle and coming back with nothing, and a depth gauge that won't stop.
+  const BOOT_SNOW = []; for (let k = 0; k < 90; k++) BOOT_SNOW.push([Math.random(), Math.random(), 0.3 + Math.random() * 0.7]);
+  const coarse = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
   Hd.drawBootScreen = function () {
     R.rect(0, 0, R.W, R.H, COL.k);
+    const t = B.time || performance.now() / 1000;
+    for (const f of BOOT_SNOW) {
+      const y = ((f[1] + t * 0.012 * f[2]) % 1) * R.H, x = (f[0] + Math.sin(t * 0.3 + f[1] * 9) * 0.004) * R.W;
+      R.pset(x, y, f[2] > 0.8 ? COL.b6 : COL.b3);
+    }
+    const ph = (t % 4.5) / 4.5, rr = ph * R.W * 0.55;
+    if (ph < 0.9) R.ellipse(R.W / 2, R.H / 2 - 12, rr, rr * 0.6, COL.b3, 0.25 + (1 - ph) * 0.5);
     Hd.center(R.H / 2 - 30, 'BENTHOS', amber(3), 3);
     Hd.center(R.H / 2 - 3, 'THE SILENT PRESSURE', amber(2));
-    if ((B.frame >> 5) & 1) Hd.center(R.H / 2 + 22, I.touchMode ? 'TAP TO CONTINUE' : 'CLICK OR PRESS ANY KEY', amber(1));
+    if ((B.frame >> 5) & 1) Hd.center(R.H / 2 + 22, I.touchMode || coarse ? 'TAP TO BEGIN' : 'CLICK OR PRESS ANY KEY', amber(1));
+    const dz = String(Math.floor(t * 7) % 10000).padStart(4, '0');
+    Hd.text(R.W - 8 - Hd.tw(dz + ' M'), 8, dz + ' M', C32('#4a3a20'));
     Hd.center(R.H - 22, 'HEADPHONES · A DARK ROOM', C32('#4a3a20'));
   };
   const TAGS = ["THE DEEP DOESN'T KILL YOU. IT KEEPS YOU.", 'EVERY LIGHT YOU MAKE IS A PROMISE TO SOMETHING HUNGRY.', 'FOUR KILOMETRES OF WATER. ONE LAMP. NOBODY COMING.'];
@@ -794,6 +807,8 @@
       t: 0, world: true, cam, lut: 'eye', hollow: true, res: [960, 540],
       update(dt) {
         this.t += dt;
+        // the camera's slow push-in: the machine leans closer to look at what's standing on the shore
+        if (this.t < 7.5) { const z = 2 + M.smooth(0, 7, this.t) * 0.6; B.SC = z; B.PX = 12 * z; B.PY = 8 * z; B.PZ = 2.5 * z; B.OFF = -30 * z; }
         if (this.t > 7.5 && !this.f1) { this.f1 = true; A.sfx('eyeshut'); A.sfx('static', null, 0.6); }
         if (this.t > 9) { B.playRes(B.state.ng); B.SC = 1; B.PX = 12; B.PY = 8; B.PZ = 2.5; B.OFF = -30; B.scene = null; B.mode = 'play'; P.lockT = 1.5; P.reach = 1;
           // the arm moves on its own: tether torn, camera thrown into the brine
