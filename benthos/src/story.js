@@ -200,7 +200,7 @@
     radio.interact = { label: () => 'TURN OFF THE RADIO', fn: () => { A.stopWaltz(); S.say('mara', '...'); radio.interact = null; } };
     A.waltz('radio');
     S.say('hud', 'MSV HALCYON MERCY · ASHER DEEP · 05:52 · SEA STATE 5', { delay: 0.6, dur: 5 });
-    S.say('hud', 'WASD: WALK · E: INTERACT · TOBIAS IS WAITING UNDER THE TARP', { delay: 3, dur: 7 });
+    S.say('hud', B.k('WASD: WALK · E: INTERACT', 'LEFT THUMB: WALK · USE: INTERACT') + ' · TOBIAS IS WAITING UNDER THE TARP', { delay: 3, dur: 7 });
   };
   S.tobiasDeck = function () {
     const fl = st().flags;
@@ -375,7 +375,7 @@
       S.checkpoint(null);
       S.after(() => {
         S.convo([['tobias', "THAT'S THE JOB. DROP YOUR WEIGHTS, {N}. WE'LL BRING YOU HOME."]]);
-        S.after(() => { S.say('hud', '[SPACE] DROP WEIGHTS', { dur: 8 }); fl.dropPrompt = true; }, 4500);
+        S.after(() => { S.say('hud', B.k('[SPACE]', '[UP]') + ' DROP WEIGHTS', { dur: 8 }); fl.dropPrompt = true; }, 4500);
       }, 800);
     } else if (!fl.eyeTaken) { fl.eyeTaken = true; p.relics.eye = true; A.sfx('pickup'); B.Hud.toast("+MAGPIE'S EYE (TETHERED CAMERA)"); }
   };
@@ -638,9 +638,9 @@
   };
   S.onGraft = function () { const fl = st().flags; if (!fl.grafted) { fl.grafted = true; S.say('mara', 'IT HOLDS. IT IS WARM.', { delay: 0.6 }); } };
   S.onAlarm = function () { const fl = st().flags; if (!fl.alarm) { fl.alarm = true; S.say('tobias', 'WHAT WAS THAT? YOUR HYDROPHONES JUST LIT UP.'); } };
-  S.onKnock = function (th) { const fl = st().flags; if (!fl.knock) { fl.knock = true; S.say('hud', 'CRUSH DEBT · ASCEND ABOVE RATING, BRACE (HOLD Q), OR GRAFT (G)', { dur: 6 }); } void th; };
+  S.onKnock = function (th) { const fl = st().flags; if (!fl.knock) { fl.knock = true; S.say('hud', 'CRUSH DEBT · ASCEND ABOVE RATING, BRACE (HOLD ' + B.k('Q', 'CLMP') + '), OR GRAFT (' + B.k('G', 'GRFT') + ')', { dur: 6 }); } void th; };
   S.onPing = function () { const fl = st().flags; if (!fl.pinged) { fl.pinged = true; S.say('hud', 'THE HULL RINGS FOR 10 S. ANYTHING THAT HEARD IT WILL FOLLOW YOUR TRAIL. TAP Q NEAR ROCK TO DAMP IT.', { delay: 1, dur: 6 }); } };
-  S.onBrace = function () { const fl = st().flags; if (!fl.braced) { fl.braced = true; S.say('hud', 'POWERED DOWN: INVISIBLE TO ELECTRORECEPTION. CRUSH DEBT FALLS. HOLD Q AGAIN TO REBOOT.', { dur: 6 }); } };
+  S.onBrace = function () { const fl = st().flags; if (!fl.braced) { fl.braced = true; S.say('hud', 'POWERED DOWN: INVISIBLE TO ELECTRORECEPTION. CRUSH DEBT FALLS. HOLD ' + B.k('Q', 'CLMP') + ' AGAIN TO REBOOT.', { dur: 6 }); } };
   S.onSleeperCommit = function () { B.danger = 3; };
   S.onSleeperDead = function (sl, how) {
     st().sleeperDead = true;
@@ -711,7 +711,7 @@
     } else if (B.act === 'act3') {
       const L = S.eyeLake;
       if (L && p.relics.eye && !fl.eyeDone && Math.hypot(p.x - L.x, p.y - L.y) < L.r + 6) {
-        once('eyePrompt', () => S.say('hud', "[E] DEPLOY MAGPIE'S EYE · LOOK BACK ACROSS THE BRINE", { dur: 6 }));
+        once('eyePrompt', () => S.say('hud', B.k('[E]', '[USE]') + " DEPLOY MAGPIE'S EYE · LOOK BACK ACROSS THE BRINE", { dur: 6 }));
         if (B.I.pressed('interact') && !p.prompt) S.machineEye();
       }
       if (p.z > 3540) once('pitRim', () => S.say('mara', "THERE'S A PIT. SOMETHING AT THE BOTTOM IS COUNTING."));

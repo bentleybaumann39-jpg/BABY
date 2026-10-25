@@ -82,12 +82,27 @@
         Object.assign({ label: 'MASTER VOLUME', keep: true }, vol('master')), Object.assign({ label: 'MUSIC', keep: true }, vol('music')),
         Object.assign({ label: 'CRT SHADER', keep: true }, tog('crt')), Object.assign({ label: 'PHOTOSENSITIVITY MODE', keep: true }, tog('photo')),
         Object.assign({ label: 'HONEST HUD (NO CO2 LIES)', keep: true }, tog('honest')), Object.assign({ label: 'STEADY TRIM ASSIST', keep: true }, tog('steady')),
-        Object.assign({ label: 'SCREEN SHAKE', keep: true }, tog('shake')), Object.assign({ label: 'RUMBLE', keep: true }, tog('rumble')),
+        Object.assign({ label: 'SCREEN SHAKE', keep: true }, tog('shake')), Object.assign({ label: I.touchMode ? 'VIBRATION' : 'RUMBLE', keep: true }, tog('rumble')),
+        { label: 'FULLSCREEN', keep: true, fn: toggleFullscreen, value: () => (document.fullscreenElement ? 'ON' : 'OFF') },
         { label: 'BACK', fn: back },
       ],
     });
   }
+  function toggleFullscreen() {
+    try {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else { const p = document.documentElement.requestFullscreen({ navigationUI: 'hide' }); if (p && p.then) p.then(() => { try { screen.orientation.lock('landscape').catch(() => {}); } catch (e) { /* unsupported */ } }).catch(() => Hd.toast('FULLSCREEN NOT ALLOWED HERE')); }
+    } catch (e) { Hd.toast('FULLSCREEN NOT ALLOWED HERE'); }
+  }
   function controlsMenu(back) {
+    if (I.touchMode) {
+      const T = ['LEFT THUMB: THRUST · PAST THE RING: BOOST', 'HOLD ON THE RIGHT: AIM THE LAMP AND PICK', 'RIGHT EDGE: TOP = BLOW (RISE) · BOTTOM = FLOOD (SINK)',
+        'USE: INTERACT (HOLD TO ABSORB)', 'PING: TAP WIDE · HOLD+RELEASE NARROW', 'LAMP: TAP W/R/OFF · HOLD: FLARE', 'PICK: FIRE / HOLD REEL / TAP RELEASE',
+        'CLMP: TAP CLAMP · HOLD BRACE · EAR: HOLD LISTEN', 'BRTH: HOLD BREATH · TAP A TANK CELL TO USE IT', 'HOLD THE O2 CLUSTER: CHEST GAUGE',
+        'TAP SCRUB: SWAP CANISTER · TAP DEPTH: CHART', 'II: PAUSE'];
+      Hd.menu({ title: 'TOUCH CONTROLS', cancel: true, onCancel: back, items: T.map(l => ({ label: l, disabled: true })).concat([{ label: 'BACK', fn: back }]) });
+      return;
+    }
     const L = ['WASD THRUST (SCREEN-RELATIVE) · MOUSE AIM LAMP', 'SHIFT BOOST · LET GO TO COAST (SILENT)', 'C FLOOD: SINK · SPACE BLOW: RISE (HISS)',
       'R PING (HOLD+RELEASE: NARROW) · RMB HOLD: LISTEN', 'LMB PICK: FIRE / HOLD REEL / RELEASE', 'F LAMP W/R/OFF · HOLD F: FLARE',
       'E INTERACT (HOLD TO ABSORB) · Q CLAMP · HOLD Q BRACE', '1-5 BIOMASS · G GRAFT · X POWERHEAD', 'V HOLD BREATH · H CHEST GAUGE · T SWAP SCRUBBER',

@@ -92,6 +92,8 @@ window.B = window.B || {};
     state: {}, hit: {}, up: {}, padPrev: {}, padNow: {},
     mouse: { x: 240, y: 135, moved: 0, inside: false, b0: false, b2: false },
     aimPad: { x: 0, y: 0 }, usingPad: false, anyHit: false, wheel: 0,
+    // touch: a floating stick on the left, buttons on the right (layout from B.touchLayout in hud.js)
+    touchMode: false, touch: { stick: null, mx: 0, my: 0, held: {}, ptrs: new Map(), refs: {} },
     down(a) { return !!(I.state[a] || I.padNow[a]); },
     pressed(a) { return !!(I.hit[a] || (I.padNow[a] && !I.padPrev[a])); },
     released(a) { return !!(I.up[a] || (!I.padNow[a] && I.padPrev[a])); },
@@ -100,6 +102,7 @@ window.B = window.B || {};
       if (I.state.left) x -= 1; if (I.state.right) x += 1; if (I.state.up) y -= 1; if (I.state.down) y += 1;
       const p = I.pad;
       if (p) { const ax = p.axes[0] || 0, ay = p.axes[1] || 0; if (Math.abs(ax) > 0.18 || Math.abs(ay) > 0.18) { x += ax; y += ay; } }
+      if (I.touch.stick) { x += I.touch.mx; y += I.touch.my; }
       const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; }
       return { x, y };
     },
@@ -121,9 +124,11 @@ window.B = window.B || {};
     },
     rumble(strong, weak, ms) {
       if (!B.settings.rumble) return;
+      if (I.touchMode) { I.buzz(Math.min(ms, 200) * (strong > 0.5 ? 1 : 0.5)); return; }
       const p = I.pad; if (!p || !p.vibrationActuator) return;
       try { p.vibrationActuator.playEffect('dual-rumble', { duration: ms, strongMagnitude: strong, weakMagnitude: weak }); } catch (e) { /* unsupported */ }
     },
+    buzz(ms) { if (I.touchMode && B.settings.rumble && navigator.vibrate) try { navigator.vibrate(ms); } catch (e) { /* unsupported */ } },
   };
   function keyEvt(e, down) {
     const acts = codeToActions[e.code];
@@ -141,6 +146,8 @@ window.B = window.B || {};
   addEventListener('keydown', e => keyEvt(e, true));
   addEventListener('keyup', e => keyEvt(e, false));
   addEventListener('blur', () => { for (const a in I.state) if (I.state[a]) { I.state[a] = false; I.up[a] = true; } I.mouse.b0 = I.mouse.b2 = false; I.state.pick = false; I.state.listen = false; if (B.onBlur) B.onBlur(); });
+  // a control named the way this player holds the game: B.k('Q', 'CLMP') -> 'Q' or 'CLMP'
+  B.k = (key, thumb) => (I.touchMode ? thumb : key);
   B.bindMouse = function (canvas) {
     const toInternal = e => {
       const r = canvas.getBoundingClientRect(); const o = B.out || { x: 0, y: 0, w: r.width, h: r.height };
@@ -161,7 +168,64 @@ window.B = window.B || {};
     canvas.addEventListener('contextmenu', e => e.preventDefault());
     canvas.addEventListener('wheel', e => { I.wheel += Math.sign(e.deltaY); e.preventDefault(); }, { passive: false });
     addEventListener('keydown', () => { if (B.onGesture) B.onGesture(); });
+    bindTouch(canvas, toInternal);
   };
+
+  // Touch. Each finger is classified when it lands: on a button (from B.touchLayout), on the left
+  // half (the floating stick), elsewhere in play (aim at that point), or outside play (a click).
+  const T = I.touch;
+  function press(a) { T.refs[a] = (T.refs[a] || 0) + 1; if (!I.state[a]) I.hit[a] = true; I.state[a] = true; }
+  function release(a) { T.refs[a] = Math.max(0, (T.refs[a] || 0) - 1); if (!T.refs[a]) { if (I.state[a]) I.up[a] = true; I.state[a] = false; } }
+  function bindTouch(canvas, toInternal) {
+    const STICK = 26; // stick radius in 480-wide buffer pixels
+    const sc = () => B.W / 480;
+    const hitBtn = (lay, x, y) => { let best = null, bd = 1e9; for (const b of lay) { const d = Math.hypot(x - b.x, y - b.y) - (b.r + 6) * sc(); if (d < 0 && d < bd) { bd = d; best = b; } if (b.w && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return b; } return best; };
+    const setActs = (t, acts) => { const old = t.acts || []; for (const a of acts) if (!old.includes(a)) press(a); for (const a of old) if (!acts.includes(a)) release(a); t.acts = acts; };
+    canvas.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse') return;
+      e.preventDefault(); try { canvas.setPointerCapture(e.pointerId); } catch (er) { /* synthetic */ }
+      I.touchMode = true; I.usingPad = false; I.anyHit = true; I.mouse.inside = false;
+      if (B.onGesture) B.onGesture();
+      toInternal(e); const x = I.mouse.x, y = I.mouse.y;
+      const lay = B.touchLayout ? B.touchLayout() : null;
+      const t = { id: e.pointerId, x0: x, y0: y, x, y, t0: performance.now(), kind: 'click', acts: [] };
+      if (lay) {
+        const b = hitBtn(lay, x, y);
+        if (b) { t.kind = 'btn'; t.btn = b; setActs(t, b.split ? (y < b.y + b.h / 2 ? b.acts : b.acts2) : b.acts); T.held[b.id] = true; I.buzz(8); }
+        else if (x < B.W / 2 && !T.stick) { t.kind = 'stick'; T.stick = { id: e.pointerId, x0: x, y0: y, x, y }; T.mx = T.my = 0; }
+        else { t.kind = 'aim'; I.mouse.inside = true; }
+      } else {
+        I.mouse.moved = 1; I.hit.click = true;
+        if (B.mode === 'scene') { I.hit.confirm = true; }
+      }
+      T.ptrs.set(e.pointerId, t);
+    }, { passive: false });
+    canvas.addEventListener('pointermove', e => {
+      const t = T.ptrs.get(e.pointerId); if (!t) return;
+      e.preventDefault(); toInternal(e); t.x = I.mouse.x; t.y = I.mouse.y;
+      if (t.kind === 'stick' && T.stick) {
+        const s = T.stick, R = STICK * sc(); let dx = t.x - s.x0, dy = t.y - s.y0; const d = Math.hypot(dx, dy);
+        // drag past the ring and the base follows the finger, like a trailing anchor
+        if (d > R * 1.6) { s.x0 += dx / d * (d - R * 1.6); s.y0 += dy / d * (d - R * 1.6); dx = t.x - s.x0; dy = t.y - s.y0; }
+        s.x = t.x; s.y = t.y; const n = Math.min(1, Math.hypot(dx, dy) / R);
+        const l = Math.hypot(dx, dy) || 1; T.mx = dx / l * n; T.my = dy / l * n;
+        setActs(t, Math.hypot(dx, dy) > R * 1.25 ? ['boost'] : []);
+      } else if (t.kind === 'btn' && t.btn.split) setActs(t, t.y < t.btn.y + t.btn.h / 2 ? t.btn.acts : t.btn.acts2);
+      else if (t.kind === 'aim') I.mouse.inside = true;
+      else if (t.kind === 'click') I.mouse.moved = 1;
+    }, { passive: false });
+    const end = e => {
+      const t = T.ptrs.get(e.pointerId); if (!t) return;
+      T.ptrs.delete(e.pointerId); setActs(t, []);
+      if (t.kind === 'btn') { T.held[t.btn.id] = false; if (t.btn.tap && performance.now() - t.t0 < 450) t.btn.tap(); }
+      if (t.kind === 'stick') { T.stick = null; T.mx = T.my = 0; }
+      if (t.kind === 'aim' && ![...T.ptrs.values()].some(o => o.kind === 'aim')) I.mouse.inside = false;
+    };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+    // a real mouse moving again hands control back to the mouse
+    canvas.addEventListener('pointermove', e => { if (e.pointerType === 'mouse' && I.touchMode && Math.abs(e.movementX) + Math.abs(e.movementY) > 3) I.touchMode = false; });
+  }
 
   // ---------------------------------------------------------------- persistence
   const store = {

@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Benthos: The Silent Pressure</title>
 <style>
-  :root { color-scheme: dark; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
-  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; image-rendering: pixelated; }
-  noscript { color: #d98e1c; font: 14px monospace; position: fixed; inset: 40% 0 auto; text-align: center; }
+  /* One deliberate look: a black CRT in a dark room. */
+  :root { color-scheme: dark; --bg: #000000; --amber: #d98e1c; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--amber); }
+  #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; image-rendering: pixelated; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  noscript { color: var(--amber); font: 14px monospace; position: fixed; inset: 40% 0 auto; text-align: center; }
 </style>
 </head>
 <body>

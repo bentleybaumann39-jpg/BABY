@@ -62,6 +62,7 @@
 
   // ------------------------------------------------------------------ transient UI state
   let toasts = [], tip = null; const tipShown = {};
+  let inset = [0, 0];
   let doc = null, docScroll = 0, craft = null, menuS = null, mapOn = false, mapImg = null, mapAct = null;
   let bootS = null, fadeS = null, gaugeFrozen = null;
   Hd.reset = function () { toasts = []; tip = null; doc = null; craft = null; mapOn = false; bootS = null; };
@@ -77,7 +78,20 @@
     gauge: 'HOLD H: READ THE CHEST GAUGE. IT ALWAYS TELLS THE TRUTH. THE WORLD KEEPS MOVING WHILE YOU LOOK.',
     scrub: 'T: SWAP THE SCRUBBER CANISTER BEFORE THE AIR TURNS. CO2 MAKES THE HUD LIE.',
   };
-  Hd.tip = function (k) { if (tipShown[k]) return; tipShown[k] = true; tip = { t: TIPS[k], until: B.time + 10 }; };
+  // the same lessons for thumbs
+  const TTIPS = {
+    move: 'LEFT THUMB THRUSTS · PUSH PAST THE RING TO BOOST · HOLD ANYWHERE ON THE RIGHT TO AIM · LET GO TO COAST: COASTING IS SILENT',
+    trim: 'RIGHT EDGE: TOP BLOWS THE TANK (RISE, HISSES, SPENDS AIR) · BOTTOM FLOODS IT (SINK, SILENT)',
+    lamp: 'LAMP CYCLES WHITE / RED / OFF · HOLD LAMP TO THROW A FLARE · ALMOST NOTHING DOWN HERE SEES RED',
+    ping: 'PING TAP: WIDE · HOLD AND RELEASE: NARROW CONE · HOLD EAR TO LISTEN · PICK FIRES THE ANCHOR LINE',
+    sleeper: 'IT IS BLIND. IT HEARS, AND IT FEELS A POWERED SUIT WITHIN 6 M. HOLD CLMP NEAR ROCK TO BRACE AND POWER DOWN.',
+    absorb: 'HOLD USE ON A CARCASS TO ABSORB BIOMASS. BIOMASS IS NOT HEALTH.',
+    cells: 'TAP A TANK CELL TO USE IT · SIPHON: JET · CAUL: SHIELD · BLOOM: DECOY · GRFT: GRAFT THE HULL (COSTS YOU)',
+    gauge: 'HOLD THE O2 CLUSTER: READ THE CHEST GAUGE. IT ALWAYS TELLS THE TRUTH. THE WORLD KEEPS MOVING WHILE YOU LOOK.',
+    scrub: 'TAP THE SCRUB BAR: SWAP THE CANISTER BEFORE THE AIR TURNS. CO2 MAKES THE HUD LIE.',
+  };
+  Hd.tip = function (k) { if (tipShown[k]) return; tipShown[k] = true; tip = { t: (I.touchMode && TTIPS[k]) || TIPS[k], until: B.time + 10 }; };
+  Hd.key = (k, t) => I.touchMode ? '' : I.usingPad ? '[' + k + '] ' : '[' + t + '] ';
   Hd.openDoc = function (d) { doc = d; docScroll = 0; A.sfx('beep'); };
   Hd.openCraft = function (c) { craft = { c, sel: 0 }; };
   Hd.toggleMap = function () { mapOn = !mapOn; A.sfx('click'); };
@@ -89,6 +103,7 @@
   Hd.menu = function (o) { menuS = Object.assign({ sel: 0, t: 0 }, o); while (menuS.items[menuS.sel] && menuS.items[menuS.sel].disabled) menuS.sel++; };
   Hd.menuOpen = () => !!menuS;
   Hd.closeMenu = () => { menuS = null; };
+  Hd._menu = () => menuS;
 
   // ------------------------------------------------------------------ input for overlays (returns true if consumed)
   Hd.tick = function (dt) {
@@ -287,7 +302,7 @@
         if (B.act === 'act3' && B.facePulse > 0) macroFace();
         const tk = (P.breathHold ? 0.35 : 0) + (P.suffoT > 0 ? Math.min(0.9, P.suffoT / 20) : 0) + (P.paco2 > 70 && !B.settings.honest ? (P.paco2 - 70) / 40 : 0) + (P.braced ? 0.15 : 0);
         tunnel(Math.min(0.95, tk), B.frame >> 3);
-        const [ix, iy] = bezel();
+        const [ix, iy] = bezel(); inset = [ix, iy];
         const dim = !P.powered;
         const a2 = dim ? amber(1) : amber(2), a3 = dim ? amber(1) : amber(3);
         const x0 = ix + 8, y0 = iy + 8;
@@ -317,9 +332,10 @@
         // right-bottom: lamp, flares, shells, scrap
         const lm = P.lampMode === 'white' ? 'LAMP W' : P.lampMode === 'red' ? 'LAMP R' : 'LAMP -';
         const rline = lm + ' · FL ' + P.inv.flare + ' · PH ' + P.inv.shell;
-        Hd.text(R.W - ix - 8 - Hd.tw(rline), R.H - iy - 26, rline, a2);
+        const ry = I.touchMode ? y0 + 84 : R.H - iy - 26, rx = I.touchMode ? R.W - ix - 34 : R.W - ix - 8;
+        Hd.text(rx - Hd.tw(rline), ry, rline, a2);
         const inv = 'TI ' + P.inv.ti + ' CE ' + P.inv.cer + ' CU ' + P.inv.cu + ' FM ' + P.inv.foam + ' CL ' + P.inv.cell + ' GL ' + P.inv.glass;
-        Hd.text(R.W - ix - 8 - Hd.tw(inv), R.H - iy - 16, inv, amber(1));
+        Hd.text(rx - Hd.tw(inv), ry + 10, inv, amber(1));
         if (P.ring > 0) Hd.text(R.W / 2 - 20, y0, 'RING ' + Math.ceil(P.ring), (B.frame >> 3) & 1 ? COL.b10 : COL.b6);
         if (P.caul > 0) Hd.text(R.W / 2 - 20, y0 + 9, 'CAUL ' + Math.ceil(P.caul), COL.t6);
         if (P.anchor) Hd.text(R.W / 2 - 24, y0 + 18, P.reeling ? 'REELING' : 'ANCHORED', amber(2));
@@ -331,7 +347,7 @@
         if (P.paco2 > 62 && B.settings.honest) Hd.center(R.H / 2 - 40, 'CO2 HIGH · SWAP SCRUBBER (T)', COL.r3);
         // prompt (sits above the captions)
         if (P.prompt && !Hd.capture()) {
-          const t = (I.usingPad ? '[A] ' : '[E] ') + P.prompt.label + (P.prompt.hold && !/HOLD/.test(P.prompt.label) ? ' (HOLD)' : '');
+          const t = Hd.key('A', 'E') + P.prompt.label + (P.prompt.hold && !/HOLD/.test(P.prompt.label) ? ' (HOLD)' : '');
           const w = Hd.tw(t), x = Math.round((R.W - w) / 2), y = Math.min(R.H - iy - 58, captionTop() - 16);
           box(x - 4, y - 3, w + 8, 13, COL.a0); Hd.text(x, y, t, a3);
           if (P.prompt.prog > 0) R.rect(x - 4, y + 10, Math.round((w + 8) * M.clamp(P.prompt.prog, 0, 1)), 2, a3);
@@ -340,16 +356,94 @@
       }
     }
     if (B.mode === 'play' && B.act === 'deck' && P && P.prompt && !Hd.capture()) {
-      const t = (I.usingPad ? '[A] ' : '[E] ') + P.prompt.label, w = Hd.tw(t), x = Math.round((R.W - w) / 2), y = R.H - 60;
+      const t = Hd.key('A', 'E') + P.prompt.label, w = Hd.tw(t), x = Math.round((R.W - w) / 2), y = R.H - 60;
       box(x - 4, y - 3, w + 8, 13, C32('#101418')); Hd.text(x, y, t, COL.g6);
     }
     drawCaptions();
     drawToasts();
     if (doc) drawDoc();
     if (craft) drawCraft();
+    if (I.touchMode) drawTouch();
     if (bootS) drawBoot();
     if (menuS) drawMenu();
   };
+
+  // ------------------------------------------------------------------ touch controls
+  // Buttons are laid out on a 480x270 grid and scaled to the buffer. acts are held while the finger
+  // is down; tap() fires on a quick release; split buttons hold acts on the top half, acts2 below.
+  B.touchLayout = function () {
+    const P = B.player;
+    if (B.mode !== 'play' || !P || Hd.capture() || P.dead || bootS) return null;
+    const s = R.W / 480, L = [];
+    const btn = (id, x, y, r, acts, label, o) => L.push(Object.assign({ id, x: x * s, y: y * s, r, acts, label }, o));
+    btn('pause', 240, 12, 8, ['pause'], 'II');
+    btn('use', 446, 230, 17, ['interact'], 'USE', { hot: !!P.prompt });
+    if (B.act === 'deck' || P.gaugeT > 0 && !I.state.gauge) return L;
+    btn('ping', 404, 250, 14, ['ping'], 'PING');
+    btn('pick', 406, 206, 14, ['pick'], 'PICK', { hot: !!P.anchor });
+    btn('lamp', 446, 186, 14, ['lamp'], 'LAMP');
+    btn('clamp', 360, 252, 14, ['clamp'], 'CLMP', { hot: P.clamped || P.braced });
+    btn('listen', 366, 214, 11, ['listen'], 'EAR');
+    btn('breath', 316, 254, 14, ['breath'], 'BRTH');
+    if (P.inv.shell > 0) btn('ph', 370, 176, 10, ['powerhead'], 'PH');
+    if (P.relics.shards > 0) btn('lens', 324, 214, 14, ['lens'], 'LENS');
+    if (P.copepods > 0.05) btn('wipe', 326, 176, 14, ['wipe'], 'WIPE', { hot: true });
+    if (P.cells.length && P.crush > 8) btn('graft', 26, 218, 14, ['graft'], 'GRFT');
+    // trim: one tall split button on the right edge
+    L.push({ id: 'trim', x: 452 * s, y: 96 * s, w: 22 * s, h: 70 * s, r: 0, split: true, acts: ['rise'], acts2: ['sink'] });
+    // invisible hotspots on the HUD itself
+    const [ix, iy] = inset, x0 = ix + 8, y0 = iy + 8;
+    L.push({ id: 'gauge', x: x0 - 4, y: y0 - 4, w: 40, h: 40, r: 0, acts: ['gauge'], hidden: true });
+    L.push({ id: 'scrub', x: x0 - 4, y: y0 + 40, w: 64, h: 12, r: 0, acts: [], tap: () => B.Player.swapLime(), hidden: true });
+    L.push({ id: 'map', x: R.W - ix - 80, y: y0 - 4, w: 76, h: 26, r: 0, acts: ['map'], hidden: true });
+    const by = R.H - iy - 18;
+    for (let k = 0; k < Math.min(5, P.cap); k++) L.push({ id: 'c' + k, x: x0 + k * 16 - 2, y: by - 6, w: 16, h: 20, r: 0, acts: ['c' + (k + 1)], hidden: true });
+    return L;
+  };
+  function ring(cx, cy, r, c, fill) {
+    for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
+      const d = Math.sqrt(x * x + y * y);
+      if (d <= r && d > r - 1.2) R.pset(cx + x, cy + y, c);
+      else if (fill && d <= r - 1.2 && ((x + y) & 1) === 0) R.pset(cx + x, cy + y, fill);
+    }
+  }
+  function drawTouch() {
+    const T = I.touch, lay = B.touchLayout();
+    if (lay) {
+      const s = R.W / 480, a1 = amber(1), a2 = amber(2), a3 = amber(3);
+      for (const b of lay) {
+        if (b.hidden) continue;
+        const held = T.held[b.id];
+        if (b.id === 'trim') {
+          const x = Math.round(b.x + b.w / 2), y = Math.round(b.y), h = Math.round(b.h), up = I.state.rise && T.refs.rise, dn = I.state.sink && T.refs.sink;
+          R.vline(x - 6, y, y + h, a1); R.vline(x + 6, y, y + h, a1); R.hline(x - 6, x + 6, y, a1); R.hline(x - 6, x + 6, y + h, a1); R.hline(x - 4, x + 4, y + h / 2, a1);
+          for (let k = 0; k < 4; k++) { R.hline(x - k, x + k, y + 10 + k, up ? a3 : a2); R.hline(x - k, x + k, y + h - 10 - k, dn ? a3 : a2); }
+          Hd.text(x - 4, y + 18, 'UP', up ? a3 : a1); Hd.text(x - 4, y + h - 25, 'DN', dn ? a3 : a1);
+          continue;
+        }
+        const r = Math.round(b.r * s), hot = b.hot && (B.frame >> 4) & 1;
+        ring(Math.round(b.x), Math.round(b.y), r, held ? a3 : hot ? a3 : a2, held ? a1 : COL.a0);
+        const w = Hd.tw(b.label); Hd.text(Math.round(b.x - w / 2) + 1, Math.round(b.y - 3), b.label, held || hot ? a3 : a2);
+      }
+      // the stick: a resting hint, or the base and knob under the thumb
+      const st = T.stick;
+      if (st) {
+        const r = Math.round(26 * s);
+        ring(Math.round(st.x0), Math.round(st.y0), r, a1, null);
+        const dx = st.x - st.x0, dy = st.y - st.y0, d = Math.hypot(dx, dy), k = d > r ? r / d : 1;
+        ring(Math.round(st.x0 + dx * k), Math.round(st.y0 + dy * k), Math.round(9 * s), I.state.boost ? a3 : a2, a1);
+      } else if (B.player && B.frame % 120 < 90) {
+        ring(Math.round(70 * s), Math.round(196 * s), Math.round(26 * s), COL.a0, null);
+        Hd.text(Math.round(70 * s) - 11, Math.round(196 * s) - 3, 'MOVE', COL.a1);
+      }
+    }
+    // portrait: the buffer is a postage stamp; ask for the other way round
+    if (innerHeight > innerWidth * 1.1) {
+      R.rect(0, R.H / 2 - 16, R.W, 32, COL.k);
+      Hd.center(R.H / 2 - 9, 'ROTATE YOUR DEVICE', amber(3), 1);
+      Hd.center(R.H / 2 + 3, 'THE TRENCH IS WIDER THAN IT IS TALL', amber(1), 1);
+    }
+  }
   function captionLines() {
     const caps = B.Story ? B.Story.caps : [], lines = [];
     for (const c of caps) {
@@ -406,7 +500,7 @@
     bootS.lines.forEach((l, k) => { if (bootS.t > k * 0.55) Hd.text(24, 40 + k * 10, l, amber(3)); });
   }
   function drawMenu() {
-    const m = menuS, lh = 11;
+    const m = menuS, lh = I.touchMode ? 15 : 11;
     const w = Math.max(Hd.tw(m.title || ''), ...m.items.map(it => Hd.tw(it.label + (it.value ? ' ' + it.value() : '')))) + 30;
     const h = m.items.length * lh + (m.title ? 26 : 12);
     const x = Math.round((R.W - w) / 2), y = m.y !== undefined ? m.y : Math.round((R.H - h) / 2);
@@ -479,7 +573,7 @@
     R.rect(0, 0, R.W, R.H, COL.k);
     Hd.center(R.H / 2 - 30, 'BENTHOS', amber(3), 3);
     Hd.center(R.H / 2 - 3, 'THE SILENT PRESSURE', amber(2));
-    if ((B.frame >> 5) & 1) Hd.center(R.H / 2 + 22, 'CLICK OR PRESS ANY KEY', amber(1));
+    if ((B.frame >> 5) & 1) Hd.center(R.H / 2 + 22, I.touchMode ? 'TAP TO CONTINUE' : 'CLICK OR PRESS ANY KEY', amber(1));
     Hd.center(R.H - 22, 'HEADPHONES · A DARK ROOM', C32('#4a3a20'));
   };
   Hd.drawTitle = function () {
@@ -659,7 +753,7 @@
             R.rect(0, 0, W, Hh, COL.k);
             const beat = (Math.floor(t / 0.72) % 6) < 5 || t < 60;
             if (beat) R.pset(W >> 1, Hh >> 1, C32('#091728'));
-            if (t > 14) Hd.center(Hh - 14, 'PRESS ENTER', C32('#0e2338'));
+            if (t > 14) Hd.center(Hh - 14, I.touchMode ? 'TAP' : 'PRESS ENTER', C32('#0e2338'));
           }
           void out;
         },

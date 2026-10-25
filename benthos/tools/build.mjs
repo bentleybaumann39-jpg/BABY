@@ -13,6 +13,18 @@ const out = html.replace(/<script src="(src\/[\w.-]+\.js)"><\/script>/g, (_, src
   return `<script>/* ${src} */\n${js}</script>`;
 });
 if (/<script src=/.test(out)) throw new Error('an external script tag was left un-inlined');
+// --artifact <file>: the same game as a page fragment for a claude.ai Artifact (the host supplies the
+// doctype, head and body skeleton, so those wrappers and the charset/viewport metas are dropped).
+const ai = process.argv.indexOf('--artifact');
+if (ai > 0) {
+  const frag = out.replace(/<!DOCTYPE html>\s*/i, '').replace(/<\/?html[^>]*>\s*/gi, '').replace(/<\/?head>\s*/gi, '').replace(/<\/?body>\s*/gi, '')
+    .replace(/<meta charset="UTF-8">\s*/i, '').replace(/<meta name="viewport"[^>]*>\s*/i, '');
+  const titleMatch = frag.match(/<title>.*?<\/title>\s*/);
+  const final = titleMatch[0] + frag.replace(titleMatch[0], '');
+  fs.writeFileSync(process.argv[ai + 1], final);
+  console.log(`wrote ${process.argv[ai + 1]} (${(final.length / 1024).toFixed(0)} KB)`);
+  process.exit(0);
+}
 const dest = path.join(root, 'Benthos.html');
 if (process.argv.includes('--check')) {
   const cur = fs.existsSync(dest) ? fs.readFileSync(dest, 'utf8') : '';
