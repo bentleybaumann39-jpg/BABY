@@ -226,6 +226,48 @@
     }
     return [ix, iy];
   }
+  // The viewport cracking under crush debt: a crack graph grown from an impact point, revealed in order as
+  // the debt climbs past a third, sealing again (the gel layer) as it falls. Kept in buffer fractions.
+  let crackG = null, crackShow = 0;
+  function buildCracks(seed) {
+    const r = B.rng(seed), segs = [], ox = 0.7 + r() * 0.16, oy = 0.2 + r() * 0.2;
+    const grow = (x, y, a, L, o0, depth) => {
+      let len = 0;
+      while (len < L) {
+        const st = 0.008 + r() * 0.014; a += (r() - 0.5) * 0.8;
+        const nx = x + Math.cos(a) * st, ny = y + Math.sin(a) * st * 1.6;
+        segs.push([x, y, nx, ny, o0 + (len / L) * (1 - o0) * 0.9]);
+        if (depth < 2 && r() < 0.1) grow(nx, ny, a + (r() < 0.5 ? -1 : 1) * (0.6 + r() * 0.6), L * 0.4, o0 + (len / L) * 0.5, depth + 1);
+        x = nx; y = ny; len += st;
+      }
+    };
+    for (let b = 0; b < 8; b++) grow(ox, oy, b / 8 * Math.PI * 2 + r() * 0.5, 0.12 + r() * 0.42, r() * 0.12, 0);
+    for (let k = 1; k <= 3; k++) { const rad = 0.018 * k; for (let a = 0; a < Math.PI * 2; a += 0.35) if (r() < 0.75) segs.push([ox + Math.cos(a) * rad, oy + Math.sin(a) * rad * 1.7, ox + Math.cos(a + 0.35) * rad, oy + Math.sin(a + 0.35) * rad * 1.7, 0.2 + k * 0.15]); }
+    return { segs, ox, oy };
+  }
+  function glassCracks(P) {
+    const want = M.clamp((P.crush - 33) / 62, 0, 1);
+    crackShow = want > crackShow ? Math.min(want, crackShow + 1 / 60 * 0.8) : Math.max(want, crackShow - 1 / 60 * 0.05);
+    if (crackShow <= 0.001) return;
+    if (!crackG) crackG = buildCracks(7 + (B.state ? B.state.deaths : 0));
+    const W = R.W, Hh = R.H, hi = C32('#c4e6ee'), lo = C32('#0e2338'), out = R.out32;
+    for (const sg of crackG.segs) {
+      if (sg[4] > crackShow) continue;
+      const x0 = sg[0] * W, y0 = sg[1] * Hh, x1 = sg[2] * W, y1 = sg[3] * Hh, n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
+      const tip = crackShow - sg[4] < 0.03;
+      for (let k = 0; k <= n; k++) {
+        const x = Math.round(x0 + (x1 - x0) * k / n), y = Math.round(y0 + (y1 - y0) * k / n);
+        if (x < 1 || y < 1 || x >= W - 1 || y >= Hh - 1) continue;
+        // refraction: the pixel beside the crack shows what's one pixel over
+        out[y * W + x + 1] = out[(y - 1) * W + x + 1];
+        out[y * W + x] = tip && (B.frame >> 2) & 1 ? lo : hi;
+        if ((x + y) & 1) out[(y + 1) * W + x] = lo;
+      }
+    }
+    const cx = Math.round(crackG.ox * W), cy = Math.round(crackG.oy * Hh);
+    for (let k = -2; k <= 2; k++) { R.pset(cx + k, cy, hi); R.pset(cx, cy + k, hi); }
+  }
+  Hd.resetCracks = () => { crackG = null; crackShow = 0; };
   function tunnel(k, seed) {
     if (k <= 0.01) return;
     const W = R.W, Hh = R.H, out = R.out32;
@@ -303,6 +345,7 @@
         if (B.act === 'act3' && B.facePulse > 0) macroFace();
         const tk = (P.breathHold ? 0.35 : 0) + (P.suffoT > 0 ? Math.min(0.9, P.suffoT / 20) : 0) + (P.paco2 > 70 && !B.settings.honest ? (P.paco2 - 70) / 40 : 0) + (P.braced ? 0.15 : 0);
         tunnel(Math.min(0.95, tk), B.frame >> 3);
+        glassCracks(P);
         const [ix, iy] = bezel(); inset = [ix, iy];
         const dim = !P.powered;
         const a2 = dim ? amber(1) : amber(2), a3 = dim ? amber(1) : amber(3);
@@ -634,9 +677,22 @@
     if ((B.frame >> 5) & 1) Hd.center(R.H / 2 + 22, I.touchMode ? 'TAP TO CONTINUE' : 'CLICK OR PRESS ANY KEY', amber(1));
     Hd.center(R.H - 22, 'HEADPHONES · A DARK ROOM', C32('#4a3a20'));
   };
+  const TAGS = ["THE DEEP DOESN'T KILL YOU. IT KEEPS YOU.", 'EVERY LIGHT YOU MAKE IS A PROMISE TO SOMETHING HUNGRY.', 'FOUR KILOMETRES OF WATER. ONE LAMP. NOBODY COMING.'];
   Hd.drawTitle = function () {
-    Hd.center(26, 'BENTHOS', amber(3), 4, true);
-    Hd.center(58, 'THE SILENT PRESSURE', amber(2), 1, true);
+    // the logo, pressed on by the water: a dark band behind it, and now and then a row slips sideways
+    const lw = Hd.tw('BENTHOS', 4), lx = Math.round((R.W - lw) / 2), ly = 26;
+    R.shadeRect(0, ly - 10, R.W, 52, COL.k, 0.55);
+    Hd.text(lx + 2, ly + 2, 'BENTHOS', COL.a0, 4);
+    Hd.text(lx, ly, 'BENTHOS', amber(3), 4, true);
+    const g = Math.floor(B.time * 3);
+    if (B.hash2(g, 1, 3) > 0.82) {
+      const row = ly + Math.floor(B.hash2(g, 2, 3) * 28), sh = B.hash2(g, 3, 3) > 0.5 ? 2 : -2, out = R.out32;
+      for (let y = row; y < row + 2 + (g & 3); y++) { const r0 = y * R.W; const tmp = out.slice(r0 + lx - 4, r0 + lx + lw + 4); for (let x = 0; x < tmp.length; x++) { const tx = lx - 4 + x + sh; if (tx >= 0 && tx < R.W) out[r0 + tx] = tmp[x]; } }
+    }
+    Hd.center(ly + 34, 'THE SILENT PRESSURE', amber(2), 1, true);
+    // the taglines surface and sink, one at a time
+    const per = 7, k = Math.floor(B.time / per) % TAGS.length, ph = (B.time % per) / per, a = Math.min(1, ph * 5, (1 - ph) * 5);
+    if (a > 0.05) { const t = TAGS[k], w = Hd.tw(t), x = Math.round((R.W - w) / 2); for (let i = 0; i < t.length; i++) if (B.hash2(i, k, 9) < a) Hd.text(x + i * 6, R.H - 26, t[i], COL.b10); }
     const n = 26 + B.meta.deaths;
     Hd.text(8, R.H - 12, 'THE ARCHIVE HOLDS ' + n, C32('#4a3a20'));
     Hd.text(R.W - 8 - Hd.tw('V' + B.VERSION), R.H - 12, 'V' + B.VERSION, C32('#4a3a20'));

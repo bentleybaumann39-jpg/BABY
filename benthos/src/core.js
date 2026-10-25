@@ -4,7 +4,7 @@
 'use strict';
 window.B = window.B || {};
 (function (B) {
-  B.VERSION = '0.1.0';
+  B.VERSION = '1.1.0';
 
   // Internal resolution (New Game+ drops to 320x180, see B.setRes).
   B.W = 480; B.H = 270;
