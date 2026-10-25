@@ -105,6 +105,7 @@
   Hd.menuOpen = () => !!menuS;
   Hd.closeMenu = () => { menuS = null; };
   Hd._menu = () => menuS;
+  Hd._craft = () => craft;
 
   // ------------------------------------------------------------------ input for overlays (returns true if consumed)
   Hd.tick = function (dt) {
@@ -167,11 +168,13 @@
       { label: 'CLOSE', ok: true, go: () => { craft = null; } },
     ]);
   }
+  // rows are taller for thumbs, as long as the list still fits the buffer
+  const craftRow = () => (I.touchMode && R.H >= 220 ? 13 : 9);
   function craftTick(dt) {
     const list = recipes();
     if (I.pressed('mUp')) { craft.sel = (craft.sel + list.length - 1) % list.length; A.sfx('click'); }
     if (I.pressed('mDown')) { craft.sel = (craft.sel + 1) % list.length; A.sfx('click'); }
-    if (I.mouse.moved && craft.y0 !== undefined) { const idx = Math.floor((I.mouse.y - craft.y0) / 9); if (idx >= 0 && idx < list.length) craft.sel = idx; I.mouse.moved = 0; }
+    if (I.mouse.moved && craft.y0 !== undefined) { const idx = Math.floor((I.mouse.y - craft.y0 + (craftRow() - 9) / 2) / craftRow()); if (idx >= 0 && idx < list.length) craft.sel = idx; I.mouse.moved = 0; }
     if (I.pressed('confirm') || I.pressed('click')) {
       const it = list[craft.sel];
       if (it.ok) { A.sfx(it.label === 'CLOSE' ? 'click' : 'graft'); it.go(); if (it.label !== 'CLOSE') { B.noise(B.player.x, B.player.y, B.player.z, 40, 'fab'); B.Story.save(); } }
@@ -593,13 +596,13 @@
     Hd.text(x + w - 8 - Hd.tw(cl), y + h - 9, cl, amber(1));
   }
   function drawCraft() {
-    const list = recipes(), w = Math.min(R.W - 20, 380), h = list.length * 9 + 34, x = Math.round((R.W - w) / 2), y = Math.round((R.H - h) / 2);
+    const rh = craftRow(), list = recipes(), w = Math.min(R.W - 20, 380), h = list.length * rh + 34, x = Math.round((R.W - w) / 2), y = Math.round((R.H - h) / 2);
     box(x, y, w, h, C32('#0c0c0e'), amber(1));
     Hd.text(x + 8, y + 7, 'FIELD FABRICATOR · CAIRN · SAVED', amber(3));
     craft.y0 = y + 22;
     list.forEach((it, k) => {
-      const yy = y + 22 + k * 9, sel = k === craft.sel;
-      if (sel) R.rect(x + 4, yy - 1, w - 8, 9, COL.a0);
+      const yy = y + 22 + k * rh, sel = k === craft.sel;
+      if (sel) R.rect(x + 4, yy - 1 - (rh - 9) / 2, w - 8, rh, COL.a0);
       Hd.text(x + 8, yy, (sel ? '> ' : '  ') + it.label, it.ok ? (sel ? amber(3) : amber(2)) : C32('#4a3a20'));
     });
     Hd.text(x + 8, y + h - 9, 'THE WATER DOES NOT STOP WHILE YOU WORK', amber(1));

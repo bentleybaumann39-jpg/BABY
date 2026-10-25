@@ -401,12 +401,14 @@
     // a vertical archipelago of debris from the barge Gull
     const path = (t) => ({ x: M.lerp(C, MX, t), y: M.lerp(C, MY, t), z: M.lerp(1050, 2860, t) });
     const islands = [[0.12, 8, -6], [0.2, -10, 9], [0.33, 12, 4], [0.42, -6, -12], [0.5, 9, 10], [0.6, -12, 3], [0.7, 7, -9], [0.8, -8, 8], [0.9, 10, 2]];
-    const loot = [['ti', 'o2'], ['cer', 'lime'], ['ti', 'cu', 'log'], ['cer', 'o2'], ['ti', 'cell'], ['ti', 'cer', 'shard'], ['lime', 'o2'], ['ti', 'cer'], ['o2', 'ti', 'shard']];
+    const loot = [['ti', 'o2'], ['cer', 'lime', 'ti'], ['ti', 'cu', 'log'], ['cer', 'o2', 'ti'], ['ti', 'cell', 'cer'], ['ti', 'cer', 'shard'], ['lime', 'o2', 'ti'], ['ti', 'cer'], ['o2', 'ti', 'shard']];
+    S.islands = []; S.islandIdx = undefined;
     islands.forEach((d, i) => {
       const p = path(d[0]); const x = p.x + d[1], y = p.y + d[2], z = p.z;
+      S.islands.push({ x, y, z, cairn: i === 1 || i === 4 || i === 6 || i === 7 });
       E.prop(() => MD.debris({ seed: i + 3 }), x, y, z, { solid: true, r: 2.2, flatZ: 1.6 });
       loot[i].forEach((k, j) => { const o = k === 'log' ? { doc: DOCS.barge, title: 'MANIFEST: BARGE GULL' } : {}; it(k, x + Math.cos(j * 2.1) * 2.8, y + Math.sin(j * 2.1) * 2.8, z - 0.5 + j * 0.3, o); });
-      if (i === 1 || i === 4 || i === 7) E.cairn(x, y - 2.6, z - 1.2);
+      if (i === 1 || i === 4 || i === 6 || i === 7) E.cairn(x, y - 2.6, z - 1.2);
       if (i === 3) it('tape', x - 1.5, y + 2.2, z - 0.6, { tape: 'tape3', title: "THE GULL'S BRIDGE RECORDER" });
     });
     // the Processions
@@ -580,6 +582,7 @@
     p.x = cp.x; p.y = cp.y; p.z = cp.z; p.vx = p.vy = p.vz = 0; p.crush = 0; p.dead = false; p.tangled = null; p.grabbed = null; p.anchor = null;
     p.o2 = Math.max(p.o2, p.o2Max * 0.5); p.paco2 = 40; p.suffoT = 0; p.lockT = 2;
     B.Hud.boot(['RECOMPRESSION', 'HV-0419 · RESTART', 'VITALS NOMINAL', 'FIDELITY ' + p.fidelity]);
+    if (cause === 'crush') S.say('tobias', "THE HULL WON'T TAKE THAT DEPTH YET, {N}. FABRICATE RATING AT A CAIRN, OR GRAFT.", { delay: 4 });
     B.snapCamera = true;
     void cause;
   };
@@ -620,7 +623,7 @@
     const s = st(), p = P(), fl = s.flags;
     fl.breachPending = false; fl.breached = true;
     p.dead = false; p.breached = true; p.res = 2; p.flipped = true; p.crush = 0; p.z = 1400; p.vx = p.vy = p.vz = 0;
-    p.rating = Math.max(p.rating, 1600); p.lockT = 3; p.hrShown = 72;
+    p.rating = Math.max(p.rating, 2000); p.lockT = 3; p.hrShown = 72;
     B.Player.loseFidelity(3, 'breach');
     B.Z.wave.phase = 'calm'; B.Z.wave.t = 120; B.Z.wave.big = false; B.Z.wave.pull = 0;
     // a debris island and a Cairn near where she wakes
@@ -662,7 +665,7 @@
     }
   }
   S.introAct3 = function () {
-    const p = P(); p.res = 3; p.rating = Math.max(p.rating, 3700);
+    const p = P(); p.res = 3; p.rating = Math.max(p.rating, 3900);
     S.say('hud', 'DEPTH PRECISION DEGRADED', { delay: 1.5, dur: 4 });
     S.convo([['mara', 'THE SONAR SAYS NINETY KILOMETRES. THE TRENCH IS FORTY METRES WIDE.'], ['tobias', "YOU'RE DOING GREAT."]], 4);
   };
@@ -735,7 +738,13 @@
   };
   S.onGraft = function () { const fl = st().flags; if (!fl.grafted) { fl.grafted = true; S.say('mara', 'IT HOLDS. IT IS WARM.', { delay: 0.6 }); } };
   S.onAlarm = function () { const fl = st().flags; if (!fl.alarm) { fl.alarm = true; S.say('tobias', 'WHAT WAS THAT? YOUR HYDROPHONES JUST LIT UP.'); } };
-  S.onKnock = function (th) { const fl = st().flags; if (!fl.knock) { fl.knock = true; S.say('hud', 'CRUSH DEBT · ASCEND ABOVE RATING, BRACE (HOLD ' + B.k('Q', 'CLMP') + '), OR GRAFT (' + B.k('G', 'GRFT') + ')', { dur: 6 }); } void th; };
+  S.onKnock = function (th) {
+    const fl = st().flags;
+    if (!fl.knock) { fl.knock = true; S.say('hud', 'CRUSH DEBT · ASCEND ABOVE RATING, BRACE (HOLD ' + B.k('Q', 'CLMP') + '), OR GRAFT (' + B.k('G', 'GRFT') + ')', { dur: 6 }); }
+    // after the breach the HUD's rating is frozen at a lie; Tobias still reads the true one off telemetry
+    else if (fl.breached && !fl.knockTold) { fl.knockTold = true; S.say('tobias', 'YOUR HULL IS RATED ' + Math.round(P().rating) + ', {N}, WHATEVER YOUR SCREEN SAYS. BUILD IT UP AT A CAIRN: TWO TITANIUM, ONE CERAMIC.'); }
+    void th;
+  };
   S.onPing = function () { const fl = st().flags; if (!fl.pinged) { fl.pinged = true; S.say('hud', 'THE HULL RINGS FOR 10 S. ANYTHING THAT HEARD IT WILL FOLLOW YOUR TRAIL. TAP Q NEAR ROCK TO DAMP IT.', { delay: 1, dur: 6 }); } };
   S.onBrace = function () { const fl = st().flags; if (!fl.braced) { fl.braced = true; S.say('hud', 'POWERED DOWN: INVISIBLE TO ELECTRORECEPTION. CRUSH DEBT FALLS. HOLD ' + B.k('Q', 'CLMP') + ' AGAIN TO REBOOT.', { dur: 6 }); } };
   S.onSleeperCommit = function () { B.danger = 3; };
@@ -775,8 +784,20 @@
     const s = st(), fl = s.flags, p = P(); if (!p) return;
     B.danger = Math.max(0, (B.danger || 0) - dt);
     for (const e of E.list) if (e.alive && (e.type === 'sleeper' && e.mode !== 'dead' && e.mode !== 'drift' || e.type === 'double' || e.type === 'reliquary' && e.mode === 'feed') && Math.hypot(e.x - p.x, e.y - p.y, e.z - p.z) < 20) B.danger = Math.max(B.danger, 1);
+    // the surface watches your blood gas, until it can't
+    if (B.act !== 'deck' && !fl.breached) {
+      if (p.lime < 0.15) once('scrubTold', () => S.say('tobias', 'YOUR SCRUBBER IS NEARLY SPENT, {N}. SWAP THE CANISTER (' + B.k('T', 'TAP SCRUB') + ') BEFORE YOUR HUD STARTS LYING.'));
+      if (p.paco2 > 58) once('co2Told', () => S.say('tobias', "{N}, YOUR CO2 IS CLIMBING. WHATEVER YOUR SCREEN SAYS, SWAP THE SCRUBBER NOW."));
+      if (p.paco2 < 45) fl.co2Told = false;
+    }
     if (B.act === 'act1') {
       if (p.z > 60) once('tipTrim', () => B.Hud.tip('trim'));
+      // out of ballast air below the cage: the winch brings it down a stop to meet her
+      const cg = E.byType('cage')[0];
+      if (cg && !fl.cageFell && !p.inCage && !cg.moving && p.air < 3 && p.z > cg.z + 12 && cg.stop < 4) {
+        S.airStrandT = (S.airStrandT || 0) + dt;
+        if (S.airStrandT > 6) { S.airStrandT = 0; S.say('tobias', "OUT OF BALLAST AIR? HOLD ON, {N}. I'M SENDING THE CAGE DOWN TO YOU."); E.cageGo(cg, cg.stop + 1); }
+      } else S.airStrandT = 0;
       if (p.z > 150) once('sunGone', () => S.say('mara', "THAT'S THE LAST OF THE SUN."));
       if (p.z > 205) once('tipLamp', () => B.Hud.tip('lamp'));
       if (p.z > 240) once('tipPing', () => B.Hud.tip('ping'));
@@ -828,6 +849,14 @@
     S.after(() => S.say('tobias', "YOU'RE IN THE SOFAR CHANNEL. EVERYTHING CARRIES IN THERE. EVERYTHING."), 16000);
   };
 
+  // When the next goal is deeper than the hull will take, send her to a Cairn to build rating if she has the
+  // parts, or say what to salvage. A little debt below rating is survivable, hence the margin.
+  function hullGate(o, goal, p) {
+    const limit = p.rating + 60; if (goal.z <= limit) return o;
+    const cairns = E.byType('cairn').filter(c => c.z < limit).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y, a.z - p.z) - Math.hypot(b.x - p.x, b.y - p.y, b.z - p.z));
+    if (p.inv.ti >= 2 && p.inv.cer >= 1 && cairns.length) { const c = cairns[0]; return { text: 'BUILD HULL RATING AT A CAIRN', x: c.x, y: c.y, z: c.z, opt: 'THE HULL WILL NOT TAKE ' + Math.round(goal.z) + ' M' }; }
+    return Object.assign({}, o, { opt: 'SALVAGE TITANIUM (2) AND CERAMIC (1) FOR THE HULL' });
+  }
   // What to do next, and where: drives the objective line and the transponder beacon in the HUD.
   // { text, x, y, z } with an optional { opt } line for side business; null when there is nothing to say.
   S.objective = function () {
@@ -845,15 +874,26 @@
     if (B.act === 'act2') {
       if (fl.wren && !fl.fell) return fl.dropPrompt ? { text: 'DROP YOUR WEIGHTS' } : { text: 'LISTEN TO TOBIAS' };
       const m = S.magpie; if (!m) return null;
-      const o = { text: fl.breached ? 'REACH MAGPIE-3 · 2,904 M' : "FOLLOW MAGPIE'S LIGHT DOWN", x: m.x, y: m.y, z: m.z };
+      let o = { text: fl.breached ? 'REACH MAGPIE-3 · 2,904 M' : "FOLLOW MAGPIE'S LIGHT DOWN", x: m.x, y: m.y, z: m.z };
+      // after the breach the beacon walks you down the wreckage trail, island by island, where the salvage and Cairns are
+      if (fl.breached && S.islands) {
+        // progress is the deepest island reached, so the target doesn't flap as she bobs up and down
+        const isl = S.islands;
+        if (S.islandIdx === undefined) { S.islandIdx = -1; isl.forEach((i, k) => { if (i.z < p.z) S.islandIdx = Math.max(S.islandIdx, k); }); }
+        isl.forEach((i, k) => { if (k > S.islandIdx && Math.hypot(i.x - p.x, i.y - p.y, i.z - p.z) < 10) S.islandIdx = k; });
+        const next = isl[S.islandIdx + 1] && isl[S.islandIdx + 1].z < m.z - 60 ? isl[S.islandIdx + 1] : null;
+        if (next) o = { text: 'FOLLOW THE WRECKAGE DOWN TOWARD MAGPIE', x: next.x, y: next.y, z: next.z - 2 };
+        o = hullGate(o, next || m, p);
+      }
       if (fl.breached && !p.relics.hand && S.vigilPos && p.z < 2400) o.opt = 'OPTIONAL · THE VIGIL, 2,200 M';
+      if (p.z > p.rating - 150 && m.z > p.rating) o.opt = 'THE HULL NEEDS RATING · FABRICATE AT A CAIRN';
       return o;
     }
     if (B.act === 'act3') {
       if (fl.archive) return null;
-      const f = B.map.features, o = { text: 'GO DOWN INTO THE PIT', x: f.AX, y: f.AY, z: 4189 };
+      const f = B.map.features; let o = { text: 'GO DOWN INTO THE PIT', x: f.AX, y: f.AY, z: 4186.5 };
       if (p.relics.eye && !fl.eyeDone && S.eyeLake) o.opt = "OPTIONAL · MAGPIE'S EYE AT THE BRINE LAKE";
-      return o;
+      return hullGate(o, o, p);
     }
     return null;
   };

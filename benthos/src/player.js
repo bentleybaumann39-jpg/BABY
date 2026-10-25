@@ -127,6 +127,8 @@
     if (c.moving || c.fallen) return;
     const next = c.stop + 1; if (next >= c.stops.length) return;
     P.inCage = c; E.cageGo(c, next); A.sfx('beep');
+    // the downline carries an air hose: the ballast bottle tops up for the ride
+    if (P.air < 100) { P.air = 100; B.Hud.toast('BALLAST AIR TOPPED UP FROM THE DOWNLINE'); }
     B.Story.onCageRide && B.Story.onCageRide(c, next);
   };
   Pm.absorb = function (src, strain) {
@@ -273,7 +275,7 @@
     const sink = !lock && I.down('sink') && P.powered, rise = !lock && I.down('rise') && P.powered && P.air > 0;
     if (sink) P.trim = Math.max(-1, P.trim - dt * 0.8);
     if (rise) {
-      P.trim = Math.min(1, P.trim + dt * 0.8); P.air = Math.max(0, P.air - dt * 3);
+      P.trim = Math.min(1, P.trim + dt * 0.8); P.air = Math.max(0, P.air - dt * 2.2);
       if ((P.hissT = (P.hissT || 0) - dt) <= 0) { P.hissT = 0.6; A.sfx('hiss'); B.noise(P.x, P.y, P.z, 50, 'ballast'); }
     }
     if (B.settings.steady && !sink && !rise) P.trim = M.approach(P.trim, M.clamp(P.vz * 0.6, -1, 1), dt * 0.6);
@@ -397,7 +399,9 @@
       else { P.o2 = 0; P.suffoT += dt; if (P.suffoT > 20) { Pm.die('air'); return; } }
     } else if (!P.breached) P.suffoT = 0;
     // scrubber and CO2
-    P.lime = Math.max(0, P.lime - dt / (240 * (1 + P.up.scrub * 0.2)) * mult);
+    P.lime = Math.max(0, P.lime - dt / (330 * (1 + P.up.scrub * 0.2)) * mult);
+    // on the gentlest setting the suit changes its own canister while there is a spare
+    if (B.settings.difficulty === 0 && P.lime < 0.05 && P.limes > 0) Pm.swapLime();
     const eff = P.lime > 0.25 ? 1 : P.lime / 0.25;
     if (eff < 1) P.paco2 += (1 - eff) * 0.45 * mult * dt / (1 + P.up.scrub * 0.25);
     else P.paco2 = Math.max(40, P.paco2 - dt * 0.7);
@@ -412,7 +416,7 @@
   function pressure(dt) {
     const before = P.crush;
     if (P.braced) P.crush = Math.max(0, P.crush - 0.5 * dt);
-    else if (P.z > P.rating) P.crush = Math.min(100, P.crush + Math.pow((P.z - P.rating) / 100, 1.5) * 0.6 * dt * (B.Z.crushMul || 1) * B.diff().crush);
+    else if (P.z > P.rating) P.crush = Math.min(100, P.crush + Math.pow((P.z - P.rating) / 100, 1.5) * 0.4 * dt * (B.Z.crushMul || 1) * B.diff().crush);
     else P.crush = Math.max(0, P.crush - 2 * dt);
     for (const th of [25, 50, 75]) if (before < th && P.crush >= th) { A.sfx('knock3'); B.shake(4); B.Story.onKnock && B.Story.onKnock(th); }
     if (P.crush >= 100) { Pm.die('crush'); return; }
