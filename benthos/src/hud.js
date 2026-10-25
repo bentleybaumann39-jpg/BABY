@@ -859,6 +859,50 @@
     B.mode = 'scene';
   };
 
+  // The Halvard Four bell, seen through its viewport: four seats, five masks, and the tally on the wall.
+  Hd.bellView = function (done) {
+    A.sfx('glass');
+    B.scene = {
+      t: 0, world: true, dimWorld: true,
+      update(dt) { this.t += dt; if ((this.t > 1.2 && (I.pressed('interact') || I.pressed('confirm') || I.pressed('click') || I.pressed('back'))) || this.t > 20) { B.scene = null; B.mode = 'play'; done && done(); } },
+      draw() {
+        const W = R.W, Hh = R.H, cx = W / 2, cy = Hh / 2 - 6, r = Math.min(W, Hh) * 0.4, t = this.t;
+        R.rect(0, 0, W, Hh, COL.k);
+        // the lamp's circle on the far wall, swaying as she holds herself to the glass
+        const lx = cx + Math.sin(t * 0.7) * r * 0.25, ly = cy + Math.cos(t * 0.5) * r * 0.12;
+        const inside = (x, y) => (x - cx) * (x - cx) + (y - cy) * (y - cy) < r * r;
+        for (let y = Math.floor(cy - r); y < cy + r; y++) for (let x = Math.floor(cx - r); x < cx + r; x++) {
+          if (!inside(x, y)) continue;
+          const d = Math.hypot(x - lx, y - ly) / (r * 0.9), lit = Math.max(0, 1 - d * d);
+          // curved steel wall with rivet lines, a bench across the bottom third
+          const bench = y > cy + r * 0.25 && y < cy + r * 0.42, rivet = ((x - cx + 400) % 18 === 0) && ((y + 400) % 4 === 0);
+          let v = 0.18 + (bench ? 0.14 : 0) + (rivet ? 0.2 : 0) + B.hash2(x >> 1, y >> 1, 5) * 0.05;
+          v *= lit;
+          const th = B.BAYER[(y & 3) * 4 + (x & 3)] + 0.5;
+          R.pset(x, y, v > th * 0.5 ? C32('#5d6266') : v > th * 0.22 ? C32('#2c2c33') : v > th * 0.08 ? C32('#16161b') : COL.k);
+        }
+        // four seats (dark gaps in the bench) and five masks hanging above them
+        for (let k = 0; k < 4; k++) { const sx = cx - r * 0.55 + k * r * 0.37; R.rect(Math.round(sx), Math.round(cy + r * 0.26), Math.round(r * 0.2), 3, C32('#0c0c0e')); }
+        for (let k = 0; k < 5; k++) {
+          const mx = cx - r * 0.6 + k * r * 0.3, my = cy - r * 0.05 + Math.sin(t * 1.3 + k) * 1.5;
+          R.vline(Math.round(mx), Math.round(cy - r * 0.45), Math.round(my), C32('#4a4a52'));
+          R.rect(Math.round(mx) - 2, Math.round(my), 5, 4, inside(mx, my) && Math.hypot(mx - lx, my - ly) < r * 0.8 ? C32('#d8b020') : C32('#4a3a10'));
+        }
+        // the tally in grease pencil, the fifth stroke of the last group heavier than the rest
+        const tx = Math.round(cx - r * 0.5), ty = Math.round(cy - r * 0.62);
+        for (let g = 0; g < 4; g++) for (let k = 0; k < (g === 3 ? 5 : 4); k++) {
+          const x = tx + g * 16 + k * 3, heavy = g === 3 && k === 4;
+          if (Math.hypot(x - lx, ty - ly) < r * 0.95) { R.vline(x, ty, ty + 8, heavy ? C32('#efefec') : C32('#9a9aa2')); if (heavy) R.vline(x + 1, ty, ty + 8, C32('#efefec')); }
+        }
+        // the viewport rim and its bolts
+        for (let a = 0; a < Math.PI * 2; a += 0.004) { for (let w = 0; w < 5; w++) R.pset(cx + Math.cos(a) * (r + w), cy + Math.sin(a) * (r + w), w === 0 ? C32('#9a9aa2') : C32('#4a4a52')); }
+        for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; R.rect(Math.round(cx + Math.cos(a) * (r + 8)) - 1, Math.round(cy + Math.sin(a) * (r + 8)) - 1, 3, 3, C32('#6f6f78')); }
+        Hd.center(Hh - 14, 'HALVARD FOUR · BELL GANNET · 620 M', COL.g4);
+        if (t > 1.2) Hd.text(W - 8 - Hd.tw(I.touchMode ? 'TAP' : 'E'), Hh - 14, I.touchMode ? 'TAP' : 'E', amber(1));
+      },
+    };
+    B.mode = 'scene';
+  };
   // The Wren's 72 hours: every Mara who ever knelt at that helmet — one per death in this save.
   Hd.wrenFootage = function (done) {
     const log = (B.state.deathLog || []).slice(0, 40);

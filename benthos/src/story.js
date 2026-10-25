@@ -349,7 +349,8 @@
     const hp = tp(3, 46, 0.5, 0.06); E.prop(() => [MD.box(0, 0, -0.5, 0.5, 0.5, 0.45, '#5d6266'), R.P.c([0, 0, -0.05], [0, 0, 0.35], 0.28, B.linHex('#4a4a52'), { m: 3 })], hp.x, hp.y, hp.z, { solid: true, r: 0.8 });
     it('log', hp.x + 1.2, hp.y + 0.6, hp.z + 0.3, { doc: DOCS.hopper, title: 'A STENCILLED HOPPER' });
     // the Gannet bell, the Halvard Four
-    const bp = tp(6, 40, 1.6); E.prop(() => MD.bell({ lit: true }), bp.x, bp.y, bp.z, { solid: true, r: 1.4 }); S.bellPos = bp;
+    const bp = tp(6, 40, 1.6); const bell = E.prop(() => MD.bell({ lit: true }), bp.x, bp.y, bp.z, { solid: true, r: 1.4 }); S.bellPos = bp;
+    bell.interact = { label: () => 'LOOK THROUGH THE VIEWPORT', fn: () => { S.locked = true; B.Hud.bellView(() => { S.locked = false; if (!st().flags.bellSeen) { st().flags.bellSeen = true; S.say('mara', 'FOUR SEATS. FIVE MASKS.', { delay: 0.5 }); } }); } };
     E.bubble(bp.x, bp.y, bp.z - 2, 1);
     it('lung', tp(6, 40, 0.5, 0.05), { title: 'THE SECOND LUNG' }); it('tape', tp(6, 43, 0.6, -0.06), { tape: 'tape2', title: 'THE BELL RECORDER' }); it('log', tp(6, 37, 0.6, -0.08), { doc: DOCS.gannet, title: 'GREASE PENCIL ON THE BELL' });
     it('lime', tp(6, 50, 0.6, 0.15)); it('o2', tp(6, 33, 0.6, 0.18));
@@ -916,8 +917,7 @@
         if (next) o = { text: 'FOLLOW THE WRECKAGE DOWN TOWARD MAGPIE', x: next.x, y: next.y, z: next.z - 2 };
         o = hullGate(o, next || m, p);
       }
-      if (fl.breached && !p.relics.hand && S.vigilPos && p.z < 2400) o.opt = 'OPTIONAL · THE VIGIL, 2,200 M';
-      if (p.z > p.rating - 150 && m.z > p.rating) o.opt = 'THE HULL NEEDS RATING · FABRICATE AT A CAIRN';
+      if (fl.breached && !p.relics.hand && S.vigilPos && p.z < 2400 && !o.opt) o.opt = 'OPTIONAL · THE VIGIL, 2,200 M';
       return o;
     }
     if (B.act === 'act3') {
