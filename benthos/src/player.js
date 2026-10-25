@@ -57,13 +57,13 @@
   // ------------------------------------------------------------------ damage and loss
   Pm.hurt = function (src, debt) {
     if (P.dead) return;
-    P.crush = Math.min(100, P.crush + debt); A.sfx('impact'); B.shake(6);
+    P.crush = Math.min(100, P.crush + debt * B.diff().hurt); A.sfx('impact'); B.shake(6);
     if (P.crush >= 100) Pm.die(src);
   };
   Pm.bite = function (s) {
     B.shake(14); A.sfx('crack'); A.sfx('boom');
-    if (P.crush > 50) { Pm.die('sleeper'); return; }
-    P.crush = Math.min(100, P.crush + 45);
+    if (P.crush > 50 + (1 - B.diff().hurt) * 40) { Pm.die('sleeper'); return; }
+    P.crush = Math.min(100, P.crush + 45 * B.diff().hurt);
     if (P.cells.length) { P.cells = []; Pm.say('hud', 'CULTURE TANK RUPTURED'); }
     const a = Math.atan2(P.y - s.y, P.x - s.x); P.vx += Math.cos(a) * 7; P.vy += Math.sin(a) * 7;
     if (P.crush >= 100) Pm.die('sleeper');
@@ -384,7 +384,7 @@
   function breathe(dt) {
     const panic = B.danger > 0;
     let mult = (P.boost ? 2 : P.thrust > 0.2 ? 1.3 : 1) * (panic ? 1.4 : 1) * (P.breathHold ? 0.6 : 1);
-    P.o2 -= dt * mult;
+    P.o2 -= dt * mult * B.diff().air;
     if (P.relics.lung) { P.lungT += dt; if (P.lungT > 60) { P.lungT = 0; P.o2 = Math.min(P.o2Max, P.o2 + 5.6); } if ((P.gaspT = (P.gaspT === undefined ? 120 : P.gaspT) - dt) <= 0) { P.gaspT = M.rnd(90, 180); A.sfx('gasp'); B.noise(P.x, P.y, P.z, 34, 'gasp'); } }
     if (P.o2 <= 0) {
       if (P.carts > 0) { P.carts--; P.o2 = P.o2Max; A.sfx('swap'); Pm.say('hud', 'O2 CARTRIDGE CHANGED · ' + P.carts + ' LEFT'); }
@@ -407,7 +407,7 @@
   function pressure(dt) {
     const before = P.crush;
     if (P.braced) P.crush = Math.max(0, P.crush - 0.5 * dt);
-    else if (P.z > P.rating) P.crush = Math.min(100, P.crush + Math.pow((P.z - P.rating) / 100, 1.5) * 0.6 * dt * (B.Z.crushMul || 1));
+    else if (P.z > P.rating) P.crush = Math.min(100, P.crush + Math.pow((P.z - P.rating) / 100, 1.5) * 0.6 * dt * (B.Z.crushMul || 1) * B.diff().crush);
     else P.crush = Math.max(0, P.crush - 2 * dt);
     for (const th of [25, 50, 75]) if (before < th && P.crush >= th) { A.sfx('knock3'); B.shake(4); B.Story.onKnock && B.Story.onKnock(th); }
     if (P.crush >= 100) { Pm.die('crush'); return; }

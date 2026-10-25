@@ -115,7 +115,7 @@
   // ------------------------------------------------------------------ state, save and load
   S.newState = function (ng) {
     S.clearTimers && S.clearTimers();
-    B.state = { v: 1, act: 'deck', ng: !!ng, flags: {}, taken: {}, cp: null, player: null, deaths: 0, deathLog: [], corpses: [], seen: {}, t0: Date.now() };
+    B.state = { v: 1, act: 'deck', ng: !!ng, flags: {}, taken: {}, cp: null, player: null, deaths: 0, deathLog: [], corpses: [], seen: {}, read: [], t0: Date.now() };
     return B.state;
   };
   S.label = function () {
@@ -256,7 +256,7 @@
     it('o2', tp(4, 40)); it('cu', tp(4, 50, 0.6, 0.15)); it('flare', tp(4, 32, 0.6, -0.15));
     it('ti', tp(5, 38)); it('ti', tp(5, 50, 0.6, 0.12)); it('cer', tp(5, 44, 0.6, -0.18));
     // the Gannet bell, the Halvard Four
-    const bp = tp(6, 40, 1.6); E.prop(() => MD.bell({ lit: true }), bp.x, bp.y, bp.z, { solid: true, r: 1.4 });
+    const bp = tp(6, 40, 1.6); E.prop(() => MD.bell({ lit: true }), bp.x, bp.y, bp.z, { solid: true, r: 1.4 }); S.bellPos = bp;
     E.bubble(bp.x, bp.y, bp.z - 2, 1);
     it('lung', tp(6, 40, 0.5, 0.05), { title: 'THE SECOND LUNG' }); it('log', tp(6, 37, 0.6, -0.08), { doc: DOCS.gannet, title: 'GREASE PENCIL ON THE BELL' });
     it('lime', tp(6, 50, 0.6, 0.15)); it('o2', tp(6, 33, 0.6, 0.18));
@@ -339,7 +339,7 @@
       void pr2;
     }
     // the Thalassa Vigil, hanging since 1971
-    const VX = C - 30, VY = C + 40, VZ = 2200;
+    const VX = C - 30, VY = C + 40, VZ = 2200; S.vigilPos = { x: VX, y: VY, z: VZ };
     E.prop(() => MD.vigil(), VX, VY, VZ, { solid: true, r: 2.2, flatZ: 1 });
     for (let k = -2; k <= 2; k++) E.add({ type: 'collider', x: VX + k * 3.2, y: VY, z: VZ - 3.2, r: 2.4, solid: true, anchor: true });
     E.cairn(VX + 2, VY - 1.5, VZ - 6);
@@ -628,6 +628,14 @@
     if (it.kind === 'hand') { S.say('mara', 'A MAP. DRAWN IN THE DARK. IT IS... ACCURATE.', { delay: 0.6 }); S.say('hud', 'M: CHART', { delay: 3 }); }
     if (it.kind === 'shard' && !fl.shard1) { fl.shard1 = true; S.say('mara', 'VIEWPORT ACRYLIC. MY SERIAL.', { delay: 0.6 }); S.say('hud', 'HOLD B: LOOK THROUGH THE SHARD · OR CONSUME ONE AT A CAIRN FOR +3 FIDELITY', { delay: 3, dur: 6 }); }
   };
+  // The journal: every document read is kept, in the order found, and can be reread from the pause menu.
+  S.noteDoc = function (doc) {
+    const s = st(); if (!s) return; if (!s.read) s.read = [];
+    const key = Object.keys(DOCS).find(k => DOCS[k] === doc); if (!key || s.read.includes(key)) return;
+    s.read.push(key); if (s.read.length > 1 || B.act !== 'deck') B.Hud.toast('LOGGED IN JOURNAL · ' + s.read.length + '/' + Object.keys(DOCS).length);
+  };
+  S.journal = () => (st() && st().read || []).map(k => DOCS[k]).filter(Boolean);
+  S.docCount = () => Object.keys(DOCS).length;
   S.onRead = function (doc) {
     if (doc === DOCS.gannet) S.say('mara', 'PELL ARNESEN. I KNEW HIS DAUGHTER.', { delay: 1 });
     if (doc === DOCS.vigil) { st().flags.vigil = true; S.say('tobias', "WHAT ARE YOU READING DOWN THERE, {N}?", { delay: 2 }); }
@@ -723,6 +731,36 @@
     const p = P(); p.rating = Math.max(p.rating, 1100);
     S.convo([['mara', 'THE WALLS END.'], ['mara', "THERE'S NOTHING TO TOUCH."], ['tobias', 'THAT ORANGE BELOW YOU IS MAGPIE. FOLLOW IT DOWN, {N}.']], 2);
     S.after(() => S.say('tobias', "YOU'RE IN THE SOFAR CHANNEL. EVERYTHING CARRIES IN THERE. EVERYTHING."), 16000);
+  };
+
+  // What to do next, and where: drives the objective line and the transponder beacon in the HUD.
+  // { text, x, y, z } with an optional { opt } line for side business; null when there is nothing to say.
+  S.objective = function () {
+    const p = P(), fl = st().flags; if (!p) return null;
+    if (B.act === 'deck') return fl.footage ? { text: 'SUIT UP AT THE CAGE ON THE A-FRAME', x: 11.2, y: 32, z: -4.4 } : { text: 'TALK TO TOBIAS UNDER THE TARP', x: 21.5, y: 28.6, z: -3.9 };
+    if (B.act === 'act1') {
+      if (p.inCage) return { text: 'RIDING THE CAGE DOWN' };
+      if (!fl.cageFell) {
+        const c = E.byType('cage')[0];
+        if (c && c.stop === 4 && !p.relics.lung && S.bellPos) return { text: "FIND HALVARD'S BELL", x: S.bellPos.x, y: S.bellPos.y, z: S.bellPos.z };
+        return c ? { text: 'SALVAGE · THE CAGE GOES DEEPER', x: c.x, y: c.y, z: c.z, opt: c.stop === 1 ? 'YELLOW CAIRNS SAVE AND CRAFT' : null } : null;
+      }
+      return { text: 'DESCEND THE SHAFT TO 1,000 M', x: 80, y: 80, z: 1002 };
+    }
+    if (B.act === 'act2') {
+      if (fl.wren && !fl.fell) return fl.dropPrompt ? { text: 'DROP YOUR WEIGHTS' } : { text: 'LISTEN TO TOBIAS' };
+      const m = S.magpie; if (!m) return null;
+      const o = { text: fl.breached ? 'REACH MAGPIE-3 · 2,904 M' : "FOLLOW MAGPIE'S LIGHT DOWN", x: m.x, y: m.y, z: m.z };
+      if (fl.breached && !p.relics.hand && S.vigilPos && p.z < 2400) o.opt = 'OPTIONAL · THE VIGIL, 2,200 M';
+      return o;
+    }
+    if (B.act === 'act3') {
+      if (fl.archive) return null;
+      const f = B.map.features, o = { text: 'GO DOWN INTO THE PIT', x: f.AX, y: f.AY, z: 4189 };
+      if (p.relics.eye && !fl.eyeDone && S.eyeLake) o.opt = "OPTIONAL · MAGPIE'S EYE AT THE BRINE LAKE";
+      return o;
+    }
+    return null;
   };
 
   // Lights far below the visible range drawn as pinpricks at their bearing (Magpie, and the Procession's copy of it).

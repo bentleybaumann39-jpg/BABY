@@ -24,7 +24,7 @@
     '?': '0e110102040004', '-': '0000001f000000', '+': '0004041f040400', '/': '00010204081000', '(': '02040808080402', ')': '08040202020408',
     "'": '0c040800000000', '"': '0a0a0a00000000', '[': '0e08080808080e', ']': '0e02020202020e', '#': '0a0a1f0a1f0a0a', '%': '18190204081303',
     '=': '00001f001f0000', '*': '0004150e150400', '<': '02040810080402', '>': '08040201020408', '_': '0000000000001f', '·': '00000004000000',
-    '—': '0000001f000000', '×': '00110a040a1100', '&': '0c12140815120d', '|': '04040404040404', '°': '0c12120c000000', '@': '0e11171517100e',
+    '—': '0000001f000000', '▼': '001f1f0e0e0400', '▲': '00040e0e1f1f00', '◆': '00040e1f0e0400', '×': '00110a040a1100', '&': '0c12140815120d', '|': '04040404040404', '°': '0c12120c000000', '@': '0e11171517100e',
   };
   const GL = {};
   for (const k in G) { const s = G[k], rows = []; for (let r = 0; r < 7; r++) rows.push(parseInt(s.substr(r * 2, 2), 16)); GL[k] = rows; }
@@ -92,11 +92,12 @@
   };
   Hd.tip = function (k) { if (tipShown[k]) return; tipShown[k] = true; tip = { t: (I.touchMode && TTIPS[k]) || TIPS[k], until: B.time + 10 }; };
   Hd.key = (k, t) => I.touchMode ? '' : I.usingPad ? '[' + k + '] ' : '[' + t + '] ';
-  Hd.openDoc = function (d) { doc = d; docScroll = 0; A.sfx('beep'); };
+  let docBack = null;
+  Hd.openDoc = function (d, onClose) { doc = d; docScroll = 0; docBack = onClose || null; A.sfx('beep'); if (B.Story.noteDoc) B.Story.noteDoc(d); };
   Hd.openCraft = function (c) { craft = { c, sel: 0 }; };
   Hd.toggleMap = function () { mapOn = !mapOn; A.sfx('click'); };
   Hd.capture = () => !!(doc || craft || menuS);
-  Hd.closeOverlay = function () { if (doc) { doc = null; return true; } if (craft) { craft = null; return true; } if (mapOn) { mapOn = false; return true; } return false; };
+  Hd.closeOverlay = function () { if (doc) { doc = null; docBack = null; return true; } if (craft) { craft = null; return true; } if (mapOn) { mapOn = false; return true; } return false; };
   Hd.boot = function (lines) { bootS = { lines, t: 0 }; A.sfx('boot'); };
   Hd.fade = function (dur, cb, text) { fadeS = { t: 0, dur, dir: 1, cb, text, hold: true }; };
   Hd.fadeIn = function (dur) { fadeS = { t: 0, dur, dir: -1 }; };
@@ -117,7 +118,7 @@
     }
     if (menuS) return menuTick(dt);
     if (doc) {
-      if (I.pressed('interact') || I.pressed('back') || I.pressed('click')) { doc = null; }
+      if (I.pressed('interact') || I.pressed('back') || I.pressed('click') || I.pressed('confirm')) { doc = null; const cb = docBack; docBack = null; if (cb) cb(); }
       const mv = I.move(); if (Math.abs(mv.y) > 0.5) docScroll = M.clamp(docScroll + Math.sign(mv.y) * dt * 6, 0, 30);
       return true;
     }
@@ -336,10 +337,10 @@
         Hd.text(rx - Hd.tw(rline), ry, rline, a2);
         const inv = 'TI ' + P.inv.ti + ' CE ' + P.inv.cer + ' CU ' + P.inv.cu + ' FM ' + P.inv.foam + ' CL ' + P.inv.cell + ' GL ' + P.inv.glass;
         Hd.text(rx - Hd.tw(inv), ry + 10, inv, amber(1));
-        if (P.ring > 0) Hd.text(R.W / 2 - 20, y0, 'RING ' + Math.ceil(P.ring), (B.frame >> 3) & 1 ? COL.b10 : COL.b6);
-        if (P.caul > 0) Hd.text(R.W / 2 - 20, y0 + 9, 'CAUL ' + Math.ceil(P.caul), COL.t6);
-        if (P.anchor) Hd.text(R.W / 2 - 24, y0 + 18, P.reeling ? 'REELING' : 'ANCHORED', amber(2));
-        if (P.clamped && !P.braced) Hd.text(R.W / 2 - 18, y0 + 27, 'CLAMPED', amber(2));
+        if (P.ring > 0) Hd.text(R.W / 2 - 20, y0 + 14, 'RING ' + Math.ceil(P.ring), (B.frame >> 3) & 1 ? COL.b10 : COL.b6);
+        if (P.caul > 0) Hd.text(R.W / 2 - 20, y0 + 23, 'CAUL ' + Math.ceil(P.caul), COL.t6);
+        if (P.anchor) Hd.text(R.W / 2 - 24, y0 + 32, P.reeling ? 'REELING' : 'ANCHORED', amber(2));
+        if (P.clamped && !P.braced) Hd.text(R.W / 2 - 18, y0 + 41, 'CLAMPED', amber(2));
         if (P.braced) Hd.center(R.H / 2 + 40, 'BRACED · POWERED DOWN', amber(1));
         if (P.tangled) Hd.center(R.H / 2 + 40, 'ENTANGLED · STRUGGLE ' + Math.round(P.grip * 100) + '%', COL.r3);
         if (P.grabbed) Hd.center(R.H / 2 + 40, 'HELD · THRUST TO BREAK FREE', COL.r3);
@@ -352,6 +353,7 @@
           box(x - 4, y - 3, w + 8, 13, COL.a0); Hd.text(x, y, t, a3);
           if (P.prompt.prog > 0) R.rect(x - 4, y + 10, Math.round((w + 8) * M.clamp(P.prompt.prog, 0, 1)), 2, a3);
         }
+        drawObjective(ix, iy);
         if (mapOn) drawMap();
       }
     }
@@ -359,6 +361,7 @@
       const t = Hd.key('A', 'E') + P.prompt.label, w = Hd.tw(t), x = Math.round((R.W - w) / 2), y = R.H - 60;
       box(x - 4, y - 3, w + 8, 13, C32('#101418')); Hd.text(x, y, t, COL.g6);
     }
+    if (B.mode === 'play' && B.act === 'deck' && P && !Hd.capture()) drawObjective(0, 0);
     drawCaptions();
     drawToasts();
     if (doc) drawDoc();
@@ -368,6 +371,61 @@
     if (menuS) drawMenu();
   };
 
+  // ------------------------------------------------------------------ objective and transponder beacon
+  // The objective line sits at the top; it brightens when it changes and after each ping. The beacon is
+  // the transponder's bearing, shown for a few seconds after a ping (and always on deck).
+  let obText = '', obT = -99;
+  function drawObjective(ix, iy) {
+    const P = B.player, ob = B.Story.objective && B.Story.objective();
+    if (!ob || !B.settings.markers) return;
+    if (ob.text !== obText) { obText = ob.text; obT = B.time; if (B.time > 2) A.sfx('beep'); }
+    const lastPing = P.pings && P.pings.length ? P.pings[P.pings.length - 1].t0 : -99, fresh = Math.max(obT, lastPing);
+    const age = B.time - fresh, act3 = B.act === 'act3';
+    const tc = age < 6 ? ((age < 1 && (B.frame >> 3) & 1) ? amber(2) : amber(3)) : amber(1);
+    const t = (act3 && B.facePulse > 0 ? '· ' : '◆ ') + ob.text;
+    Hd.center(iy + 4, t, tc);
+    if (ob.opt && age < 10) Hd.center(iy + 13, ob.opt, amber(1));
+    if (ob.x === undefined) return;
+    const show = B.act === 'deck' || age < 8;
+    if (!show) return;
+    const fade = B.act === 'deck' ? 1 : M.clamp((8 - age) / 2, 0, 1);
+    if (fade < 1 && B.BAYER[(B.frame & 3) * 4 + ((B.frame >> 2) & 3)] + 0.5 > fade) return;
+    const dx = ob.x - P.x, dy = ob.y - P.y, dz = ob.z - P.z, hd = Math.hypot(dx, dy);
+    const psx = R.sx(P.x), psy = R.sy(P.y, P.z) - 8, col = amber(3);
+    // the deep lies: in the Settling the bearing wanders
+    const jit = act3 ? (B.hash2(Math.floor(B.time * 2), 1, 7) - 0.5) * 0.5 : 0;
+    const depthTxt = Math.abs(dz) < 3 ? '' : (dz > 0 ? '▼' : '▲') + Math.round(Math.abs(dz)) + 'M';
+    if (hd < 6) {
+      if (!depthTxt) return;
+      const y = psy + (dz > 0 ? 24 : -22);
+      chevron(psx, y, 0, dz > 0 ? 1 : -1, col); Hd.text(Math.round(psx - Hd.tw(depthTxt) / 2), y + (dz > 0 ? 6 : -12), depthTxt, col);
+      return;
+    }
+    const ax = dx * B.PX, ay = dy * B.PY, l = Math.hypot(ax, ay), ca = Math.cos(jit), sa = Math.sin(jit);
+    const ux = (ax / l) * ca - (ay / l) * sa, uy = (ax / l) * sa + (ay / l) * ca;
+    const tsx = R.sx(ob.x), tsy = R.sy(ob.y, ob.z) - 6;
+    const onScreen = tsx > ix + 20 && tsx < R.W - ix - 20 && tsy > iy + 24 && tsy < R.H - iy - 30 && Math.abs(dz) < 25;
+    let mx, my;
+    if (onScreen) { mx = tsx; my = tsy - 8 + Math.round(Math.sin(B.time * 4) * 2); chevron(mx, my, 0, 1, col); }
+    else {
+      const rx = R.W / 2 - ix - 34, ry = R.H / 2 - iy - 34, k = Math.min(rx / Math.max(0.01, Math.abs(ux)), ry / Math.max(0.01, Math.abs(uy)), Math.min(rx, ry) * 0.9);
+      mx = psx + ux * k; my = psy + uy * k;
+      mx = M.clamp(mx, ix + 30, R.W - ix - 30); my = M.clamp(my, iy + 26, R.H - iy - 34);
+      chevron(mx, my, ux, uy, col);
+    }
+    const lab = Math.round(hd) + 'M' + (depthTxt ? ' ' + depthTxt : '');
+    Hd.text(Math.round(mx - Hd.tw(lab) / 2), Math.round(my + 7), lab, amber(2));
+  }
+  // a small filled arrowhead pointing along (ux, uy), with a dark outline so it reads on anything
+  function chevron(x, y, ux, uy, c) {
+    const l = Math.hypot(ux, uy) || 1; ux /= l; uy /= l;
+    const ax = x + ux * 5, ay = y + uy * 5, bx = x - ux * 3 - uy * 4, by = y - uy * 3 + ux * 4, cx = x - ux * 3 + uy * 4, cy = y - uy * 3 - ux * 4;
+    const inTri = (px, py, g) => { const d1 = (px - bx) * (ay - by) - (ax - bx) * (py - by), d2 = (px - cx) * (by - cy) - (bx - cx) * (py - cy), d3 = (px - ax) * (cy - ay) - (cx - ax) * (py - ay); const neg = d1 < -g || d2 < -g || d3 < -g, pos = d1 > g || d2 > g || d3 > g; return !(neg && pos); };
+    for (let py = Math.floor(y - 7); py <= y + 7; py++) for (let px = Math.floor(x - 7); px <= x + 7; px++) {
+      if (inTri(px + 0.5, py + 0.5, 0)) R.pset(px, py, c); else if (inTri(px + 0.5, py + 0.5, 6)) R.pset(px, py, COL.k);
+    }
+  }
+
   // ------------------------------------------------------------------ touch controls
   // Buttons are laid out on a 480x270 grid and scaled to the buffer. acts are held while the finger
   // is down; tap() fires on a quick release; split buttons hold acts on the top half, acts2 below.
@@ -376,7 +434,7 @@
     if (B.mode !== 'play' || !P || Hd.capture() || P.dead || bootS) return null;
     const s = R.W / 480, L = [];
     const btn = (id, x, y, r, acts, label, o) => L.push(Object.assign({ id, x: x * s, y: y * s, r, acts, label }, o));
-    btn('pause', 240, 12, 8, ['pause'], 'II');
+    btn('pause', 22, 104, 9, ['pause'], 'II');
     btn('use', 446, 230, 17, ['interact'], 'USE', { hot: !!P.prompt });
     if (B.act === 'deck' || P.gaugeT > 0 && !I.state.gauge) return L;
     btn('ping', 404, 250, 14, ['ping'], 'PING');
@@ -597,6 +655,7 @@
     const out = R.out32, k = M.clamp(t / 40, 0, 0.97);
     for (let y = 0; y < R.H; y++) for (let x = 0; x < R.W; x++) { const i = y * R.W + x; out[i] = B.hash2(x, y, 77) < k ? COL.k : snap[i]; }
     R.shadeRect(0, 0, R.W, R.H, COL.k, 0.35);
+    if (doc) drawDoc();
     if (menuS) drawMenu();
   };
 

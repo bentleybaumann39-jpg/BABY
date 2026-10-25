@@ -234,10 +234,13 @@ window.B = window.B || {};
     del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } },
   };
   B.store = store;
-  const SET_DEF = { master: 0.8, music: 0.7, crt: true, photo: false, honest: false, steady: false, captions: true, rumble: true, shake: true };
+  const SET_DEF = { master: 0.8, music: 0.7, crt: true, photo: false, honest: false, steady: false, captions: true, rumble: true, shake: true, markers: true, difficulty: 1, quality: 1 };
   B.settings = Object.assign({}, SET_DEF, store.get('benthos.settings', {}));
   for (const k in B.settings) if (!(k in SET_DEF) || typeof B.settings[k] !== typeof SET_DEF[k]) B.settings[k] = SET_DEF[k];
   B.saveSettings = () => store.set('benthos.settings', B.settings);
+  // Difficulty: 0 story, 1 diver, 2 abyssal. Scales air use, damage taken and crush accumulation.
+  B.DIFF = [{ name: 'STORY', air: 0.6, hurt: 0.5, crush: 0.6 }, { name: 'DIVER', air: 1, hurt: 1, crush: 1 }, { name: 'ABYSSAL', air: 1.3, hurt: 1.4, crush: 1.3 }];
+  B.diff = () => B.DIFF[M.clamp(B.settings.difficulty | 0, 0, 2)];
   B.meta = Object.assign({ deaths: 0, endings: [], ngplus: false, runs: 0 }, store.get('benthos.meta', {}));
   B.saveMeta = () => store.set('benthos.meta', B.meta);
 })(window.B);

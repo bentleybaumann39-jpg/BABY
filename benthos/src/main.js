@@ -79,9 +79,11 @@
     const vol = k => ({ adj: d => { B.settings[k] = M.clamp(Math.round((B.settings[k] + d * 0.1) * 10) / 10, 0, 1); B.saveSettings(); A.setVolume(); }, value: () => '<' + Math.round(B.settings[k] * 10) + '>' });
     Hd.menu({
       title: 'SETTINGS', cancel: true, onCancel: back, items: [
+        { label: 'DIFFICULTY', keep: true, adj: d => { B.settings.difficulty = (B.settings.difficulty + (d || 1) + 3) % 3; B.saveSettings(); }, value: () => B.diff().name },
         Object.assign({ label: 'MASTER VOLUME', keep: true }, vol('master')), Object.assign({ label: 'MUSIC', keep: true }, vol('music')),
         Object.assign({ label: 'CRT SHADER', keep: true }, tog('crt')), Object.assign({ label: 'PHOTOSENSITIVITY MODE', keep: true }, tog('photo')),
         Object.assign({ label: 'HONEST HUD (NO CO2 LIES)', keep: true }, tog('honest')), Object.assign({ label: 'STEADY TRIM ASSIST', keep: true }, tog('steady')),
+        Object.assign({ label: 'OBJECTIVE AND BEACON', keep: true }, tog('markers')),
         Object.assign({ label: 'SCREEN SHAKE', keep: true }, tog('shake')), Object.assign({ label: I.touchMode ? 'VIBRATION' : 'RUMBLE', keep: true }, tog('rumble')),
         { label: 'FULLSCREEN', keep: true, fn: toggleFullscreen, value: () => (document.fullscreenElement ? 'ON' : 'OFF') },
         { label: 'BACK', fn: back },
@@ -110,6 +112,10 @@
       'RS-CLICK PICK · LS-CLICK BREATH · DPAD CELLS/GAUGE'];
     Hd.menu({ title: 'CONTROLS', cancel: true, onCancel: back, items: L.map(l => ({ label: l, disabled: true })).concat([{ label: 'BACK', fn: back }]) });
   }
+  function journalMenu() {
+    const docs = S.journal(), items = docs.map(d => ({ label: d.title.length > 46 ? d.title.slice(0, 44) + '..' : d.title, fn: () => Hd.openDoc(d, journalMenu) }));
+    Hd.menu({ title: 'JOURNAL', cancel: true, onCancel: pauseMenu, items: items.concat([{ label: 'BACK', fn: pauseMenu }]) });
+  }
   function pause() {
     if (B.mode !== 'play') return;
     B.mode = 'pause'; pauseSnap = new Uint32Array(R.out32); pauseT = 0; A.mute(true);
@@ -118,7 +124,8 @@
   function pauseMenu() {
     Hd.menu({
       title: 'PAUSED', cancel: true, onCancel: resume, items: [
-        { label: 'RESUME', fn: resume }, { label: 'SETTINGS', fn: () => settingsMenu(pauseMenu) }, { label: 'CONTROLS', fn: () => controlsMenu(pauseMenu) },
+        { label: 'RESUME', fn: resume }, { label: 'JOURNAL · ' + S.journal().length + '/' + S.docCount(), fn: journalMenu, disabled: !S.journal().length },
+        { label: 'SETTINGS', fn: () => settingsMenu(pauseMenu) }, { label: 'CONTROLS', fn: () => controlsMenu(pauseMenu) },
         { label: 'QUIT TO TITLE', fn: () => { A.mute(false); B.toTitle(); } },
       ],
     });

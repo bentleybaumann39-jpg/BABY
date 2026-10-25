@@ -74,7 +74,7 @@ const s1 = await css(70, 196), s2 = await css(80, 196), aim = await css(300, 60)
 await touch('touchStart', [s1]); await touch('touchMove', [s2]); await touch('touchStart', [s2, aim]); await tick(30);
 await expect('two fingers: one thrusts, one aims up', () => B.player.thrust > 0.2 && B.player.aimY < -0.3);
 await touch('touchEnd', []); await tick(5);
-await tap(240, 12);
+await tap(22, 104);
 await tick(3);
 await expect('II pauses the game', () => B.mode === 'pause');
 await shot('t05-pause');
