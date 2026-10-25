@@ -136,5 +136,5 @@
     if (z < 4000) return 'ben3';
     return 'ben4';
   };
-  B.zoneDither = { top: 0.06, sun: 0.07, twi: 0.08, deep: 0.1, mid: 0.11, mid2: 0.12, ben0: 0.14, ben1: 0.15, ben2: 0.17, ben3: 0.2, ben4: 0.24, red: 0.16, listen: 0.18, eye: 0.3 };
+  B.zoneDither = { top: 0.06, sun: 0.08, twi: 0.1, deep: 0.13, mid: 0.15, mid2: 0.18, ben0: 0.22, ben1: 0.25, ben2: 0.28, ben3: 0.3, ben4: 0.32, red: 0.16, listen: 0.18, eye: 0.3 };
 })(window.B);

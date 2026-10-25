@@ -9,13 +9,13 @@
 (function (B) {
   const M = B.M;
   const R = B.R = {};
-  let W, H, N, FR, FG, FB, ZB, LID, EM, MD, img, OUT32, OUT8;
+  let W, H, N, FR, FG, FB, ZB, LID, EM, MD, SEC, img, OUT32, OUT8;
   const cam = R.cam = { x: 0, y: 0, z: 0, ox: 0, oy: 0, fx: 0, fy: 0, zCut: 0, maxView: 64 };
 
   R.alloc = function (w, h) {
     W = w; H = h; N = W * H;
     FR = new Float32Array(N); FG = new Float32Array(N); FB = new Float32Array(N);
-    ZB = new Float32Array(N); LID = new Uint8Array(N); EM = new Uint8Array(N); MD = new Uint8Array(N);
+    ZB = new Float32Array(N); LID = new Uint8Array(N); EM = new Uint8Array(N); MD = new Uint8Array(N); SEC = new Uint8Array(N);
     img = new ImageData(W, H); OUT32 = new Uint32Array(img.data.buffer); OUT8 = img.data;
     R.W = W; R.H = H; R.out32 = OUT32; R.img = img;
     colLights = new Int16Array(W * MAXCL); colCount = new Uint8Array(W);
@@ -76,7 +76,7 @@
   R.sy = (y, z) => y * B.PY + z * B.PZ - cam.oy + H / 2 + B.OFF;
 
   R.begin = function () {
-    FR.fill(0); FG.fill(0); FB.fill(0); ZB.fill(1e9); LID.fill(0); EM.fill(0); MD.fill(0);
+    FR.fill(0); FG.fill(0); FB.fill(0); ZB.fill(1e9); LID.fill(0); EM.fill(0); MD.fill(0); SEC.fill(0);
     env.lights = pending; pending = []; wires.length = 0; overlays.length = 0;
   };
   // Distribute lights to the screen columns they can touch.
@@ -164,13 +164,79 @@
   // Light intensity (scalar) arriving at a point, used for sprite-less effects like particles.
   R.lightAt = function (x, y, z) { shade(x, y, z, 0, 0.6, -0.8, 1, 1, 1, M.clamp(R.sx(x) | 0, 0, W - 1), false); return (SR + SG + SB) / 3; };
 
+  // ------------------------------------------------------------------ surface detail
+  // One tileable 64x64 texture per material (8 texels per metre, so a tile spans 8 m): an albedo multiplier
+  // and a normal nudge, so the lamp rakes across cracks, pillow lava, ripples and burrows.
+  const TS = 64, TEXA = [], TEXX = [], TEXY = [], RJX = new Float32Array(TS * TS), RJY = new Float32Array(TS * TS);
+  for (let i = 0; i < TS * TS; i++) { RJX[i] = (B.hash2(i & 63, i >> 6, 91) - 0.5) * 0.7; RJY[i] = (B.hash2(i >> 6, i & 63, 92) - 0.5) * 0.7; }
+  (function () {
+    const hsh = (x, y, s) => B.hash2(((x % 997) + 997) % 997, ((y % 997) + 997) % 997, s);
+    // periodic value noise with lattice period P over the tile
+    const pn = (x, y, P, s) => {
+      const f = TS / P, gx = x / f, gy = y / f, ix = Math.floor(gx), iy = Math.floor(gy), tx = gx - ix, ty = gy - iy;
+      const w = (a, b) => hsh(((a % P) + P) % P, ((b % P) + P) % P, s);
+      const ux = tx * tx * (3 - 2 * tx), uy = ty * ty * (3 - 2 * ty);
+      const a = w(ix, iy), b = w(ix + 1, iy), c = w(ix, iy + 1), d = w(ix + 1, iy + 1);
+      return a + (b - a) * ux + (c - a) * uy + (a - b - c + d) * ux * uy;
+    };
+    // periodic Voronoi: G x G jittered points; returns [F1, F2] in texels
+    const vor = (x, y, G, s) => {
+      const f = TS / G, cx = Math.floor(x / f), cy = Math.floor(y / f); let d1 = 1e9, d2 = 1e9;
+      for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+        const gx = cx + ox, gy = cy + oy, wx = ((gx % G) + G) % G, wy = ((gy % G) + G) % G;
+        const px = (gx + 0.15 + 0.7 * hsh(wx, wy, s)) * f, py = (gy + 0.15 + 0.7 * hsh(wy, wx, s + 1)) * f;
+        const d = Math.hypot(x - px, y - py); if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d;
+      }
+      return [d1, d2];
+    };
+    const burrows = [], rnd = B.rng(11); for (let k = 0; k < 7; k++) burrows.push([rnd() * TS, rnd() * TS, 1 + rnd() * 1.4]);
+    for (let mt = 0; mt < 13; mt++) {
+      const hg = new Float32Array(TS * TS), al = new Float32Array(TS * TS);
+      for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) {
+        let h = 0, a = 1;
+        const n1 = pn(x, y, 8, 40 + mt), n2 = pn(x, y, 16, 60 + mt), sp = hsh(x, y, 80 + mt);
+        if (mt === 0) { // rock: blocky, cracked
+          const [d1, d2] = vor(x, y, 6, 3), e = d2 - d1;
+          h = n1 * 1.4 + n2 * 0.6 - (e < 1.3 ? (1.3 - e) * 1.2 : 0); a = (0.82 + n2 * 0.35) * (e < 1 ? 0.5 : 1) * (0.94 + sp * 0.12);
+        } else if (mt === 1 || mt === 2) { // sediment / sand: speckle, ripples, burrows, a drag trail
+          const rip = Math.sin((x + n1 * 14) * (mt === 2 ? 0.75 : 0.42)); h = rip * (mt === 2 ? 0.7 : 0.45) + n2 * 0.6; a = 0.78 + sp * 0.3 + n1 * 0.25 + rip * 0.08;
+          for (const [bx, by, br] of burrows) {
+            let dx = Math.abs(x - bx), dy = Math.abs(y - by); dx = Math.min(dx, TS - dx); dy = Math.min(dy, TS - dy); const d = Math.hypot(dx, dy);
+            if (d < br) { h -= (br - d) * 0.8; a *= 0.45; } else if (d < br + 1.5) h += 0.4;
+          }
+          if (mt === 1) { const ty = 32 + Math.sin(x / TS * Math.PI * 2) * 9 + Math.sin(x / TS * Math.PI * 6) * 3; if (Math.abs(y - ty) < 1.2) { h -= 0.35; a *= 0.8; } }
+        } else if (mt === 3) { // basalt: pillow lava
+          const [d1, d2] = vor(x, y, 5, 7), e = d2 - d1, rad = TS / 5 * 0.7;
+          h = Math.max(0, 1 - (d1 / rad) ** 2) * 2.2 + n2 * 0.3; a = e < 1.5 ? 0.45 : 0.85 + n1 * 0.3;
+        } else if (mt === 5) { // bone: grain along its length
+          h = Math.sin(y * 0.9 + n1 * 4) * 0.25 + n2 * 0.3; a = 0.88 + n2 * 0.2 + (sp > 0.93 ? -0.3 : 0);
+        } else if (mt === 6) { // manganese nodules sitting in pale ooze
+          const [d1] = vor(x, y, 12, 9), rad = TS / 12 * 0.42;
+          if (d1 < rad) { h = Math.sqrt(1 - (d1 / rad) ** 2) * 1.3; a = 0.75 + (d1 < rad * 0.35 ? 0.5 : 0); } else { h = n2 * 0.2; a = 2.6 + sp * 0.4; }
+        } else if (mt === 7 || mt === 11) { h = n2 * 1.4 + sp * 0.5; a = 0.75 + n2 * 0.5; }
+        else if (mt === 8 || mt === 10 || mt === 12) { // steel and timber: plates, rivets, grain
+          const sx = x % 16, sy = y % 16; h = (sx === 0 || sy === 0) ? -0.5 : (sx === 3 && sy === 3) ? 0.6 : 0; a = 0.92 + n2 * 0.16 + (sx === 0 || sy === 0 ? -0.25 : 0);
+          if (mt === 12) { h = Math.sin(y * 1.1 + n1 * 3) * 0.2; a = 0.85 + n1 * 0.3; }
+        } else { h = n2 * 0.5; a = 0.9 + n2 * 0.2; }
+        hg[y * TS + x] = h; al[y * TS + x] = a;
+      }
+      const tx = new Float32Array(TS * TS), ty = new Float32Array(TS * TS), k = mt === 8 || mt === 10 || mt === 12 ? 0.25 : 0.5;
+      for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) {
+        const i = y * TS + x;
+        tx[i] = (hg[y * TS + ((x + 1) & 63)] - hg[y * TS + ((x + 63) & 63)]) * k;
+        ty[i] = (hg[((y + 1) & 63) * TS + x] - hg[((y + 63) & 63) * TS + x]) * k;
+      }
+      TEXA.push(al); TEXX.push(tx); TEXY.push(ty);
+    }
+  })();
+
   // ------------------------------------------------------------------ terrain
   const ALB = B.MAT_ALB;
   R.terrain = function (map, P) {
     binLights();
     const PX = B.PX, PY = B.PY, PZ = B.PZ, half = W / 2;
     const zCut = cam.zCut, zFar = zCut + cam.maxView, baseY = H / 2 + B.OFF - cam.oy;
-    const hm = map.h, n = map.n, inv = map.inv, MT = map.mat, JT = map.jit, NX = map.nx, NY = map.ny;
+    const hm = map.h, n = map.n, inv = map.inv, MT = map.mat, JT = map.jit, NX = map.nx, NY = map.ny, AO = map.ao;
     const dY = 1 / PY, topside = !!map.topside, t = env.time;
     const secR = topside ? 0 : 0.0042, secG = 0.0046, secB = 0.0052;
     const abyssZ = zFar;
@@ -208,8 +274,11 @@
         const lim = door ? dbuf : ybuf;
         if (sy < lim) {
           const top = sy < 0 ? 0 : sy;
-          const cidx = (ty < 0.5 ? iy : iy + 1) * n + (tx < 0.5 ? ix : ix + 1);
-          const mt = MT[cidx], jt = 0.88 + JT[cidx] / 255 * 0.24;
+          // nearest cell, with a ragged boundary so material patches don't read as squares
+          const ti = (((Y * 8) | 0) & 63) * TS + (((X * 8) | 0) & 63);
+          const cidx = (ty + RJY[ti] < 0.5 ? iy : iy + 1) * n + (tx + RJX[ti] < 0.5 ? ix : ix + 1);
+          const mt = MT[cidx], jt = (0.88 + JT[cidx] / 255 * 0.24) * AO[cidx] / 128;
+          const ta = TEXA[mt][ti], tnx = TEXX[mt][ti], tny = TEXY[mt][ti];
           const nx = NX[cidx], ny = NY[cidx], nz = -Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
           const al = ALB[mt];
           for (let p = top; p < lim; p++) {
@@ -221,20 +290,22 @@
               FR[i] = abR; FG[i] = abG; FB[i] = abB; ZB[i] = 1e9; continue;
             }
             if (cut && dy < 1.2) {
-              // Rock section at the cut plane: dark, hatched, faintly lit by the lamp.
-              const hatch = ((sx + p) & 3) === 0 ? 2.2 : 1;
+              // Rock section at the cut plane: near-black, finely hatched, faintly lit by the lamp; its edge is
+              // traced afterwards (see sectionRim) so the walls read like a cross-section drawing.
+              const hatch = ((sx + p) & 3) === 0 ? 1.8 : 0.75;
               shade(X, Y, zCut, 0, 0.2, -0.98, 0.05, 0.045, 0.04, sx, false);
-              FR[i] = (secR + SR * 0.5) * hatch; FG[i] = (secG + SG * 0.5) * hatch; FB[i] = (secB + SB * 0.5) * hatch; ZB[i] = zCut; continue;
+              FR[i] = (secR + SR * 0.45) * hatch; FG[i] = (secG + SG * 0.45) * hatch; FB[i] = (secB + SB * 0.45) * hatch; ZB[i] = zCut; SEC[i] = 1; continue;
             }
             const face = dy >= 1.5;
             const zp = face ? s + dy / PZ : s;
             let ar = al[0] * jt, ag = al[1] * jt, ab = al[2] * jt, gl = false;
             let snx = nx, sny = ny, snz = nz;
             if (face) {
-              const strata = 0.75 + 0.35 * B.hash2(sx >> 1, (zp * 1.5) | 0, 5);
-              const rk = mt === MAT_BONE ? ALB[MAT_BONE] : ALB[0];
-              ar = rk[0] * strata; ag = rk[1] * strata; ab = rk[2] * strata;
-              snx = nx * 0.4; sny = 0.85; snz = -0.35;
+              // cliff faces: strata bands, vertical joints, and the lower face in its own shadow
+              const band = (zp * 1.5) | 0, strata = 0.75 + 0.35 * B.hash2(sx >> 1, band, 5), joint = B.hash2((X * 3) | 0, band >> 2, 6) > 0.86 ? 0.55 : 1;
+              const rk = mt === MAT_BONE ? ALB[MAT_BONE] : mt === MAT_BAS ? ALB[MAT_BAS] : ALB[0], sh = dy > 30 ? 0.6 : 1 - dy / 75;
+              ar = rk[0] * strata * joint * sh; ag = rk[1] * strata * joint * sh; ab = rk[2] * strata * joint * sh;
+              snx = nx * 0.4 + (B.hash2(band, (X * 2) | 0, 8) - 0.5) * 0.5; sny = 0.85; snz = -0.35;
             } else if (mt === MAT_BRINE) {
               const rip = 0.5 + 0.5 * Math.sin(X * 1.7 + Y * 2.3 + t * 0.8) * Math.sin(X * 0.9 - Y * 1.3 - t * 0.5);
               ar *= 0.6 + rip * 0.8; ag *= 0.6 + rip * 0.8; ab *= 0.6 + rip * 0.8; gl = true;
@@ -243,6 +314,7 @@
               const cap = w > 0.72 ? 3.2 : 1;
               ar = 0.012 * cap + w * 0.02; ag = 0.03 * cap + w * 0.03; ab = 0.05 * cap + w * 0.04; gl = true;
             }
+            if (!face && mt !== MAT_SEA && mt !== MAT_BRINE) { ar *= ta; ag *= ta; ab *= ta; snx += tnx; sny += tny; }
             shade(X, Y, zp, snx, sny, snz, ar, ag, ab, sx, gl);
             if (face && cut && dy < 4 && !topside) { SR += 0.004; SG += 0.0055; SB += 0.007; } // rim where the wall meets the cut
             FR[i] = SR; FG[i] = SG; FB[i] = SB; ZB[i] = zp;
@@ -253,8 +325,20 @@
       }
       for (let p = 0; p < ybuf; p++) { const i = p * W + sx; if (MD[i]) continue; FR[i] = abR; FG[i] = abG; FB[i] = abB; ZB[i] = 1e9; }
     }
+    if (!topside) sectionRim(zCut);
   };
-  const MAT_BONE = 5, MAT_BRINE = 4, MAT_SEA = 9;
+  // A one-pixel rim where the cut rock meets open water, lit by whatever light reaches the wall.
+  function sectionRim(zCut) {
+    const baseY = H / 2 + B.OFF - cam.oy;
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      const i = y * W + x; if (!SEC[i]) continue;
+      if (SEC[i - 1] && SEC[i + 1] && SEC[i - W] && SEC[i + W]) continue;
+      const X = (x + 0.5 - W / 2 + cam.ox) / B.PX, Y = (y - baseY - zCut * B.PZ) / B.PY;
+      shade(X, Y, zCut + 0.3, 0, 0.6, -0.8, 0.5, 0.55, 0.6, x, false);
+      FR[i] = 0.006 + SR; FG[i] = 0.012 + SG; FB[i] = 0.016 + SB;
+    }
+  }
+  const MAT_BONE = 5, MAT_BRINE = 4, MAT_SEA = 9, MAT_BAS = 3;
 
   // ------------------------------------------------------------------ models (3D primitives -> G-buffer)
   const GMAX = 360 * 220;
@@ -561,7 +645,9 @@
     for (let py = by0; py <= by1; py++) for (let px = bx0; px <= bx1; px++) {
       const rx = px - x0, ry = py - y0, along = rx * dx + ry * dy; if (along <= 0 || along > len) continue;
       const across = Math.abs(rx * dy - ry * dx); const w = along * spread + 2; if (across > w) continue;
-      const a = (1 - along / len) * (1 - across / w) * k;
+      // soft edges, brightest near the glass, with slow streaks of particulate drifting through
+      const fall = 1 - along / len, edge = 1 - (across / w) * (across / w), streak = 0.75 + 0.25 * Math.sin(along * 0.21 - env.time * 1.7 + across * 0.6);
+      const a = fall * Math.sqrt(fall) * edge * streak * k * 1.15;
       if (B.BAYER[(py & 3) * 4 + (px & 3)] + 0.5 > a * 2.2) continue;
       const i = py * W + px; FR[i] += cr * a; FG[i] += cg * a; FB[i] += cb * a;
     }

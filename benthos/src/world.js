@@ -13,7 +13,7 @@
     return {
       name, size, cell, n, inv: 1 / cell,
       h: new Float32Array(n * n), nx: new Float32Array(n * n), ny: new Float32Array(n * n),
-      mat: new Uint8Array(n * n), jit: new Uint8Array(n * n), features: {},
+      mat: new Uint8Array(n * n), jit: new Uint8Array(n * n), ao: new Uint8Array(n * n), features: {},
     };
   }
 
@@ -42,6 +42,14 @@
       const l = Math.sqrt(hx * hx + hy * hy + 1);
       m.nx[i] = hx / l; m.ny[i] = hy / l;
       m.jit[i] = (B.hash2(x, y, 99) * 255) | 0;
+    }
+    // Cavity term: a cell deeper than its neighbourhood sits in a hollow and gets less light; a crest gets
+    // a touch more. Two separable box blurs (radius 3 cells) give the neighbourhood mean.
+    {
+      const tmp = new Float32Array(n * n), avg = new Float32Array(n * n), R3 = 3;
+      for (let y = 0; y < n; y++) { let acc = 0; const row = y * n; for (let x = -R3; x <= R3; x++) acc += h[row + M.clamp(x, 0, n - 1)]; for (let x = 0; x < n; x++) { tmp[row + x] = acc / (2 * R3 + 1); acc += h[row + Math.min(n - 1, x + R3 + 1)] - h[row + Math.max(0, x - R3)]; } }
+      for (let x = 0; x < n; x++) { let acc = 0; for (let y = -R3; y <= R3; y++) acc += tmp[M.clamp(y, 0, n - 1) * n + x]; for (let y = 0; y < n; y++) { avg[y * n + x] = acc / (2 * R3 + 1); acc += tmp[Math.min(n - 1, y + R3 + 1) * n + x] - tmp[Math.max(0, y - R3) * n + x]; } }
+      for (let i = 0; i < n * n; i++) m.ao[i] = M.clamp(Math.round(128 - (h[i] - avg[i]) / m.cell * 70), 60, 165);
     }
     // 8x8-cell min/max depth blocks let the renderer skip open water and solid rock in bulk
     const bn = Math.ceil(n / 8); m.bn = bn; m.bmin = new Float32Array(bn * bn); m.bmax = new Float32Array(bn * bn);

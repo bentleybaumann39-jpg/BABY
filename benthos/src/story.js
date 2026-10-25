@@ -168,7 +168,7 @@
     const p = P(); p.x = pos.x; p.y = pos.y; p.z = pos.z; p.vx = p.vy = p.vz = 0; p.dead = false; p.tangled = null; p.inCage = null; p.anchor = null;
     if (act !== 'deck') { p.deck = false; }
     POP[act]();
-    if (act !== 'deck') S.checkpoint(null);
+    if (act !== 'deck') { E.life(); S.checkpoint(null); }
     B.snapCamera = true;
   };
   const START = {

@@ -229,10 +229,12 @@
     lastOx = ox; lastOy = oy;
     // the lamp beam made visible by particulate; strong in the scattering layer and in silt
     if (P && env.lamp.on && B.mode !== 'title' && !(sc && sc.cam)) {
-      const L = env.lamp, turb = (B.Z.inLayer(P.z) ? 0.24 : 0.07) + (E.inSilt(P.x, P.y, P.z) ? 0.25 : 0);
+      const L = env.lamp, turb = (B.Z.inLayer(P.z) ? 0.26 : 0.11) + (E.inSilt(P.x, P.y, P.z) ? 0.25 : 0) + (eyeZ > 200 && eyeZ < 1000 ? 0.03 : 0);
+      // the beam stops where it meets rock
+      const range = Math.sqrt(L.r2), hit = B.World.rayRock(B.map, L.x, L.y, L.z, L.dx, L.dy, L.dz, range), frac = hit ? Math.max(0.15, hit.t / range) : 1;
       // scattered light reads blue-white in water
-      if (L.mode === 'red') R.beam(R.sx(L.x), R.sy(L.y, L.z), L.dx * B.PX, L.dy * B.PY, Math.sqrt(L.r2) * B.PX * 0.85, 0.45, turb, 0.5, 0.04, 0.02);
-      else R.beam(R.sx(L.x), R.sy(L.y, L.z), L.dx * B.PX, L.dy * B.PY, Math.sqrt(L.r2) * B.PX * 0.85, 0.32, turb, 0.3, 0.42, 0.5);
+      if (L.mode === 'red') R.beam(R.sx(L.x), R.sy(L.y, L.z), L.dx * B.PX, L.dy * B.PY, range * B.PX * 0.85 * frac, 0.45, turb, 0.5, 0.04, 0.02);
+      else R.beam(R.sx(L.x), R.sy(L.y, L.z), L.dx * B.PX, L.dy * B.PY, range * B.PX * 0.85 * frac, 0.32, turb, 0.3, 0.42, 0.5);
     }
     // god rays near the surface
     if (eyeZ < 110 && !topside && B.mode !== 'title') {
