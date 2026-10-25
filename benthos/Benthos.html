@@ -3046,6 +3046,31 @@ void main(){
     }
   }
 
+  // Far off in the black, things signal to each other: screen-space points on a slow parallax layer that
+  // flash in short patterns. Nothing you can reach; they make the water feel as big as it is.
+  const FAR = []; for (let k = 0; k < 28; k++) FAR.push({ x: Math.random(), y: Math.random(), ph: Math.random() * 40, per: 6 + Math.random() * 14, kind: k % 4, n: 1 + (k % 3) });
+  let farOx = null, farOy = null;
+  function farLights(sys) {
+    const Pp = pl(); if (!Pp || B.act === 'deck') return;
+    const z = Pp.z, dens = z < 250 ? 0 : z < 400 ? (z - 250) / 150 : B.act === 'act3' ? 0.35 : 1;
+    const ox = R.cam.ox, oy = R.cam.oy; if (farOx === null) { farOx = ox; farOy = oy; }
+    const dx = (ox - farOx) * 0.12, dy = (oy - farOy) * 0.12; farOx = ox; farOy = oy;
+    if (dens <= 0) return;
+    const buf = R.buffers(), W = R.W, Hh = R.H;
+    for (const f of FAR) {
+      f.x = ((f.x - dx / W) % 1 + 1) % 1; f.y = ((f.y - dy / Hh) % 1 + 1) % 1;
+      if (Math.random() > dens) continue;
+      // a burst of n blinks, then quiet for the rest of its period
+      const t = (B.time + f.ph) % f.per, blink = t < f.n * 0.35 && (t % 0.35) < 0.16;
+      if (!blink) continue;
+      const x = (f.x * W) | 0, y = (f.y * Hh) | 0, i = y * W + x;
+      if (buf.ZB[i] < Pp.z + 30) continue; // never in front of rock
+      const c = f.kind === 0 ? [0.05, 0.25, 0.55] : f.kind === 1 ? [0.1, 0.4, 0.3] : f.kind === 2 ? [0.25, 0.3, 0.6] : [0.06, 0.15, 0.4];
+      buf.FR[i] += c[0] * 0.55; buf.FG[i] += c[1] * 0.55; buf.FB[i] += c[2] * 0.55; buf.EM[i] = 1;
+    }
+    void sys;
+  }
+
   // ------------------------------------------------------------------ 2. drifters
   // weights per depth band: [atolla, comb, siphonophore, lanternfish, pyrosome, dragonfish]
   function drifterTable(z) {
@@ -3214,7 +3239,7 @@ void main(){
         if ((this.scanT -= dt) <= 0) { this.scanT = 0.25; benthosScan(this, Pp); }
         for (const b of this.benthos.values()) if (b.beh) b.beh(dt, Pp);
       },
-      draw() { sparksDraw(); },
+      draw() { sparksDraw(); farLights(this); },
     });
     sys.t0 = B.time;
     sn = 0;

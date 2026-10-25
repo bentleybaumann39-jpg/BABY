@@ -10,7 +10,7 @@ The full design is in [DESIGN.md](DESIGN.md). The game is a compressed, playable
 
 **Easiest:** double-click `Benthos.html`. It is one self-contained file with no server and no install.
 
-`index.html` also works from disk, because the source files are plain scripts. You need a desktop browser with Web Audio (Chrome, Edge or Firefox; WebGL is optional). Use headphones, and play in a dark room.
+`index.html` also works from disk, because the source files are plain scripts. Any current browser with Web Audio works (Chrome, Edge, Firefox, Safari; WebGL is optional), on a desktop, a tablet or a phone held sideways. Use headphones, and play in a dark room.
 
 | Key | Action |
 |---|---|
@@ -33,7 +33,21 @@ The full design is in [DESIGN.md](DESIGN.md). The game is a compressed, playable
 
 A gamepad also works: left stick thrust, right stick aim, RT boost, LT listen, LB/RB rise/sink, A use, B clamp, X ping, Y lamp, RS-click Pick, D-pad cells and gauge.
 
-The settings menu has Honest HUD (turns off the CO₂ lies), photosensitivity mode, steady trim, screen shake, rumble and CRT toggles.
+**Touch.** The first touch switches to on-screen controls:
+* **Left thumb:** a floating stick. Push past the ring to boost.
+* **Right side:** USE, PING, PICK, LAMP, CLMP, EAR and BRTH buttons, plus PH, LENS, WIPE and GRFT when they apply.
+* **Right edge:** the trim bar. Hold the top half to blow the tank (rise), the bottom half to flood it (sink).
+* **Aim:** hold anywhere else on the right side to point the lamp and the Pick there.
+* **The HUD itself:** hold the O₂ cluster for the chest gauge, tap SCRUB to swap the canister, tap the depth readout for the chart, tap a tank cell to use it. II pauses.
+
+Taps work as clicks in menus and skip scenes. Prompts and tips name the touch controls once you're playing by touch.
+
+**Settings**
+* Difficulty: story, diver or abyssal (air use, damage and crush debt).
+* Objective line and transponder beacon.
+* Honest HUD (turns off the CO₂ lies), photosensitivity mode, steady trim.
+* Quality: high (480×270) or performance (400×225, thinner ambient life). The game steps down once on its own if it runs slow.
+* Volume, music, CRT shader, screen shake, rumble or vibration, fullscreen.
 
 ## What's in it
 
@@ -57,6 +71,18 @@ The settings menu has Honest HUD (turns off the CO₂ lies), photosensitivity mo
   * the Archive
 * **The Breach at 1,140 m.** The death screen is true, RETRY does not reload, and everything after is subtly, provably wrong.
 
+**Finding your way**
+* A one-line objective for every stage, with optional side goals.
+* After each ping the objective's transponder answers. Its bearing, distance and depth show for a few seconds.
+* A journal of every document and tape found, rereadable from the pause menu.
+
+**The living water** (`src/life.js`)
+* Dinoflagellates flare behind your fins and behind anything big moving fast.
+* Mid-water animals drift in a ring around you: crown jellies with a pinwheel alarm, comb jellies that rainbow in the lamp, siphonophore chains, lanternfish schools that scatter from the beam, pyrosomes, and dragonfish with a red cheek light.
+* Seabed fauna grows over whatever floor is in view: kelp, fans, sponges, crinoids, bamboo coral and sea pens that glow when brushed, sea pigs, tripod fish, tube worms.
+* A sperm whale crosses the shaft in Act I. A field of black smokers glows on the plain.
+* Nineteen field notes are logged as you meet things, and kept across runs.
+
 **Creatures** (each one is described in DESIGN.md §3)
 * **The Reliquary.** It waits for you to weaken and wears helmets at their own era's resolution.
 * **The Sleeper.** Its sprite lags 500 ms behind its hitbox; only sonar and sound show where it really is.
@@ -71,9 +97,16 @@ The settings menu has Honest HUD (turns off the CO₂ lies), photosensitivity mo
 * **Sonar.** Wireframes that see through rock, plus a terrain point cloud.
 * **Biomass.** Strains that rebuild you as much as they help you.
 * **Cairns** save the game, and their fabricator builds upgrades.
+* **The viewport** cracks as crush debt climbs, and seals again as it falls.
+
+**Story**
+* Fifteen documents and five tapes. The tapes play as voices over the comms; one of them is in a voice you know.
+* The first few deaths of each kind tell you, in a line, what went wrong.
+* A records page counts descents, deaths, helmets in the Archive and endings found.
 
 **Rendering** (all software; every shape and texture is generated in code)
-* A column ray-marcher over a floor heightfield, with a cut plane at the diver's depth.
+* A column ray-marcher over a floor heightfield, with a cut plane at the diver's depth. Rock sections get a traced rim.
+* Per-material detail textures (cracked rock, pillow lava, ripples, burrows, nodules) and a cavity term, so the lamp rakes across the ground.
 * Beer–Lambert light, so warm colours die first.
 * 3D-primitive models ray-cast into a small G-buffer.
 * Ordered dithering into per-depth palettes that shrink as you descend.
@@ -103,6 +136,7 @@ src/models.js     every model as a list of 3D primitives
 src/audio.js      procedural audio engine, the Ostinato, the waltz
 src/entities.js   entity list, noise events, items, props, cairns, the cage, effects
 src/creatures.js  Reliquary, Sleeper, Procession, Grain, fauna, Second Diver
+src/life.js       wake light, mid-water drifters, seabed fauna, the whale, black smokers
 src/player.js     the diver: physics, sonar, breath, Crush Debt, Fidelity, biomass
 src/zones.js      Phantom Floor, Slow Wave and SOFAR, the Settling
 src/story.js      population, dialogue and latency, triggers, set pieces, endings
@@ -110,6 +144,9 @@ src/hud.js        pixel font, HUD, menus, sequences, endings
 src/main.js       modes, fixed-step loop, camera, marine snow, frame pipeline
 tests/smoke.mjs   visits every act and set piece headlessly; fails on any page error
 tests/story.mjs   plays the critical path with simulated input, beat by beat
+tests/touch.mjs   drives the game on an emulated phone through the touch controls
+tools/build.mjs   inlines everything into Benthos.html (--artifact <file> for a claude.ai page)
+tools/shot.mjs    renders one view to a PNG for art iteration
 ```
 
 ## Tests
@@ -119,5 +156,6 @@ Both tests use Playwright (`npm install` at the repo root, or a global install).
 ```bash
 node benthos/tests/smoke.mjs [shotDir]   # every act and sequence; optional screenshots
 node benthos/tests/story.mjs [shotDir]   # deck -> Breach -> Magpie -> Archive -> ending -> title
+node benthos/tests/touch.mjs [shotDir]   # menus, stick, buttons and trim bar on an emulated phone
 node benthos/tools/build.mjs --check     # Benthos.html matches the sources
 ```
