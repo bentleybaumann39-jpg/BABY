@@ -4635,6 +4635,16 @@ void main(){
       const pr = E.prop(() => MD.helmet({ era, yaw: a + Math.PI, tilt: 0.2, stencil: mara }), x, y, H(x, y) - 0.4, { anchor: false });
       pr.mopts = { dead: !mara, lut: mara ? 0 : era === '94' ? 3 : 2, scale: era === '94' ? 2 : era === 'mara' ? 1 : 3, minLight: 0.04 };
     }
+    // the count: visors along the spiral light in fours with a gap, the Ostinato made visible (five in Act III,
+    // because by then one of the beats is yours)
+    const spots = [];
+    for (let i = 0; i < n; i++) { const tt = i / n * 4.4, a = tt * Math.PI * 2, r = 5 + tt * 5.6, x = AX + Math.cos(a) * r, y = AY + Math.sin(a) * r; spots.push([x, y, H(x, y) - 0.6]); }
+    E.add({ type: 'archiveCount', x: AX, y: AY, z: H(AX, AY), draw() {
+      const beats = B.act === 'act3' && st() && st().flags.act3 ? 5 : 4, slot = Math.floor(B.time / 0.72) % (beats + 1), ph = (B.time / 0.72) % 1;
+      if (slot >= beats) return;
+      const k = Math.max(0, 1 - ph * 1.6);
+      for (let i = slot; i < spots.length; i += beats) { const s = spots[i]; R.point(s[0], s[1], s[2], 1, 0.3 * k, 0.9 * k, 0.8 * k, 2); if (i % (beats * 3) === slot) R.addLight(s[0], s[1], s[2] - 0.5, 0.3, 0.9, 0.8, 4, 0.6 * k); }
+    } });
     const core = E.prop(t => [R.P.s(0, 0, 0, 0.5, B.linHex('#9aa2ab'), { m: 3, e: [0.05, 0.05, 0.08] }), MD.box(0, 0, 0.5, 0.8, 0.8, 0.3, '#25282e')], AX, AY, H(AX, AY) - 0.9, { solid: true, r: 0.9 });
     core.interact = { label: () => st().flags.archiveDone ? 'CHOOSE' : 'SLOT THE WREN INTO YOUR DATA PORT', fn: () => S.archive() };
     S.archiveCore = core;
