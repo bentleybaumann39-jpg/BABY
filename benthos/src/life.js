@@ -93,7 +93,7 @@
       update(d, dt, Pp) {
         d.ph += dt * 1.6; d.z += Math.sin(d.ph) * dt * 0.08;
         const near = Math.hypot(d.x - Pp.x, d.y - Pp.y, d.z - Pp.z);
-        if (d.alarm <= 0 && (near < 3.5 || inBeam(d.x, d.y, d.z, 9) > 0.15)) { d.alarm = 5; B.A && B.A.at && B.A.at('jelly', d.x, d.y, d.z, 0.4); }
+        if (d.alarm <= 0 && (near < 3.5 || inBeam(d.x, d.y, d.z, 9) > 0.15)) { d.alarm = 5; B.A.at('jelly', d.x, d.y, d.z, 0.5); }
         d.alarm -= dt;
       },
       draw(d) {
@@ -289,7 +289,7 @@
   };
   function touchGlow(b, dt, Pp, kind, r) {
     const d = Math.hypot(b.x - Pp.x, b.y - Pp.y, b.z - 0.5 - Pp.z), mv = Math.hypot(Pp.vx, Pp.vy, Pp.vz);
-    if (d < r && mv > 0.4 && b.glow < 0.5) { b.glow = 3.5; Lf.burst(b.x, b.y, b.z - 0.4 * b.s, 6, 0.3, kind); }
+    if (d < r && mv > 0.4 && b.glow < 0.5) { b.glow = 3.5; Lf.burst(b.x, b.y, b.z - 0.4 * b.s, 6, 0.3, kind); B.A.at('glow', b.x, b.y, b.z, 0.8); }
     b.glow = Math.max(0, b.glow - dt);
   }
 

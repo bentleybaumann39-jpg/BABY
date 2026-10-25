@@ -182,6 +182,14 @@
     eyeshut(t) { tone(interior, 'square', 220, 110, t, 0.002, 0.1, 0.2, 0.08); },
     heartbeat(t, v) { tone(interior, 'sine', 58, 40, t, 0.004, 0.02, 0.16, v); tone(interior, 'sine', 52, 38, t + 0.22, 0.004, 0.02, 0.14, v * 0.7); },
     wave(t) { burst(exterior, 'lowpass', 160, 0.7, t, 1.2, 1.4, 2.4, 0.5, brown); tone(exterior, 'sine', 48, 36, t, 1, 1.5, 2, 0.25); },
+    // crown jelly alarm: a rising glassy spiral
+    jelly(t) { for (let k = 0; k < 7; k++) tone(exterior, 'sine', 900 * Math.pow(1.19, k), 940 * Math.pow(1.19, k), t + k * 0.07, 0.01, 0.03, 0.5, 0.035); },
+    // a sea pen or bamboo coral lighting up when brushed: a soft breath of noise and a low bell
+    glow(t) { burst(exterior, 'bandpass', 1200, 1.5, t, 0.08, 0.2, 0.6, 0.06, white, 2400); tone(exterior, 'sine', 620, 610, t + 0.05, 0.02, 0.1, 1.2, 0.03); },
+    // the objective transponder answering a ping: two thin chirps, filtered by distance
+    transponder(t) { for (let k = 0; k < 2; k++) { tone(exterior, 'sine', 3100, 3300, t + k * 0.13, 0.003, 0.03, 0.08, 0.05); tone(revSend, 'sine', 3100, 3300, t + k * 0.13, 0.003, 0.02, 0.4, 0.03); } },
+    // viewport glass crazing under load
+    crackle(t) { for (let k = 0; k < 5; k++) burst(interior, 'highpass', 5000 + Math.random() * 3000, 2, t + Math.random() * 0.25, 0.0005, 0.001, 0.012, 0.18); },
     splash(t) { burst(exterior, 'lowpass', 1500, 0.6, t, 0.01, 0.2, 1.2, 0.6, white, 300); },
   };
   function I_rumble(a, b, ms) { if (B.I) B.I.rumble(a, b, ms); }

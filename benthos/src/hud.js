@@ -247,7 +247,9 @@
   }
   function glassCracks(P) {
     const want = M.clamp((P.crush - 33) / 62, 0, 1);
+    const before = crackShow;
     crackShow = want > crackShow ? Math.min(want, crackShow + 1 / 60 * 0.8) : Math.max(want, crackShow - 1 / 60 * 0.05);
+    if (Math.floor(crackShow * 12) > Math.floor(before * 12)) A.sfx('crackle');
     if (crackShow <= 0.001) return;
     if (!crackG) crackG = buildCracks(7 + (B.state ? B.state.deaths : 0));
     const W = R.W, Hh = R.H, hi = C32('#c4e6ee'), lo = C32('#0e2338'), out = R.out32;
@@ -417,12 +419,14 @@
   // ------------------------------------------------------------------ objective and transponder beacon
   // The objective line sits at the top; it brightens when it changes and after each ping. The beacon is
   // the transponder's bearing, shown for a few seconds after a ping (and always on deck).
-  let obText = '', obT = -99;
+  let obText = '', obT = -99, heardPing = -99;
   function drawObjective(ix, iy) {
     const P = B.player, ob = B.Story.objective && B.Story.objective();
     if (!ob || !B.settings.markers) return;
     if (ob.text !== obText) { obText = ob.text; obT = B.time; if (B.time > 2) A.sfx('beep'); }
     const lastPing = P.pings && P.pings.length ? P.pings[P.pings.length - 1].t0 : -99, fresh = Math.max(obT, lastPing);
+    // the transponder answers a ping after the sound has crossed the water and come back
+    if (lastPing > heardPing && ob.x !== undefined && B.act !== 'deck') { heardPing = lastPing; A.sfxAt('transponder', Math.min(2.5, 0.25 + Math.hypot(ob.x - P.x, ob.y - P.y, ob.z - P.z) / 750)); }
     const age = B.time - fresh, act3 = B.act === 'act3';
     const tc = age < 6 ? ((age < 1 && (B.frame >> 3) & 1) ? amber(2) : amber(3)) : amber(1);
     const t = (act3 && B.facePulse > 0 ? '· ' : '◆ ') + ob.text;
