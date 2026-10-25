@@ -112,7 +112,7 @@
   const lit = (x, y, z) => R.lightAt(x, y, z);
   // Is the lamp beam on this point (and close enough to matter)?
   function inBeam(x, y, z, range) {
-    const L = R.env.lamp; if (!L.on) return 0;
+    const L = R.env.lamp; if (!L.on || L.mode === 'red') return 0; // almost nothing down here sees red
     const dx = x - L.x, dy = y - L.y, dz = z - L.z, d = Math.hypot(dx, dy, dz); if (d > (range || Math.sqrt(L.r2))) return 0;
     return (dx * L.dx + dy * L.dy + dz * L.dz) / (d || 1) > L.cosO ? 1 - d / Math.sqrt(L.r2) : 0;
   }
@@ -124,7 +124,8 @@
       update(d, dt, Pp) {
         d.ph += dt * 1.6; d.z += Math.sin(d.ph) * dt * 0.08;
         const near = Math.hypot(d.x - Pp.x, d.y - Pp.y, d.z - Pp.z);
-        if (d.alarm <= 0 && (near < 3.5 || inBeam(d.x, d.y, d.z, 9) > 0.15)) { d.alarm = 5; B.A.at('jelly', d.x, d.y, d.z, 0.5); }
+        // the burglar alarm calls something bigger: it is a noise the hunters hear
+        if (d.alarm <= 0 && (near < 3.5 || inBeam(d.x, d.y, d.z, 9) > 0.15)) { d.alarm = 5; B.A.at('jelly', d.x, d.y, d.z, 0.5); B.noise(d.x, d.y, d.z, 52, 'alarm'); }
         d.alarm -= dt;
       },
       draw(d) {

@@ -3094,7 +3094,7 @@ void main(){
   const lit = (x, y, z) => R.lightAt(x, y, z);
   // Is the lamp beam on this point (and close enough to matter)?
   function inBeam(x, y, z, range) {
-    const L = R.env.lamp; if (!L.on) return 0;
+    const L = R.env.lamp; if (!L.on || L.mode === 'red') return 0; // almost nothing down here sees red
     const dx = x - L.x, dy = y - L.y, dz = z - L.z, d = Math.hypot(dx, dy, dz); if (d > (range || Math.sqrt(L.r2))) return 0;
     return (dx * L.dx + dy * L.dy + dz * L.dz) / (d || 1) > L.cosO ? 1 - d / Math.sqrt(L.r2) : 0;
   }
@@ -3106,7 +3106,8 @@ void main(){
       update(d, dt, Pp) {
         d.ph += dt * 1.6; d.z += Math.sin(d.ph) * dt * 0.08;
         const near = Math.hypot(d.x - Pp.x, d.y - Pp.y, d.z - Pp.z);
-        if (d.alarm <= 0 && (near < 3.5 || inBeam(d.x, d.y, d.z, 9) > 0.15)) { d.alarm = 5; B.A.at('jelly', d.x, d.y, d.z, 0.5); }
+        // the burglar alarm calls something bigger: it is a noise the hunters hear
+        if (d.alarm <= 0 && (near < 3.5 || inBeam(d.x, d.y, d.z, 9) > 0.15)) { d.alarm = 5; B.A.at('jelly', d.x, d.y, d.z, 0.5); B.noise(d.x, d.y, d.z, 52, 'alarm'); }
         d.alarm -= dt;
       },
       draw(d) {
@@ -4257,7 +4258,7 @@ void main(){
     squid: { name: 'GLASS AND MOURNING SQUID', sub: 'CRANCHIIDAE · HISTIOTEUTHIDAE', body: ['GLASS SQUID ARE ALMOST NOTHING: A CLEAR BODY, TWO EYES, A FEW BLUE SPOTS.', 'THE MOURNING SQUID WEARS A DARK WEB TIPPED IN BLUE, AND DOES NOT LIKE LIGHT.'] },
     double: { name: 'THE SECOND DIVER', sub: 'NO CLASSIFICATION', body: ['IT MOVES THE WAY YOU MOVED. IT HESITATES WHERE YOU HESITATED.', 'IT HAS NO SHADOW. ITS PINGS LAY REAL TRAILS, AND THINGS FOLLOW THEM.'] },
     whale: { name: 'SPERM WHALE', sub: 'PHYSETER MACROCEPHALUS · TO 2,000 M', body: ['THE LARGEST TOOTHED ANIMAL ALIVE, AND THE ONLY THING DOWN HERE THAT MEANS NO HARM.', 'IT SEES WITH SOUND. THE CREAK IS IT LOOKING AT YOU.'] },
-    atolla: { name: 'CROWN JELLY', sub: 'ATOLLA WYVILLEI', body: ['A DEEP RED BELL, INVISIBLE IN THE DARK.', 'WHEN SEIZED IT FIRES A PINWHEEL OF BLUE LIGHT: A BURGLAR ALARM THAT CALLS SOMETHING BIGGER TO EAT WHATEVER IS EATING IT.'] },
+    atolla: { name: 'CROWN JELLY', sub: 'ATOLLA WYVILLEI', body: ['A DEEP RED BELL, INVISIBLE IN THE DARK.', 'WHEN SEIZED IT FIRES A PINWHEEL OF BLUE LIGHT: A BURGLAR ALARM THAT CALLS SOMETHING BIGGER TO EAT WHATEVER IS EATING IT.', 'THE SLEEPER COMES TO THAT ALARM. IT CANNOT SEE A RED LAMP.'] },
     comb: { name: 'COMB JELLY', sub: 'CTENOPHORA', body: ['IT MAKES NO LIGHT OF ITS OWN. ITS EIGHT ROWS OF BEATING COMBS BREAK YOUR LAMP INTO RUNNING RAINBOWS.'] },
     siph: { name: 'SIPHONOPHORE', sub: 'APOLEMIA', body: ['A CHAIN OF CLONED BODIES WORKING AS ONE ANIMAL, SOMETIMES TENS OF METRES LONG.', 'WAVES OF BLUE LIGHT TRAVEL ITS LENGTH WHEN IT IS TOUCHED.'] },
     lfish: { name: 'LANTERNFISH', sub: 'MYCTOPHIDAE', body: ['THE COMMONEST VERTEBRATE ON EARTH. ROWS OF PHOTOPHORES ALONG THE BELLY HIDE ITS SILHOUETTE FROM BELOW.', 'THE SCHOOLS SCATTER FROM YOUR LAMP.'] },
