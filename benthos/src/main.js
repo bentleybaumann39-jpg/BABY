@@ -81,6 +81,9 @@
     const items = [{ label: 'BEGIN DESCENT', fn: () => S.newGame(false) }];
     if (S.hasSave()) items.unshift({ label: 'CONTINUE · ' + (B.store.get('benthos.save', {}).label || 'MARA EKDAHL'), fn: () => S.continueGame() });
     if (B.meta.ngplus) items.push({ label: 'SECOND COPY (NEW GAME+, 320×180)', fn: () => S.newGame(true) });
+    const seen = Object.keys(B.meta.seen || {}).length;
+    if (seen) items.push({ label: 'FIELD NOTES · ' + seen + '/' + Object.keys(S.NOTES).length, fn: () => notesMenu(titleMenu) });
+    if (B.meta.runs || B.meta.deaths) items.push({ label: 'RECORDS', fn: () => recordsMenu(titleMenu) });
     items.push({ label: 'SETTINGS', fn: () => settingsMenu(titleMenu) }, { label: 'CONTROLS', fn: () => controlsMenu(titleMenu) });
     Hd.menu({ title: '', items, y: Math.round(R.H * 0.42), bare: false });
   }
@@ -124,6 +127,19 @@
       'RS-CLICK PICK · LS-CLICK BREATH · DPAD CELLS/GAUGE'];
     Hd.menu({ title: 'CONTROLS', cancel: true, onCancel: back, items: L.map(l => ({ label: l, disabled: true })).concat([{ label: 'BACK', fn: back }]) });
   }
+  function notesMenu(back) {
+    const seen = B.meta.seen || {}, keys = Object.keys(S.NOTES);
+    const items = keys.map(k => seen[k] ? { label: S.NOTES[k].name, fn: () => { const n = S.NOTES[k]; Hd.openDoc({ title: n.name, body: [n.sub, ''].concat(n.body) }, () => notesMenu(back)); } } : { label: '? ? ?', disabled: true });
+    // two columns would be kinder; one column of short names fits the buffer
+    Hd.menu({ title: 'FIELD NOTES · ' + Object.keys(seen).length + '/' + keys.length, cancel: true, onCancel: back, items: items.concat([{ label: 'BACK', fn: back }]), compact: true });
+  }
+  function recordsMenu(back) {
+    const m = B.meta, E3 = ['ascent', 'sediment', 'lossless'], seen = Object.keys(m.seen || {}).length;
+    const L = ['DESCENTS BEGUN · ' + (m.runs || 0), 'TIMES THE SIGNAL WAS LOST · ' + (m.deaths || 0), 'HELMETS IN THE ARCHIVE · ' + (26 + (m.deaths || 0)),
+      'FIELD NOTES · ' + seen + '/' + Object.keys(S.NOTES).length, '', 'ENDINGS'].concat(E3.map(e => '  ' + ((m.endings || []).includes(e) ? e.toUpperCase() : '- - -')));
+    if (m.ngplus) L.push('', 'THE SECOND COPY IS AVAILABLE');
+    Hd.menu({ title: 'RECORDS', cancel: true, onCancel: back, items: L.map(l => ({ label: l, disabled: true })).concat([{ label: 'BACK', fn: back }]) });
+  }
   function journalMenu() {
     const docs = S.journal(), items = docs.map(d => ({ label: d.title.length > 46 ? d.title.slice(0, 44) + '..' : d.title, fn: () => Hd.openDoc(d, journalMenu) }));
     Hd.menu({ title: 'JOURNAL', cancel: true, onCancel: pauseMenu, items: items.concat([{ label: 'BACK', fn: pauseMenu }]) });
@@ -137,6 +153,7 @@
     Hd.menu({
       title: 'PAUSED', cancel: true, onCancel: resume, items: [
         { label: 'RESUME', fn: resume }, { label: 'JOURNAL · ' + S.journal().length + '/' + S.docCount(), fn: journalMenu, disabled: !S.journal().length },
+        { label: 'FIELD NOTES · ' + Object.keys(B.meta.seen || {}).length + '/' + Object.keys(S.NOTES).length, fn: () => notesMenu(pauseMenu), disabled: !Object.keys(B.meta.seen || {}).length },
         { label: 'SETTINGS', fn: () => settingsMenu(pauseMenu) }, { label: 'CONTROLS', fn: () => controlsMenu(pauseMenu) },
         { label: 'QUIT TO TITLE', fn: () => { A.mute(false); B.toTitle(); } },
       ],

@@ -106,6 +106,50 @@
   };
   S.DOCS = DOCS;
 
+  // ------------------------------------------------------------------ field notes
+  // Everything alive that the diver has seen, lit or pinged, kept across runs.
+  const NOTES = {
+    reliquary: { name: 'THE RELIQUARY', sub: 'BATHYNOMUS CUSTOS · 380 M TO THE FLOOR', body: ['A GIANT ISOPOD THE LENGTH OF A CAR, FOURTEEN LEGS, BONE-WHITE CHITIN.', 'IT CEMENTS SALVAGE TO ITS BACK WITH A PALE WAX: HELMETS, FLOATS, A SHOE.', 'IT HOLDS 25 TO 40 M AWAY, JUST PAST YOUR LAMP. IT DOES NOT HUNT. IT WAITS.', 'IT FEEDS ONLY ON THE WEAK. HELD IN WHITE LIGHT, IT ROLLS INTO A BALL.'] },
+    sleeper: { name: 'THE SLEEPER', sub: "SOMNIOSUS TARDUS · 'OLD LAG' · 550-2,900 M", body: ['A SLEEPER SHARK GROWN TO FOURTEEN METRES, FOUR HUNDRED YEARS OLD.', 'BLIND. COPEPODS TRAIL FROM ITS EYES. IT HEARS THRUST AND FEELS A POWERED SUIT.', 'ITS IMAGE RUNS HALF A SECOND BEHIND ITS BODY. THE SONAR SHOWS WHERE IT IS.', 'COAST. OR BRACE AGAINST ROCK AND POWER DOWN, AND LET IT PASS.'] },
+    procession: { name: 'THE PROCESSION', sub: 'PRAYA INTERMINATA · 1,000-2,600 M', body: ['A COLONIAL SIPHONOPHORE HANGING THREE HUNDRED METRES THROUGH OPEN WATER.', 'ITS CURTAIN OF FISHING TENTACLES IS NEARLY INVISIBLE. A PING DRAWS IT.', 'IT CONTRACTS AT LOUD SOUND, AND IT LEARNS YOUR SIGNALS AND PLAYS THEM BACK.', 'LATER IT LEARNS TO SHINE LIKE MAGPIE.'] },
+    grain: { name: 'THE GRAIN', sub: 'HIRONDELLEA PULVIS · 2,000 M TO THE FLOOR', body: ['A SWARM OF HADAL AMPHIPODS, EACH ONE A SINGLE PIXEL.', 'IN THE DARK IT BECOMES THE TEXTURE OF THE DARK. LOOK FOR THE SEAMS.', 'IT STRIPS WHAT IT COVERS. GO DARK, OR LEAVE IT A BLOOM.'] },
+    squid: { name: 'GLASS AND MOURNING SQUID', sub: 'CRANCHIIDAE · HISTIOTEUTHIDAE', body: ['GLASS SQUID ARE ALMOST NOTHING: A CLEAR BODY, TWO EYES, A FEW BLUE SPOTS.', 'THE MOURNING SQUID WEARS A DARK WEB TIPPED IN BLUE, AND DOES NOT LIKE LIGHT.'] },
+    double: { name: 'THE SECOND DIVER', sub: 'NO CLASSIFICATION', body: ['IT MOVES THE WAY YOU MOVED. IT HESITATES WHERE YOU HESITATED.', 'IT HAS NO SHADOW. ITS PINGS LAY REAL TRAILS, AND THINGS FOLLOW THEM.'] },
+    whale: { name: 'SPERM WHALE', sub: 'PHYSETER MACROCEPHALUS · TO 2,000 M', body: ['THE LARGEST TOOTHED ANIMAL ALIVE, AND THE ONLY THING DOWN HERE THAT MEANS NO HARM.', 'IT SEES WITH SOUND. THE CREAK IS IT LOOKING AT YOU.'] },
+    atolla: { name: 'CROWN JELLY', sub: 'ATOLLA WYVILLEI', body: ['A DEEP RED BELL, INVISIBLE IN THE DARK.', 'WHEN SEIZED IT FIRES A PINWHEEL OF BLUE LIGHT: A BURGLAR ALARM THAT CALLS SOMETHING BIGGER TO EAT WHATEVER IS EATING IT.'] },
+    comb: { name: 'COMB JELLY', sub: 'CTENOPHORA', body: ['IT MAKES NO LIGHT OF ITS OWN. ITS EIGHT ROWS OF BEATING COMBS BREAK YOUR LAMP INTO RUNNING RAINBOWS.'] },
+    siph: { name: 'SIPHONOPHORE', sub: 'APOLEMIA', body: ['A CHAIN OF CLONED BODIES WORKING AS ONE ANIMAL, SOMETIMES TENS OF METRES LONG.', 'WAVES OF BLUE LIGHT TRAVEL ITS LENGTH WHEN IT IS TOUCHED.'] },
+    lfish: { name: 'LANTERNFISH', sub: 'MYCTOPHIDAE', body: ['THE COMMONEST VERTEBRATE ON EARTH. ROWS OF PHOTOPHORES ALONG THE BELLY HIDE ITS SILHOUETTE FROM BELOW.', 'THE SCHOOLS SCATTER FROM YOUR LAMP.'] },
+    pyro: { name: 'PYROSOME', sub: 'PYROSOMA ATLANTICUM', body: ['A HOLLOW TUBE OF THOUSANDS OF ZOOIDS. TOUCH IT AND LIGHT RUNS ALONG ITS WHOLE BODY.'] },
+    dragon: { name: 'BLACK DRAGONFISH', sub: 'IDIACANTHUS', body: ['A BLACK FISH WITH A GLOWING BARBEL TO LURE PREY.', 'ITS CHEEK LIGHT IS RED, A COLOUR ALMOST NOTHING DOWN HERE CAN SEE. YOUR RED LAMP CAN.'] },
+    seapig: { name: 'SEA PIG', sub: 'SCOTOPLANES', body: ['A SEA CUCUMBER THAT WALKS THE PLAIN ON HYDRAULIC LEGS, EATING THE MUD.'] },
+    tripod: { name: 'TRIPOD FISH', sub: 'BATHYPTEROIS', body: ['IT STANDS ON THREE LONG FIN RAYS, FACING THE CURRENT, WAITING FOR FOOD TO ARRIVE.'] },
+    seapen: { name: 'SEA PEN', sub: 'PENNATULACEA', body: ['A COLONY SHAPED LIKE A QUILL. BRUSH IT AND IT GLOWS VIOLET.'] },
+    bamboo: { name: 'BAMBOO CORAL', sub: 'ISIDIDAE', body: ['WHITE SEGMENTS JOINED BY DARK NODES. DISTURBED, THE NODES PULSE BLUE.'] },
+    sponge: { name: 'GLASS SPONGE', sub: 'HEXACTINELLIDA', body: ["A LATTICE OF SILICA. SOME HOLD A PAIR OF SHRIMP INSIDE FOR LIFE, THE 'VENUS FLOWER BASKET'."] },
+    vent: { name: 'BLACK SMOKER', sub: 'HYDROTHERMAL VENT', body: ['WATER AT FOUR HUNDRED DEGREES, BLACK WITH SULPHIDES. THE ONLY HEAT ON THE PLAIN.', 'EVERYTHING AROUND IT LIVES ON CHEMISTRY, NOT SUNLIGHT.'] },
+  };
+  S.NOTES = NOTES;
+  S.sight = function (key) {
+    if (!NOTES[key]) return; B.meta.seen = B.meta.seen || {};
+    if (B.meta.seen[key]) return;
+    B.meta.seen[key] = true; B.saveMeta();
+    B.Hud.toast('FIELD NOTE · ' + NOTES[key].name);
+  };
+  let sightT = 0;
+  function sightings(dt) {
+    if ((sightT -= dt) > 0) return; sightT = 0.5;
+    const p = P(); if (!p || B.act === 'deck') return;
+    for (const e of E.list) {
+      if (!e.alive) continue;
+      const key = e.type === 'drift' || e.type === 'benthos' ? e.kind : e.type; if (!NOTES[key] || (B.meta.seen && B.meta.seen[key])) continue;
+      let ex = e.x, ey = e.y, ez = e.z; if (e.type === 'procession') { ex = e.px[0]; ey = e.py[0]; ez = M.clamp(p.z, e.zTop, e.zTop + e.len); }
+      const d = Math.hypot(ex - p.x, ey - p.y, ez - p.z);
+      const near = e.type === 'whale' ? d < 40 : e.type === 'vent' ? d < 18 : d < 5;
+      if (near || B.Player.revealed(e) || (d < 16 && E.inLamp(ex, ey, ez, 16) > 0.05)) S.sight(key);
+    }
+  }
+
   // ------------------------------------------------------------------ captions and comms
   // Tobias speaks through the water: one-way latency is depth / 1,500 m/s. After the breach it goes negative.
   S.latency = function () { const p = P(); if (!p) return 0; if (st() && st().flags.breached) return -0.8; return Math.max(0, p.z) / 1500; };
@@ -505,7 +549,7 @@
   // ------------------------------------------------------------------ deaths
   S.onDeath = function (cause) {
     const s = st(), p = P();
-    s.deaths++; B.meta.deaths++; B.saveMeta();
+    s.deaths++; B.meta.deaths++; B.meta.deathKinds = B.meta.deathKinds || {}; B.meta.deathKinds[cause] = (B.meta.deathKinds[cause] || 0) + 1; B.saveMeta();
     s.deathLog.push({ act: B.act, z: Math.round(p.z), res: p.res, cause });
     // keep the death count even though the checkpoint reload rewinds everything else
     const sv = B.store.get('benthos.save', null); if (sv) { sv.deaths = s.deaths; sv.deathLog = s.deathLog; sv.corpses = s.corpses; B.store.set('benthos.save', sv); }
@@ -724,6 +768,7 @@
   }
   let ghostT = 120, ghostFrameT = 90;
   S.update = function (dt) {
+    sightings(dt);
     runTimers(dt);
     updateCaps(dt);
     if (B.mode !== 'play') return;

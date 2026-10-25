@@ -118,7 +118,9 @@
     }
     if (menuS) return menuTick(dt);
     if (doc) {
-      if (I.pressed('interact') || I.pressed('back') || I.pressed('click') || I.pressed('confirm')) { doc = null; const cb = docBack; docBack = null; if (cb) cb(); }
+      // a tap pages through a long document before it closes it
+      if (I.pressed('click') && I.touchMode && doc._n && doc._off + doc._vis < doc._n) docScroll = doc._off + doc._vis - 1;
+      else if (I.pressed('interact') || I.pressed('back') || I.pressed('click') || I.pressed('confirm')) { doc = null; const cb = docBack; docBack = null; if (cb) cb(); }
       const mv = I.move(); if (Math.abs(mv.y) > 0.5) docScroll = M.clamp(docScroll + Math.sign(mv.y) * dt * 6, 0, 30);
       return true;
     }
@@ -586,7 +588,9 @@
     R.hline(x + 6, x + w - 7, y + 17, amber(1));
     const off = Math.min(Math.floor(docScroll), Math.max(0, lines.length - visible));
     for (let k = 0; k < visible; k++) Hd.text(x + 8, y + 22 + k * 9, lines[k + off] || '', COL.g5);
-    Hd.text(x + w - 8 - Hd.tw('E CLOSE'), y + h - 9, 'E CLOSE', amber(1));
+    doc._n = lines.length; doc._vis = visible; doc._off = off;
+    const more = off + visible < lines.length, cl = I.touchMode ? (more ? 'TAP: MORE' : 'TAP TO CLOSE') : (I.usingPad ? 'A CLOSE' : 'E CLOSE') + (more ? ' · S MORE' : '');
+    Hd.text(x + w - 8 - Hd.tw(cl), y + h - 9, cl, amber(1));
   }
   function drawCraft() {
     const list = recipes(), w = Math.min(R.W - 20, 380), h = list.length * 9 + 34, x = Math.round((R.W - w) / 2), y = Math.round((R.H - h) / 2);
@@ -605,7 +609,7 @@
     bootS.lines.forEach((l, k) => { if (bootS.t > k * 0.55) Hd.text(24, 40 + k * 10, l, amber(3)); });
   }
   function drawMenu() {
-    const m = menuS, lh = I.touchMode ? 15 : 11;
+    const m = menuS, lh = I.touchMode ? (m.compact ? 11 : 15) : (m.compact ? 9 : 11);
     const w = Math.max(Hd.tw(m.title || ''), ...m.items.map(it => Hd.tw(it.label + (it.value ? ' ' + it.value() : '')))) + 30;
     const h = m.items.length * lh + (m.title ? 26 : 12);
     const x = Math.round((R.W - w) / 2), y = m.y !== undefined ? m.y : Math.round((R.H - h) / 2);
@@ -699,6 +703,7 @@
     if (a > 0.05) { const t = TAGS[k], w = Hd.tw(t), x = Math.round((R.W - w) / 2); for (let i = 0; i < t.length; i++) if (B.hash2(i, k, 9) < a) Hd.text(x + i * 6, R.H - 26, t[i], COL.b10); }
     const n = 26 + B.meta.deaths;
     Hd.text(8, R.H - 12, 'THE ARCHIVE HOLDS ' + n, C32('#4a3a20'));
+    if (doc) drawDoc();
     Hd.text(R.W - 8 - Hd.tw('V' + B.VERSION), R.H - 12, 'V' + B.VERSION, C32('#4a3a20'));
     if (menuS) drawMenu();
   };
@@ -708,6 +713,19 @@
     const CAUSE = { crush: 'HULL FAILURE', impact: 'HULL FAILURE', sleeper: 'HULL FAILURE', reliquary: 'HULL FAILURE', air: 'ASPHYXIA', co2: 'HYPERCAPNIA', procession: 'ENTANGLED', grain: 'HULL FAILURE', breach: '' };
     Hd.center(R.H / 2 - 40, 'SIGNAL LOST', amber(3), 3);
     if (CAUSE[cause]) Hd.center(R.H / 2 - 10, CAUSE[cause], amber(1));
+    // what went wrong, in a line, for the first few deaths of each kind
+    const k = B.k, HINT = {
+      crush: 'BELOW YOUR RATING THE HULL TAKES DEBT. RISE, BRACE (HOLD ' + k('Q', 'CLMP') + ') OR GRAFT.',
+      impact: 'SOMETHING HIT THE HULL. CRUSH DEBT MAKES EVERY BLOW WORSE.',
+      sleeper: 'IT IS BLIND. IT HEARS THRUST AND FEELS A POWERED SUIT. COAST, OR BRACE AND POWER DOWN.',
+      reliquary: 'IT ONLY FEEDS ON THE WEAK. KEEP YOUR AIR UP; HOLD IT IN THE WHITE LAMP AND IT CURLS.',
+      air: 'O2 CARTRIDGES SWAP THEMSELVES WHILE YOU HAVE THEM. SALVAGE MORE ON THE LEDGES.',
+      co2: 'WHEN THE HUD STARTS LYING, THE SCRUBBER IS SPENT. SWAP IT (' + k('T', 'TAP SCRUB') + ').',
+      procession: 'THE CURTAIN SNARES WHAT TOUCHES IT. STRIKE THE FLOAT, OR SIPHON FREE.',
+      grain: 'THE GRAIN STRIPS LIGHT AND HEAT. GO DARK, OR DROP A BLOOM AND LEAVE.',
+    };
+    const n = (B.meta.deathKinds && B.meta.deathKinds[cause]) || 0;
+    if (HINT[cause] && n <= 3 && t > 1) { const lines = Hd.wrap(HINT[cause], Math.floor((R.W - 80) / 6)); lines.forEach((l, i) => Hd.center(R.H / 2 + (I.touchMode ? 58 : 46) + i * 9, l, COL.b10)); }
     if (menuS) drawMenu();
   };
   Hd.drawPause = function (snap, t) {
