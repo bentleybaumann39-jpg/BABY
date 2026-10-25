@@ -156,6 +156,11 @@
     Hd.menu({
       title: 'PAUSED', cancel: true, onCancel: resume, items: [
         { label: 'RESUME', fn: resume }, { label: 'JOURNAL · ' + S.journal().length + '/' + S.docCount(), fn: journalMenu, disabled: !S.journal().length },
+        // the suit actions a gamepad has no button for
+        ...(B.player && B.act !== 'deck' ? [
+          { label: 'OPEN THE CHART', fn: () => { resume(); if (!B.Hud.mapOn()) B.Hud.toggleMap(); }, disabled: !B.player.relics.hand },
+          { label: 'SWAP SCRUBBER CANISTER · ' + B.player.limes + ' SPARE', fn: () => { resume(); B.Player.swapLime(); }, disabled: !B.player.limes },
+        ] : []),
         { label: 'FIELD NOTES · ' + Object.keys(B.meta.seen || {}).length + '/' + Object.keys(S.NOTES).length, fn: () => notesMenu(pauseMenu), disabled: !Object.keys(B.meta.seen || {}).length },
         { label: 'SETTINGS', fn: () => settingsMenu(pauseMenu) }, { label: 'CONTROLS', fn: () => controlsMenu(pauseMenu) },
         { label: 'QUIT TO TITLE', fn: () => { A.mute(false); B.toTitle(); } },

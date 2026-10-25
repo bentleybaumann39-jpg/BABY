@@ -96,6 +96,7 @@
   Hd.openDoc = function (d, onClose) { doc = d; docScroll = 0; docBack = onClose || null; A.sfx('beep'); if (B.Story.noteDoc) B.Story.noteDoc(d); };
   Hd.openCraft = function (c) { craft = { c, sel: 0 }; };
   Hd.toggleMap = function () { mapOn = !mapOn; A.sfx('click'); };
+  Hd.mapOn = () => mapOn;
   Hd.capture = () => !!(doc || craft || menuS);
   Hd.closeOverlay = function () { if (doc) { doc = null; docBack = null; return true; } if (craft) { craft = null; return true; } if (mapOn) { mapOn = false; return true; } return false; };
   Hd.boot = function (lines) { bootS = { lines, t: 0 }; A.sfx('boot'); };
