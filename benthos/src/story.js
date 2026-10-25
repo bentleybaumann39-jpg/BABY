@@ -437,7 +437,8 @@
     }
     // the Thalassa Vigil, hanging since 1971
     const VX = C - 30, VY = C + 40, VZ = 2200; S.vigilPos = { x: VX, y: VY, z: VZ };
-    E.prop(() => MD.vigil(), VX, VY, VZ, { solid: true, r: 2.2, flatZ: 1 });
+    const vg = E.prop(() => MD.vigil(), VX, VY, VZ, { solid: true, r: 2.2, flatZ: 1 });
+    vg.interact = { label: () => 'LOOK INTO THE CREW SPHERE', fn: () => { S.locked = true; B.Hud.vigilView(() => { S.locked = false; if (!st().flags.sphereSeen) { st().flags.sphereSeen = true; S.say('mara', 'SOMEBODY LET THEMSELVES OUT.', { delay: 0.5 }); } }); } };
     for (let k = -2; k <= 2; k++) E.add({ type: 'collider', x: VX + k * 3.2, y: VY, z: VZ - 3.2, r: 2.4, solid: true, anchor: true });
     E.cairn(VX + 2, VY - 1.5, VZ - 6);
     it('hand', VX + 0.4, VY - 1.6, VZ - 0.2, { title: "THE CARTOGRAPHER'S HAND" });

@@ -4573,7 +4573,8 @@ void main(){
     }
     // the Thalassa Vigil, hanging since 1971
     const VX = C - 30, VY = C + 40, VZ = 2200; S.vigilPos = { x: VX, y: VY, z: VZ };
-    E.prop(() => MD.vigil(), VX, VY, VZ, { solid: true, r: 2.2, flatZ: 1 });
+    const vg = E.prop(() => MD.vigil(), VX, VY, VZ, { solid: true, r: 2.2, flatZ: 1 });
+    vg.interact = { label: () => 'LOOK INTO THE CREW SPHERE', fn: () => { S.locked = true; B.Hud.vigilView(() => { S.locked = false; if (!st().flags.sphereSeen) { st().flags.sphereSeen = true; S.say('mara', 'SOMEBODY LET THEMSELVES OUT.', { delay: 0.5 }); } }); } };
     for (let k = -2; k <= 2; k++) E.add({ type: 'collider', x: VX + k * 3.2, y: VY, z: VZ - 3.2, r: 2.4, solid: true, anchor: true });
     E.cairn(VX + 2, VY - 1.5, VZ - 6);
     it('hand', VX + 0.4, VY - 1.6, VZ - 0.2, { title: "THE CARTOGRAPHER'S HAND" });
@@ -5936,6 +5937,38 @@ void main(){
     B.mode = 'scene';
   };
 
+  // The Thalassa Vigil's crew sphere through its porthole: two seats, 1971 dials, a hatch opened from inside.
+  Hd.vigilView = function (done) {
+    A.sfx('glass');
+    B.scene = {
+      t: 0, world: true, dimWorld: true,
+      update(dt) { this.t += dt; if ((this.t > 1.2 && (I.pressed('interact') || I.pressed('confirm') || I.pressed('click') || I.pressed('back'))) || this.t > 20) { B.scene = null; B.mode = 'play'; done && done(); } },
+      draw() {
+        const W = R.W, Hh = R.H, cx = W / 2, cy = Hh / 2 - 6, r = Math.min(W, Hh) * 0.36, t = this.t;
+        R.rect(0, 0, W, Hh, COL.k);
+        const lx = cx + Math.sin(t * 0.6) * r * 0.3, ly = cy + Math.cos(t * 0.45) * r * 0.15;
+        for (let y = Math.floor(cy - r); y < cy + r; y++) for (let x = Math.floor(cx - r); x < cx + r; x++) {
+          const dx = x - cx, dy = y - cy; if (dx * dx + dy * dy >= r * r) continue;
+          const d = Math.hypot(x - lx, y - ly) / (r * 0.95), lit = Math.max(0, 1 - d * d);
+          // the far curve of the sphere, two bucket seats, a panel of round dials
+          const seat = (Math.abs(x - (cx - r * 0.35)) < r * 0.16 || Math.abs(x - (cx + r * 0.35)) < r * 0.16) && y > cy + r * 0.1 && y < cy + r * 0.5;
+          const panel = y > cy - r * 0.35 && y < cy - r * 0.05 && Math.abs(dx) < r * 0.6;
+          const dial = panel && (Math.hypot(((x - cx + 600) % 14) - 7, y - (cy - r * 0.2)) < 4.5);
+          let v = (0.14 + Math.abs(dx) / r * 0.08 + (seat ? 0.18 : 0) + (panel ? 0.1 : 0) + (dial ? 0.25 : 0)) * lit;
+          const th = B.BAYER[(y & 3) * 4 + (x & 3)] + 0.5;
+          R.pset(x, y, dial && v > th * 0.4 ? C32('#d8d0bc') : v > th * 0.45 ? C32('#6b4a33') : v > th * 0.2 ? C32('#2a1a10') : v > th * 0.07 ? C32('#140c08') : COL.k);
+        }
+        // the hatch, swung inward, with its wheel on the inside face
+        const hx = Math.round(cx + r * 0.05), hy = Math.round(cy - r * 0.95);
+        R.rect(hx - 10, hy + 6, 20, 6, C32('#4a4a52')); R.ellipse(hx, hy + 9, 5, 2, C32('#9a9aa2'));
+        if (t > 3) Hd.center(Math.round(cy + r + 12), 'THE HATCH DOGS ARE THROWN FROM THE INSIDE', COL.g4);
+        for (let a = 0; a < Math.PI * 2; a += 0.004) for (let w = 0; w < 6; w++) R.pset(cx + Math.cos(a) * (r + w), cy + Math.sin(a) * (r + w), w === 0 ? C32('#b07d52') : C32('#664329'));
+        Hd.center(Hh - 14, 'THALASSA VIGIL · CREW SPHERE · 2,200 M · 1971', COL.g4);
+        if (t > 1.2) Hd.text(W - 8 - Hd.tw(I.touchMode ? 'TAP' : 'E'), Hh - 14, I.touchMode ? 'TAP' : 'E', amber(1));
+      },
+    };
+    B.mode = 'scene';
+  };
   // The Halvard Four bell, seen through its viewport: four seats, five masks, and the tally on the wall.
   Hd.bellView = function (done) {
     A.sfx('glass');
