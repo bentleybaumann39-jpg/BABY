@@ -81,6 +81,7 @@ Taps work as clicks in menus and skip scenes. Prompts and tips name the touch co
 * Mid-water animals drift in a ring around you: crown jellies with a pinwheel alarm, comb jellies that rainbow in the lamp, siphonophore chains, lanternfish schools that scatter from the beam, pyrosomes, and dragonfish with a red cheek light.
 * Seabed fauna grows over whatever floor is in view: kelp, fans, sponges, crinoids, bamboo coral and sea pens that glow when brushed, sea pigs, tripod fish, tube worms.
 * A sperm whale crosses the shaft in Act I. A field of black smokers glows on the plain.
+* You can look through the Gannet bell's viewport and into the Vigil's crew sphere.
 * Nineteen field notes are logged as you meet things, and kept across runs.
 
 **Creatures** (each one is described in DESIGN.md §3)
@@ -102,6 +103,8 @@ Taps work as clicks in menus and skip scenes. Prompts and tips name the touch co
 **Story**
 * Seventeen documents and five tapes. The tapes play as voices over the comms; one of them is in a voice you know.
 * The first few deaths of each kind tell you, in a line, what went wrong.
+* The chest gauge view has a photo of Tobias and Mara taped beside the dials. It tells the truth too.
+* The Archive's helmets count in fours, in time with the Ostinato.
 * A records page counts descents, deaths, helmets in the Archive and endings found.
 
 **Rendering** (all software; every shape and texture is generated in code)
@@ -145,6 +148,7 @@ src/main.js       modes, fixed-step loop, camera, marine snow, frame pipeline
 tests/smoke.mjs   visits every act and set piece headlessly; fails on any page error
 tests/story.mjs   plays the critical path with simulated input, beat by beat
 tests/touch.mjs   drives the game on an emulated phone through the touch controls
+tests/bot.mjs     a bot that plays the whole game with no warps (steering, salvage, crafting) and logs each beat
 tools/build.mjs   inlines everything into Benthos.html (--artifact <file> for a claude.ai page)
 tools/shot.mjs    renders one view to a PNG for art iteration
 ```
@@ -157,5 +161,6 @@ Both tests use Playwright (`npm install` at the repo root, or a global install).
 node benthos/tests/smoke.mjs [shotDir]   # every act and sequence; optional screenshots
 node benthos/tests/story.mjs [shotDir]   # deck -> Breach -> Magpie -> Archive -> ending -> title
 node benthos/tests/touch.mjs [shotDir]   # menus, stick, buttons and trim bar on an emulated phone
+node benthos/tests/bot.mjs 32 [shotDir]  # a full playthrough by a bot; --act2 / --act3 start later
 node benthos/tools/build.mjs --check     # Benthos.html matches the sources
 ```
