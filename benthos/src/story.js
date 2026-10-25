@@ -537,14 +537,25 @@
   // ------------------------------------------------------------------ recurring actors
   S.spawnReliquary = function () {
     if (E.byType('reliquary').length) return;
-    const p = P(), a = Math.random() * 6.28; let x = p.x + Math.cos(a) * 35, y = p.y + Math.sin(a) * 35;
-    if (H(x, y) < p.z + 2) { x = p.x; y = p.y; }
+    // out past the lamp in open water; if the walls are close, as close as they allow, never on top of her
+    const p = P(); let x = null, y = null;
+    for (let k = 0; k < 40 && x === null; k++) {
+      const a = Math.random() * 6.28, r = 35 - k * 0.6, cx = p.x + Math.cos(a) * r, cy = p.y + Math.sin(a) * r;
+      if (H(cx, cy) > p.z + 2 && B.World.rayRock(B.map, p.x, p.y, p.z, (cx - p.x) / r, (cy - p.y) / r, 0, r) === null) { x = cx; y = cy; }
+    }
+    if (x === null) { x = p.x; y = p.y - 14; }
     E.reliquary(x, y, p.z);
   };
   S.spawnSleeper = function (band) {
     if (E.byType('sleeper').length || st().sleeperDead) return;
-    const p = P(), a = Math.random() * 6.28;
-    E.sleeper(p.x + Math.cos(a) * 45, p.y + Math.sin(a) * 45, M.clamp(p.z + 15, band[0], band[1]), band);
+    // somewhere out in open water, as far off as the walls allow (the Act I shaft is only 44 m across)
+    const p = P(), z = M.clamp(p.z + 8, band[0], band[1]);
+    let x = p.x, y = p.y;
+    for (let k = 0; k < 40; k++) {
+      const a = Math.random() * 6.28, r = 45 - k; const cx = p.x + Math.cos(a) * r, cy = p.y + Math.sin(a) * r;
+      if (H(cx, cy) > z + 4 && B.World.rayRock(B.map, p.x, p.y, z, (cx - p.x) / r, (cy - p.y) / r, 0, r) === null) { x = cx; y = cy; break; }
+    }
+    const sl = E.sleeper(x, y, z, band); sl.flyby = true;
   };
   S.spawnDouble = function () { if (E.byType('double').length) return; const p = P(); E.double(p.x - 25, p.y + 18, p.z); };
   S.corpse = function (x, y, z, era, yaw, doc) {

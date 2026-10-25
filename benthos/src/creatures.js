@@ -170,8 +170,10 @@
         switch (this.mode) {
           case 'drift': {
             if (!this.wp || dist(this, this.wp.x, this.wp.y, this.wp.z) < 4) {
-              const a = Math.random() * 6.28, rr = M.rnd(30, 65);
-              this.wp = { x: Pp.x + Math.cos(a) * rr, y: Pp.y + Math.sin(a) * rr, z: M.clamp(Pp.z + M.rnd(-25, 25), this.band[0], this.band[1]) };
+              // mostly it keeps its distance; now and then, and always the first time, its patrol passes close
+              const close = this.flyby || Math.random() < 0.18, a = Math.random() * 6.28, rr = close ? M.rnd(8, 14) : M.rnd(30, 65);
+              if (this.flyby) { this.flyby = false; const side = Math.atan2(this.y - Pp.y, this.x - Pp.x) + Math.PI * 0.75; this.wp = { x: Pp.x + Math.cos(side) * rr, y: Pp.y + Math.sin(side) * rr, z: M.clamp(Pp.z + 1, this.band[0], this.band[1]) }; }
+              else this.wp = { x: Pp.x + Math.cos(a) * rr, y: Pp.y + Math.sin(a) * rr, z: M.clamp(Pp.z + (close ? M.rnd(-3, 3) : M.rnd(-25, 25)), this.band[0], this.band[1]) };
             }
             tx = this.wp.x; ty = this.wp.y; tz = this.wp.z; break;
           }
