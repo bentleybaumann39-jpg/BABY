@@ -218,7 +218,7 @@
         sparksUpdate(dt);
         const Pp = pl(); if (!Pp || B.act === 'deck') return;
         // keep the drifter ring full, recycle anything left behind
-        const tab = drifterTable(Pp.z), want = Math.round(tab.n * (B.settings.quality === 'low' ? 0.5 : 1));
+        const tab = drifterTable(Pp.z), want = Math.round(tab.n * (B.settings.quality === 0 ? 0.6 : 1));
         for (const d of this.drifters) if (Math.hypot(d.x - Pp.x, (d.y - Pp.y) * 1.2, (d.z - Pp.z) * 0.8) > 42) d.alive = false;
         this.drifters = this.drifters.filter(d => d.alive);
         let tries = 3;
@@ -260,7 +260,7 @@
     const i0 = Math.floor((Pp.x - 26) / CELL), i1 = Math.floor((Pp.x + 26) / CELL), j0 = Math.floor((Pp.y - 14) / CELL), j1 = Math.floor((Pp.y + 30) / CELL);
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
       const key = i * 4096 + j, hv = B.hash2(i, j, 501);
-      const dens = B.act === 'act3' ? 0.5 : 0.62; if (hv > dens) continue;
+      const dens = (B.act === 'act3' ? 0.5 : Pp.z < 160 ? 0.32 : 0.62) * (B.settings.quality === 0 ? 0.6 : 1); if (hv > dens) continue;
       const x = (i + 0.2 + 0.6 * B.hash2(i, j, 502)) * CELL, y = (j + 0.2 + 0.6 * B.hash2(i, j, 503)) * CELL;
       if (x < 1 || y < 1 || x > map.size - 1 || y > map.size - 1) continue;
       const z = H(x, y); if (z < zCut + 0.3 || z > zMax) continue;
@@ -296,13 +296,13 @@
   // Models. Local axes as everywhere: x east, y south, z down, so "up" is -z.
   const BM = {
     kelp(b) {
-      const out = [], n = 6 + (b.seed % 4), sway = B.time * 0.9 + b.seed;
-      for (let s = 0; s < 3; s++) {
+      const out = [], n = 4 + (b.seed % 3), sway = B.time * 0.9 + b.seed;
+      for (let s = 0; s < 2; s++) {
         let px = (s - 1) * 0.25, py = ((b.seed >> s) % 3 - 1) * 0.2, pz = 0;
         for (let k = 0; k < n; k++) {
-          const t = k / n, nx = px + Math.sin(sway + k * 0.6 + s) * 0.18 * t + 0.08, ny = py + Math.cos(sway * 0.7 + k * 0.5) * 0.1 * t, nz = pz - 0.55 * b.s;
+          const t = k / n, nx = px + Math.sin(sway + k * 0.6 + s) * 0.22 * t + 0.08, ny = py + Math.cos(sway * 0.7 + k * 0.5) * 0.12 * t, nz = pz - 0.8 * b.s;
           out.push(P.c([px, py, pz], [nx, ny, nz], 0.05, c(k % 2 ? '#4d6128' : '#7a8f3b')));
-          if (k % 2) out.push(P.e(nx + 0.12, ny, nz, P.basis(1, 0.3, -0.4), [0.16, 0.06, 0.015], c('#7a8f3b')));
+          if (k % 2) out.push(P.e(nx + 0.14, ny, nz, P.basis(1, 0.3, -0.4), [0.2, 0.07, 0.015], c('#7a8f3b')));
           px = nx; py = ny; pz = nz;
         }
       }

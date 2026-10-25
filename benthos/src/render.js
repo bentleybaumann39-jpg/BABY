@@ -82,9 +82,13 @@
   // Distribute lights to the screen columns they can touch.
   function binLights() {
     colCount.fill(0);
-    const L = env.lights;
+    const L = env.lights, zCut = cam.zCut, zFar = zCut + cam.maxView, baseY = H / 2 + B.OFF - cam.oy;
+    const Ymin = (0 - baseY - zFar * B.PZ) / B.PY - 2, Ymax = (H - baseY - zCut * B.PZ) / B.PY + 2;
     for (let li = 0; li < L.length; li++) {
-      const l = L[li], sx = R.sx(l.x), rp = l.range * B.PX;
+      const l = L[li];
+      // a light far outside the visible slab of water cannot touch anything on screen
+      if (!env.topside && (l.z + l.range < zCut - 30 || l.z - l.range > zFar || l.y + l.range < Ymin - 12 || l.y - l.range > Ymax + 4)) continue;
+      const sx = R.sx(l.x), rp = l.range * B.PX;
       const a = Math.max(0, Math.floor(sx - rp)), b = Math.min(W - 1, Math.ceil(sx + rp));
       for (let c = a; c <= b; c++) { const k = colCount[c]; if (k < MAXCL) { colLights[c * MAXCL + k] = li; colCount[c] = k + 1; } }
     }
@@ -107,7 +111,7 @@
         const cx = ((x * 4) | 0) & 63, cy = ((y * 4) | 0) & 63;
         cs *= 0.6 + CAU[E.cauFrame + cy * 64 + cx] * 1.7 * E.caustic * (1 - zi / 150);
       }
-      lr = SUNR[zi] * cs; lg = SUNG[zi] * cs; lb = SUNB[zi] * cs;
+      if (zi < 700) { lr = SUNR[zi] * cs; lg = SUNG[zi] * cs; lb = SUNB[zi] * cs; } else { lr = 0; lg = 0; lb = 0; }
       lr += E.ambient * 0.3; lg += E.ambient * 0.6; lb += E.ambient;
     }
     const L = E.lamp;
@@ -281,6 +285,12 @@
           const ta = TEXA[mt][ti], tnx = TEXX[mt][ti], tny = TEXY[mt][ti];
           const nx = NX[cidx], ny = NY[cidx], nz = -Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
           const al = ALB[mt];
+          // a section pixel with no light able to reach it skips shading altogether
+          let secDark = false;
+          if (cut && !colCount[sx] && (env.sunScale <= 0 || zCut > 400)) {
+            const L = env.lamp; if (!L.on) secDark = true; else { const ddx = X - L.x, ddy = Y - L.y, ddz = zCut - L.z; secDark = ddx * ddx + ddy * ddy + ddz * ddz > L.r2; }
+          }
+          let lastBand = -1, fStr = 1, fJoint = 1, fPert = 0;
           for (let p = top; p < lim; p++) {
             const i = p * W + sx;
             if (door) { if (B.BAYER[(p & 3) * 4 + (sx & 3)] < 0) continue; MD[i] = 1; }
@@ -293,6 +303,7 @@
               // Rock section at the cut plane: near-black, finely hatched, faintly lit by the lamp; its edge is
               // traced afterwards (see sectionRim) so the walls read like a cross-section drawing.
               const hatch = ((sx + p) & 3) === 0 ? 1.8 : 0.75;
+              if (secDark) { FR[i] = secR * hatch; FG[i] = secG * hatch; FB[i] = secB * hatch; ZB[i] = zCut; SEC[i] = 1; continue; }
               shade(X, Y, zCut, 0, 0.2, -0.98, 0.05, 0.045, 0.04, sx, false);
               FR[i] = (secR + SR * 0.45) * hatch; FG[i] = (secG + SG * 0.45) * hatch; FB[i] = (secB + SB * 0.45) * hatch; ZB[i] = zCut; SEC[i] = 1; continue;
             }
@@ -302,10 +313,11 @@
             let snx = nx, sny = ny, snz = nz;
             if (face) {
               // cliff faces: strata bands, vertical joints, and the lower face in its own shadow
-              const band = (zp * 1.5) | 0, strata = 0.75 + 0.35 * B.hash2(sx >> 1, band, 5), joint = B.hash2((X * 3) | 0, band >> 2, 6) > 0.86 ? 0.55 : 1;
-              const rk = mt === MAT_BONE ? ALB[MAT_BONE] : mt === MAT_BAS ? ALB[MAT_BAS] : ALB[0], sh = dy > 30 ? 0.6 : 1 - dy / 75;
-              ar = rk[0] * strata * joint * sh; ag = rk[1] * strata * joint * sh; ab = rk[2] * strata * joint * sh;
-              snx = nx * 0.4 + (B.hash2(band, (X * 2) | 0, 8) - 0.5) * 0.5; sny = 0.85; snz = -0.35;
+              const band = (zp * 1.5) | 0;
+              if (band !== lastBand) { lastBand = band; fStr = 0.75 + 0.35 * B.hash2(sx >> 1, band, 5); fJoint = B.hash2((X * 3) | 0, band >> 2, 6) > 0.86 ? 0.55 : 1; fPert = (B.hash2(band, (X * 2) | 0, 8) - 0.5) * 0.5; }
+              const rk = mt === MAT_BONE ? ALB[MAT_BONE] : mt === MAT_BAS ? ALB[MAT_BAS] : ALB[0], k = fStr * fJoint * (dy > 30 ? 0.6 : 1 - dy / 75);
+              ar = rk[0] * k; ag = rk[1] * k; ab = rk[2] * k;
+              snx = nx * 0.4 + fPert; sny = 0.85; snz = -0.35;
             } else if (mt === MAT_BRINE) {
               const rip = 0.5 + 0.5 * Math.sin(X * 1.7 + Y * 2.3 + t * 0.8) * Math.sin(X * 0.9 - Y * 1.3 - t * 0.5);
               ar *= 0.6 + rip * 0.8; ag *= 0.6 + rip * 0.8; ab *= 0.6 + rip * 0.8; gl = true;

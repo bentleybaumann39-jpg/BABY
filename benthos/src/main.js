@@ -14,6 +14,17 @@
     if (R.W === w && R.H === h) return;
     B.W = w; B.H = h; R.alloc(w, h); R.resize(); snow.init();
   };
+  // The play resolution: 480x270, 400x225 in performance mode, 320x180 for the Second Copy (NG+).
+  B.playRes = function (ng) { if (ng) B.setRes(320, 180); else if (B.settings.quality === 0) B.setRes(400, 225); else B.setRes(480, 270); };
+  // One automatic step down the first time play runs slow; the setting can be put back by hand.
+  let slowT = 0;
+  function autoQuality(dt) {
+    if (B.noAutoPause || B.settings.qualityChecked || B.mode !== 'play' || !B.player) return;
+    slowT += dt; if (slowT < 6) return;
+    B.settings.qualityChecked = true;
+    if (B.settings.quality === 1 && B.renderMs > 30) { B.settings.quality = 0; B.playRes(B.state && B.state.ng); Hd.toast('PERFORMANCE MODE · CHANGE IT IN SETTINGS'); }
+    B.saveSettings();
+  }
 
   // ------------------------------------------------------------------ marine snow: five parallax layers
   const LAYERS = [{ n: 120, f: 0.55, s: 1, b: 0.45, far: true }, { n: 90, f: 0.75, s: 1, b: 0.65, far: true }, { n: 60, f: 1, s: 1, b: 0.85 }, { n: 30, f: 1.35, s: 2, b: 1 }, { n: 10, f: 1.9, s: 3, b: 1 }];
@@ -57,7 +68,7 @@
   // ------------------------------------------------------------------ modes
   B.toTitle = function () {
     B.mode = 'title'; B.act = 'title'; B.scene = null; B.player = null; Hd.reset(); S.clearCaps();
-    B.setRes(B.meta.ngplus && false ? 320 : 480, 270);
+    B.playRes(false);
     B.map = S.getMap('act3'); E.reset(); B.Z.reset(); A.stopWaltz(); A.setLofi(16, 20000);
     const f = B.map.features;
     S.buildArchive(f.AX, f.AY, B.meta.deaths);
@@ -85,6 +96,7 @@
         Object.assign({ label: 'HONEST HUD (NO CO2 LIES)', keep: true }, tog('honest')), Object.assign({ label: 'STEADY TRIM ASSIST', keep: true }, tog('steady')),
         Object.assign({ label: 'OBJECTIVE AND BEACON', keep: true }, tog('markers')),
         Object.assign({ label: 'SCREEN SHAKE', keep: true }, tog('shake')), Object.assign({ label: I.touchMode ? 'VIBRATION' : 'RUMBLE', keep: true }, tog('rumble')),
+        { label: 'QUALITY', keep: true, adj: () => { B.settings.quality = B.settings.quality ? 0 : 1; B.saveSettings(); if (B.state && B.mode !== 'title') B.playRes(B.state.ng); else B.playRes(false); }, value: () => (B.settings.quality ? 'HIGH' : 'PERFORMANCE') },
         { label: 'FULLSCREEN', keep: true, fn: toggleFullscreen, value: () => (document.fullscreenElement ? 'ON' : 'OFF') },
         { label: 'BACK', fn: back },
       ],
@@ -301,7 +313,7 @@
     let steps = 0;
     while (acc >= 1 / 60 && steps < 4) { tick(1 / 60); acc -= 1 / 60; steps++; I.endTick(); }
     if (steps === 4) acc = 0;
-    draw(dt);
+    draw(dt); autoQuality(dt);
     B.fps = B.fps ? B.fps * 0.95 + (1 / Math.max(dt, 0.001)) * 0.05 : 60;
     requestAnimationFrame(frame);
   }

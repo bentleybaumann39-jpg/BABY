@@ -144,14 +144,14 @@
     B.Hud.closeMenu();
     const s = B.store.get('benthos.save', null); if (!s) return S.newGame(false);
     B.state = s; s.seen = s.seen || {};
-    if (s.ng) B.setRes(320, 180); else B.setRes(480, 270);
+    B.playRes(s.ng);
     S.loadAct(s.act, s.cp, s.player);
     B.mode = 'play';
   };
   S.newGame = function (ng) {
     B.Hud.closeMenu();
     S.newState(ng); B.meta.runs++; B.saveMeta();
-    if (ng) B.setRes(320, 180); else B.setRes(480, 270);
+    B.playRes(ng);
     S.loadAct('deck');
     B.mode = 'play';
   };

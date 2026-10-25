@@ -714,7 +714,7 @@
       update(dt) {
         this.t += dt;
         if (this.t > 7.5 && !this.f1) { this.f1 = true; A.sfx('eyeshut'); A.sfx('static', null, 0.6); }
-        if (this.t > 9) { B.setRes(B.state.ng ? 320 : 480, B.state.ng ? 180 : 270); B.SC = 1; B.PX = 12; B.PY = 8; B.PZ = 2.5; B.OFF = -30; B.scene = null; B.mode = 'play'; P.lockT = 1.5; P.reach = 1;
+        if (this.t > 9) { B.playRes(B.state.ng); B.SC = 1; B.PX = 12; B.PY = 8; B.PZ = 2.5; B.OFF = -30; B.scene = null; B.mode = 'play'; P.lockT = 1.5; P.reach = 1;
           // the arm moves on its own: tether torn, camera thrown into the brine
           const e = B.E.add({ type: 'eyeCam', x: P.x, y: P.y, z: P.z - 0.5, vx: Math.cos(a) * 5, vy: Math.sin(a) * 5, vz: -1, t: 0,
             update(dt2) { this.t += dt2; this.x += this.vx * dt2; this.y += this.vy * dt2; this.vx *= 0.97; this.vy *= 0.97; this.vz += dt2 * 1.5; this.z += this.vz * dt2; if (this.t > 30) this.alive = false; },

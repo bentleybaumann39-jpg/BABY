@@ -234,7 +234,7 @@ window.B = window.B || {};
     del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } },
   };
   B.store = store;
-  const SET_DEF = { master: 0.8, music: 0.7, crt: true, photo: false, honest: false, steady: false, captions: true, rumble: true, shake: true, markers: true, difficulty: 1, quality: 1 };
+  const SET_DEF = { master: 0.8, music: 0.7, crt: true, photo: false, honest: false, steady: false, captions: true, rumble: true, shake: true, markers: true, difficulty: 1, quality: 1, qualityChecked: false };
   B.settings = Object.assign({}, SET_DEF, store.get('benthos.settings', {}));
   for (const k in B.settings) if (!(k in SET_DEF) || typeof B.settings[k] !== typeof SET_DEF[k]) B.settings[k] = SET_DEF[k];
   B.saveSettings = () => store.set('benthos.settings', B.settings);
