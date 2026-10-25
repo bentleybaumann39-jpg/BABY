@@ -40,6 +40,8 @@ await page.evaluate(() => {
     const P = B.player;
     if (B.mode === 'title') { if (B.Hud.menuOpen()) { set('confirm', !I.state.confirm); } return; }
     if (B.mode === 'dead') { note('DIED: ' + B.deadCause + ' at ' + Math.round(P.z) + ' m'); set('confirm', !I.state.confirm); return; }
+    if (B.Hud.menuOpen() && B.mode !== 'pause') { if (!bot.endNoted) { bot.endNoted = true; note('MENU: ' + B.Hud._menu().items.map(i => i.label).join(' / ')); } set('confirm', !I.state.confirm); return; }
+    if (B.mode === 'title' && bot.endNoted && !bot.creditsNoted) { bot.creditsNoted = true; note('BACK AT THE TITLE'); }
     if (B.mode !== 'play' || !P) { release(); return; }
     // at a fabricator: build hull rating while it can be afforded, then close
     const cr = B.Hud._craft();

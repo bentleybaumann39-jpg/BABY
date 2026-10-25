@@ -5595,7 +5595,7 @@ void main(){
     for (const c of caps) {
       const who = c.label || (c.who === 'tobias' ? 'TOBIAS: ' : c.who === 'mara' ? 'MARA: ' : c.who === 'new' ? (B.act === 'deck' ? 'CREW: ' : 'HV-0420: ') : '');
       const col = c.who === 'tobias' ? amber(3) : c.who === 'mara' ? COL.g6 : c.who === 'new' ? amber(2) : COL.b10;
-      for (const l of Hd.wrap(who + c.text, Math.floor((R.W - 150) / 6))) lines.push([l, col]);
+      for (const l of Hd.wrap(who + c.text, Math.floor((capTouch() ? R.W * 0.55 : R.W - 150) / 6))) lines.push([l, col]);
     }
     return lines.slice(-4);
   }
@@ -5605,8 +5605,11 @@ void main(){
     if (!B.Story) return;
     const show = captionLines(); if (!show.length) return;
     let y = captionBase() - (show.length - 1) * 9;
-    for (const [l, col] of show) { const w = Hd.tw(l); R.shadeRect((R.W - w) / 2 - 3, y - 2, w + 6, 11, COL.k, 0.7); Hd.text((R.W - w) / 2, y, l, col); y += 9; }
+    // with thumbs on the right-hand buttons, captions sit left of centre, clear of them
+    const cx = capTouch() ? R.W * 0.4 : R.W / 2;
+    for (const [l, col] of show) { const w = Hd.tw(l); R.shadeRect(Math.round(cx - w / 2) - 3, y - 2, w + 6, 11, COL.k, 0.7); Hd.text(Math.round(cx - w / 2), y, l, col); y += 9; }
   }
+  const capTouch = () => I.touchMode && B.mode === 'play' && B.act !== 'deck';
   function drawToasts() {
     let y = 46;
     for (const t of toasts) { const w = Hd.tw(t.t); R.shadeRect((R.W - w) / 2 - 3, y - 2, w + 6, 11, COL.k, 0.75); Hd.text((R.W - w) / 2, y, t.t, amber(3)); y += 11; }
