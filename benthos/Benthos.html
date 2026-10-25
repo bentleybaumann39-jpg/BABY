@@ -4880,6 +4880,10 @@ void main(){
   };
   S.ending = function (which) {
     if (!B.meta.endings.includes(which)) B.meta.endings.push(which);
+    // records: the fastest descent to an ending, and the most of the story found in one run
+    const s = st(), t = Math.round(s.playT || 0);
+    if (t > 60 && (!B.meta.bestTime || t < B.meta.bestTime)) B.meta.bestTime = t;
+    B.meta.mostRead = Math.max(B.meta.mostRead || 0, (s.read || []).length);
     B.meta.ngplus = true; B.saveMeta();
     B.store.del('benthos.save');
     B.Hud.ending(which);
@@ -4950,6 +4954,7 @@ void main(){
   let ghostT = 120, ghostFrameT = 90;
   S.update = function (dt) {
     sightings(dt);
+    if (B.mode === 'play' && st()) st().playT = (st().playT || 0) + dt;
     runTimers(dt);
     updateCaps(dt);
     if (B.mode !== 'play') return;
@@ -6334,7 +6339,8 @@ void main(){
   function recordsMenu(back) {
     const m = B.meta, E3 = ['ascent', 'sediment', 'lossless'], seen = Object.keys(m.seen || {}).length;
     const L = ['DESCENTS BEGUN · ' + (m.runs || 0), 'TIMES THE SIGNAL WAS LOST · ' + (m.deaths || 0), 'HELMETS IN THE ARCHIVE · ' + (26 + (m.deaths || 0)),
-      'FIELD NOTES · ' + seen + '/' + Object.keys(S.NOTES).length, '', 'ENDINGS'].concat(E3.map(e => '  ' + ((m.endings || []).includes(e) ? e.toUpperCase() : '- - -')));
+      'FIELD NOTES · ' + seen + '/' + Object.keys(S.NOTES).length, 'MOST OF THE STORY IN ONE RUN · ' + (m.mostRead || 0) + '/' + S.docCount(),
+      'FASTEST DESCENT · ' + (m.bestTime ? Math.floor(m.bestTime / 60) + ':' + String(m.bestTime % 60).padStart(2, '0') : '- - -'), '', 'ENDINGS'].concat(E3.map(e => '  ' + ((m.endings || []).includes(e) ? e.toUpperCase() : '- - -')));
     if (m.ngplus) L.push('', 'THE SECOND COPY IS AVAILABLE');
     Hd.menu({ title: 'RECORDS', cancel: true, onCancel: back, items: L.map(l => ({ label: l, disabled: true })).concat([{ label: 'BACK', fn: back }]) });
   }

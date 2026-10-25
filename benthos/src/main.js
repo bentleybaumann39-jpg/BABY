@@ -139,7 +139,8 @@
   function recordsMenu(back) {
     const m = B.meta, E3 = ['ascent', 'sediment', 'lossless'], seen = Object.keys(m.seen || {}).length;
     const L = ['DESCENTS BEGUN · ' + (m.runs || 0), 'TIMES THE SIGNAL WAS LOST · ' + (m.deaths || 0), 'HELMETS IN THE ARCHIVE · ' + (26 + (m.deaths || 0)),
-      'FIELD NOTES · ' + seen + '/' + Object.keys(S.NOTES).length, '', 'ENDINGS'].concat(E3.map(e => '  ' + ((m.endings || []).includes(e) ? e.toUpperCase() : '- - -')));
+      'FIELD NOTES · ' + seen + '/' + Object.keys(S.NOTES).length, 'MOST OF THE STORY IN ONE RUN · ' + (m.mostRead || 0) + '/' + S.docCount(),
+      'FASTEST DESCENT · ' + (m.bestTime ? Math.floor(m.bestTime / 60) + ':' + String(m.bestTime % 60).padStart(2, '0') : '- - -'), '', 'ENDINGS'].concat(E3.map(e => '  ' + ((m.endings || []).includes(e) ? e.toUpperCase() : '- - -')));
     if (m.ngplus) L.push('', 'THE SECOND COPY IS AVAILABLE');
     Hd.menu({ title: 'RECORDS', cancel: true, onCancel: back, items: L.map(l => ({ label: l, disabled: true })).concat([{ label: 'BACK', fn: back }]) });
   }

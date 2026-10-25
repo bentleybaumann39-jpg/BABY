@@ -741,6 +741,10 @@
   };
   S.ending = function (which) {
     if (!B.meta.endings.includes(which)) B.meta.endings.push(which);
+    // records: the fastest descent to an ending, and the most of the story found in one run
+    const s = st(), t = Math.round(s.playT || 0);
+    if (t > 60 && (!B.meta.bestTime || t < B.meta.bestTime)) B.meta.bestTime = t;
+    B.meta.mostRead = Math.max(B.meta.mostRead || 0, (s.read || []).length);
     B.meta.ngplus = true; B.saveMeta();
     B.store.del('benthos.save');
     B.Hud.ending(which);
@@ -811,6 +815,7 @@
   let ghostT = 120, ghostFrameT = 90;
   S.update = function (dt) {
     sightings(dt);
+    if (B.mode === 'play' && st()) st().playT = (st().playT || 0) + dt;
     runTimers(dt);
     updateCaps(dt);
     if (B.mode !== 'play') return;
