@@ -6055,7 +6055,7 @@ void main(){
     B.Story.clearCaps();
     if (which === 'ascent') {
       // For the only time in the game, up works.
-      B.map = S.getMap('void'); B.E.reset(); B.act = 'act2';
+      B.map = S.getMap('void'); B.E.reset(); B.act = 'act2'; B.E.life();
       P.z = 4190; P.vx = P.vy = P.vz = 0; S.locked = true; S.surfacing = true;
       A.waltz('clean'); A.setLofi(16, 20000);
       let fid = P.fidelity;
@@ -6066,6 +6066,10 @@ void main(){
           if (this.surf) return;
           const sp = Math.min(70, 4 + this.t * 2.4);
           P.z = Math.max(0, P.z - sp * dt); P.yaw += dt * 0.05;
+          // the plankton she rises through lights up and streams away below her
+          const dens = P.z < 180 ? 0 : P.z < 300 ? (P.z - 180) / 120 : P.z > 3000 ? 0.4 : 1, n = Math.min(14, sp * 0.4) * dens;
+          for (let k = 0; k < n; k++) if (Math.random() < 0.5) B.Life.spark(P.x + M.rnd(-7, 7), P.y + M.rnd(-5, 5), P.z + M.rnd(-1, 4), 0, 0, 0, M.rnd(0.3, 0.9), Math.random() < 0.85 ? 0 : 2);
+          if (P.z < 420 && !this.whale) { this.whale = true; B.E.whale(P.x - 30, P.y - 8, P.z - 30, 0.1); }
           if (P.z < 3000 && P.res > 2) P.res = 2; if (P.z < 1100 && P.res > 1) { P.res = 1; P.flipped = false; }
           const tf = Math.round(M.lerp(16, fid, P.z / 4190)); if (tf !== P.fidelity) { P.fidelity = tf; R.setFidelity(tf); }
           B.act = P.z < 1000 ? 'act1' : 'act2';
