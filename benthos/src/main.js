@@ -7,7 +7,7 @@
   let shakeAmt = 0, shx = 0, shy = 0;
   const camS = { x: 0, y: 0, z: 0 };
   let pauseSnap = null, pauseT = 0;
-  let lastOx = 0, lastOy = 0;
+  let lastOx = 0, lastOy = 0, lightT = 6, lightAt = -99;
 
   B.shake = function (a) { if (B.settings.shake && !B.settings.photo) shakeAmt = Math.max(shakeAmt, a); };
   B.setRes = function (w, h) {
@@ -237,6 +237,12 @@
     if (B.mode === 'title') env.eye = { x: tx, y: ty + 4, z: tz - 6 }; else env.eye = sc && sc.cam ? { x: sc.cam.x, y: sc.cam.y, z: sc.cam.z } : { x: P.x, y: P.y, z: P.z - 0.8 };
     env.caustic = eyeZ < 150 ? 1 : 0; env.cauFrame = (((B.time * 8) | 0) % 24) * 4096; env.time = B.time;
     env.topR = 0.95; env.topG = 0.86; env.topB = 0.8; env.sunScale = 1;
+    // the storm over the Asher Deep: a double flash now and then, thunder a few seconds behind it
+    if (topside && B.act === 'deck' && !B.settings.photo) {
+      if ((lightT -= dt) <= 0) { lightT = M.rnd(14, 32); lightAt = B.time; A.sfxAt('thunder', M.rnd(1.2, 3.5)); }
+      const lt = B.time - lightAt, f = lt < 0.08 ? 1 : lt > 0.16 && lt < 0.24 ? 0.7 : lt < 0.6 ? Math.max(0, 0.25 - lt * 0.4) : 0;
+      if (f > 0) { env.topR += f * 2.2; env.topG += f * 2.3; env.topB += f * 2.6; }
+    }
     if (B.mode === 'title') env.lamp.on = false;
     R.begin();
     R.terrain(B.map, B.mode === 'play' && !topside && P ? P : null);

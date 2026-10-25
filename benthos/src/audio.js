@@ -194,6 +194,8 @@
     whaleClick(t) { burst(exterior, 'bandpass', 2800, 1.2, t, 0.0005, 0.001, 0.025, 0.5); burst(revSend, 'bandpass', 2200, 1, t, 0.0005, 0.002, 0.4, 0.15); },
     // a black smoker: a deep roar breathing up out of the floor
     vent(t) { burst(exterior, 'lowpass', 220, 0.8, t, 0.6, 1.2, 1.5, 0.35, brown); burst(exterior, 'bandpass', 900, 0.6, t + 0.2, 0.4, 0.8, 1, 0.05); },
+    // thunder over the sea: a crack, then a long low roll
+    thunder(t) { burst(exterior, 'lowpass', 900, 0.7, t, 0.01, 0.05, 0.6, 0.35, white); burst(exterior, 'lowpass', 160, 0.6, t + 0.1, 0.4, 1.4, 3.2, 0.7, brown); burst(revSend, 'lowpass', 220, 0.6, t + 0.2, 0.6, 1.2, 3.5, 0.3, brown); },
     splash(t) { burst(exterior, 'lowpass', 1500, 0.6, t, 0.01, 0.2, 1.2, 0.6, white, 300); },
   };
   function I_rumble(a, b, ms) { if (B.I) B.I.rumble(a, b, ms); }
