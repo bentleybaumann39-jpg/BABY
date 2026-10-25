@@ -6041,8 +6041,8 @@ void main(){
         const blk = (bx, by, bw, bh) => { for (let y = 0; y < bh; y += s) for (let x = 0; x < bw; x += s) { const px = Math.floor((fx + bx + x) / s) * s, py = Math.floor((fy + by + y) / s) * s; R.rect(px, py, s, s, white); } };
         blk(-6, 0, 12, 11); blk(-9, 11, 18, 14); blk(-12, 13, 4, 10); blk(8, 13, 4, 10); blk(-7, 25 - kneel, 5, 10 - kneel / 2); blk(2, 25 - kneel, 5, 10 - kneel / 2);
         R.rect(Math.floor((fx - 3) / s) * s, Math.floor((fy + 3) / s) * s, 6 + (s > 1 ? s : 0), 4, COL.k);
-        Hd.text(6, 6, 'WREN · MAGPIE-3 CAM1', white); Hd.text(6, 16, v.label, white);
-        Hd.text(W - 6 - Hd.tw('T+' + String(Math.floor(this.t * 2.7 + vi * 3)).padStart(2, '0') + ':' + String(Math.floor(this.t * 37) % 60).padStart(2, '0')), 6, 'T+' + String(Math.floor(this.t * 2.7 + vi * 3)).padStart(2, '0') + ':' + String(Math.floor(this.t * 37) % 60).padStart(2, '0'), white);
+        Hd.text(16, 12, 'WREN · MAGPIE-3 CAM1', white); Hd.text(16, 22, v.label, white);
+        Hd.text(W - 16 - Hd.tw('T+' + String(Math.floor(this.t * 2.7 + vi * 3)).padStart(2, '0') + ':' + String(Math.floor(this.t * 37) % 60).padStart(2, '0')), 12, 'T+' + String(Math.floor(this.t * 2.7 + vi * 3)).padStart(2, '0') + ':' + String(Math.floor(this.t * 37) % 60).padStart(2, '0'), white);
         if (v.future && ((B.frame >> 3) & 1)) Hd.center(Hh - 20, 'THE NEXT ONE', white);
       },
     };
