@@ -22,7 +22,7 @@
 'use strict';
 window.B = window.B || {};
 (function (B) {
-  B.VERSION = '0.1.0';
+  B.VERSION = '1.1.0';
 
   // Internal resolution (New Game+ drops to 320x180, see B.setRes).
   B.W = 480; B.H = 270;
@@ -1741,6 +1741,10 @@ void main(){
       case 'shell': return [P.c([-0.07, 0, bob], [0.07, 0, bob], 0.035, c('#d0a040'), { m: 3 })];
       case 'air': return [P.c([-0.25, 0, bob], [0.25, 0, bob], 0.09, c('#5d6266'), { m: 3 })];
       case 'chitin': return [P.e(0, 0, bob, AX, [0.25, 0.15, 0.05], c('#c8b896'))];
+      case 'tape': { // a recorder: two reels behind a window and a red record light that still blinks
+        const on = Math.sin(t * 4) > 0 ? [0.9, 0.05, 0.02] : null;
+        return [P.b(0, 0, bob, P.basis(1, 0.2, 0), [0.2, 0.12, 0.05], c('#3a3f47'), { m: 3 }), P.s(-0.07, 0.01, bob - 0.05, 0.045, c('#9aa2ab')), P.s(0.07, 0.01, bob - 0.05, 0.045, c('#9aa2ab')), P.s(0.16, -0.06, bob - 0.04, 0.02, c('#5c1414'), on ? { e: on } : {})];
+      }
       case 'log': return [P.b(0, 0, bob, P.basis(1, 0.3, 0), [0.18, 0.13, 0.02], c('#2a2a2e')), P.s(0.12, 0, bob - 0.03, 0.025, c('#ffb43a'), { e: [0.4, 0.2, 0.02] })];
       case 'lung': return [P.e(0, 0, bob, AX, [0.3, 0.22, 0.12 + Math.sin(t * 0.42 * Math.PI) * 0.04], c('#2a2a2a')), P.c([0.3, 0, bob], [0.5, 0.1, bob], 0.03, c('#2a2a2a'))];
       case 'hand': return [P.b(0, 0, bob, P.basis(1, 0.2, 0), [0.3, 0.22, 0.02], c('#1c1c1c')), P.c([0.1, 0.1, bob - 0.06], [0.35, 0.05, bob - 0.1], 0.06, c('#d8d0bc'))];
@@ -1968,6 +1972,14 @@ void main(){
     eyeshut(t) { tone(interior, 'square', 220, 110, t, 0.002, 0.1, 0.2, 0.08); },
     heartbeat(t, v) { tone(interior, 'sine', 58, 40, t, 0.004, 0.02, 0.16, v); tone(interior, 'sine', 52, 38, t + 0.22, 0.004, 0.02, 0.14, v * 0.7); },
     wave(t) { burst(exterior, 'lowpass', 160, 0.7, t, 1.2, 1.4, 2.4, 0.5, brown); tone(exterior, 'sine', 48, 36, t, 1, 1.5, 2, 0.25); },
+    // crown jelly alarm: a rising glassy spiral
+    jelly(t) { for (let k = 0; k < 7; k++) tone(exterior, 'sine', 900 * Math.pow(1.19, k), 940 * Math.pow(1.19, k), t + k * 0.07, 0.01, 0.03, 0.5, 0.035); },
+    // a sea pen or bamboo coral lighting up when brushed: a soft breath of noise and a low bell
+    glow(t) { burst(exterior, 'bandpass', 1200, 1.5, t, 0.08, 0.2, 0.6, 0.06, white, 2400); tone(exterior, 'sine', 620, 610, t + 0.05, 0.02, 0.1, 1.2, 0.03); },
+    // the objective transponder answering a ping: two thin chirps, filtered by distance
+    transponder(t) { for (let k = 0; k < 2; k++) { tone(exterior, 'sine', 3100, 3300, t + k * 0.13, 0.003, 0.03, 0.08, 0.05); tone(revSend, 'sine', 3100, 3300, t + k * 0.13, 0.003, 0.02, 0.4, 0.03); } },
+    // viewport glass crazing under load
+    crackle(t) { for (let k = 0; k < 5; k++) burst(interior, 'highpass', 5000 + Math.random() * 3000, 2, t + Math.random() * 0.25, 0.0005, 0.001, 0.012, 0.18); },
     splash(t) { burst(exterior, 'lowpass', 1500, 0.6, t, 0.01, 0.2, 1.2, 0.6, white, 300); },
   };
   function I_rumble(a, b, ms) { if (B.I) B.I.rumble(a, b, ms); }
@@ -2197,11 +2209,11 @@ void main(){
       type: 'item', kind, x, y, z, n: o.n || 1, scrap: SCRAP.has(kind), r: 0.4, sid: o.sid,
       draw() {
         const t = B.time;
-        R.model(this.x, this.y, this.z, MD.item(this.kind, t + this.id), { minLight: this.kind === 'shard' || this.kind === 'log' ? 0.05 : 0.02 });
+        R.model(this.x, this.y, this.z, MD.item(this.kind, t + this.id), { minLight: this.kind === 'shard' || this.kind === 'log' || this.kind === 'tape' ? 0.05 : 0.02 });
         // a faint glint so pickups read in the dark when the lamp touches them
         if (E.inLamp(this.x, this.y, this.z, 12) > 0.1 && ((t * 3 + this.id) % 4) < 0.25) R.point(this.x, this.y, this.z - 0.2, 1, 1.5, 1.5, 1.4, 1);
       },
-      interact: { label: () => (e.kind === 'log' ? 'READ ' : 'TAKE ') + (e.title || ITEM_NAME[e.kind]), fn: () => B.Player.take(e) },
+      interact: { label: () => (e.kind === 'log' ? 'READ ' : e.kind === 'tape' ? 'PLAY ' : 'TAKE ') + (e.title || ITEM_NAME[e.kind]), fn: () => B.Player.take(e) },
     }, o));
     // saved pickups stay taken
     if (e.sid && B.state && B.state.taken && B.state.taken[e.sid]) e.alive = false;
@@ -3040,7 +3052,7 @@ void main(){
       update(d, dt, Pp) {
         d.ph += dt * 1.6; d.z += Math.sin(d.ph) * dt * 0.08;
         const near = Math.hypot(d.x - Pp.x, d.y - Pp.y, d.z - Pp.z);
-        if (d.alarm <= 0 && (near < 3.5 || inBeam(d.x, d.y, d.z, 9) > 0.15)) { d.alarm = 5; B.A && B.A.at && B.A.at('jelly', d.x, d.y, d.z, 0.4); }
+        if (d.alarm <= 0 && (near < 3.5 || inBeam(d.x, d.y, d.z, 9) > 0.15)) { d.alarm = 5; B.A.at('jelly', d.x, d.y, d.z, 0.5); }
         d.alarm -= dt;
       },
       draw(d) {
@@ -3236,7 +3248,7 @@ void main(){
   };
   function touchGlow(b, dt, Pp, kind, r) {
     const d = Math.hypot(b.x - Pp.x, b.y - Pp.y, b.z - 0.5 - Pp.z), mv = Math.hypot(Pp.vx, Pp.vy, Pp.vz);
-    if (d < r && mv > 0.4 && b.glow < 0.5) { b.glow = 3.5; Lf.burst(b.x, b.y, b.z - 0.4 * b.s, 6, 0.3, kind); }
+    if (d < r && mv > 0.4 && b.glow < 0.5) { b.glow = 3.5; Lf.burst(b.x, b.y, b.z - 0.4 * b.s, 6, 0.3, kind); B.A.at('glow', b.x, b.y, b.z, 0.8); }
     b.glow = Math.max(0, b.glow - dt);
   }
 
@@ -3424,6 +3436,7 @@ void main(){
     if (B.state && it.sid) B.state.taken[it.sid] = true;
     it.alive = false;
     if (k === 'log') { A.sfx('pickup'); B.Hud.openDoc(it.doc); B.Story.onRead && B.Story.onRead(it.doc); return; }
+    if (k === 'tape') { B.Story.playTape(it.tape); return; }
     if (k === 'o2') P.carts += it.n; else if (k === 'lime') P.limes += it.n; else if (k === 'air') P.air = Math.min(100, P.air + 50);
     else if (k === 'lung') { P.relics.lung = true; P.o2Max = 432; }
     else if (k === 'hand') P.relics.hand = true;
@@ -4042,6 +4055,44 @@ void main(){
       'DON\'T LET THEM SEND ANOTHER ONE.'] },
     plainhelm: { title: 'HELMET · NO SERIAL', body: ['THE VISOR IS PAINTED BLACK FROM THE INSIDE.', 'SCRATCHED UNDER THE PAINT: FOUR BEATS AND A GAP.'] },
   };
+  // Tapes: recorders found in the water. They play as voices over the comms, and their transcripts go
+  // into the journal with the documents.
+  const TAPES = {
+    tape1: { title: 'SURVEY CASSETTE · ARNESEN · 1994', who: 'new', label: 'ARNESEN (TAPE): ', lines: [
+      'SURVEY TAPE, ASHER DEEP, DAY ONE. ARNESEN. THIRTY-FOUR METRES, THE SUNLIT WALL.',
+      'VISIBILITY TWENTY. THE WALL GOES STRAIGHT DOWN, LIKE SOMEONE CUT IT.',
+      'STAKE SEVEN IS IN. THE SHELF RINGS WHEN YOU TAP IT. HOLLOW, MAYBE.',
+      '...SOMETHING IS TAPPING BACK. ECHO, PROBABLY. NOTE IT ANYWAY.'] },
+    tape2: { title: 'BELL RECORDER · HALVARD FOUR · 1994', who: 'new', label: 'HALVARD FOUR (TAPE): ', lines: [
+      "BELL RECORDER, HALVARD FOUR. WE'VE LOST THE UMBILICAL.",
+      "PELL'S COUNTING HEADS. HE KEEPS GETTING FIVE.",
+      'THERE ARE FOUR OF US IN HERE. THERE HAVE ALWAYS BEEN FOUR.',
+      'THE FIFTH ONE IS VERY POLITE. IT WAITS ITS TURN TO BREATHE.'] },
+    tape3: { title: 'BRIDGE RECORDER · BARGE GULL · 1994', who: 'new', label: 'GULL (TAPE): ', lines: [
+      'GULL TO HALVARD FOUR. GULL TO HALVARD FOUR. NOTHING ON THE LINE.',
+      'THE WINCH IS PAYING OUT ON ITS OWN. TWO THOUSAND METRES AND STILL GOING.',
+      'CAPTAIN SAYS CUT IT. NOBODY WANTS TO BE THE ONE.',
+      '...WE CUT IT. IT KEPT PAYING OUT.'] },
+    tape4: { title: 'REEL-TO-REEL · L. SZABO · THALASSA VIGIL · 1971', who: 'new', label: 'SZABO (TAPE): ', lines: [
+      'SZABO, VIGIL, THIRD DAY HOLDING STATION. THE GASOLINE KEEPS US UP.',
+      'THE LIGHT BELOW IS NOT OURS. IT ANSWERS WHEN WE SIGNAL.',
+      'KOVACS OPENED THE HATCH THIS MORNING. FROM THE INSIDE. HE SAID SOMEONE KNOCKED.',
+      'I HAVE STOPPED COUNTING THE KNOCKS. THEY COME IN FOURS, WITH A GAP.'] },
+    tape5: { title: 'SUIT RECORDER · HV-0419 · DATE UNREADABLE', who: 'mara', label: 'HV-0419 (TAPE): ', lines: [
+      "THIS IS EKDAHL. HV-0419. IF YOU'RE HEARING THIS IN MY VOICE, YOU'RE ME.",
+      "I DON'T KNOW WHICH COPY YOU ARE. I THINK I WAS THE SECOND.",
+      "WHEN TOBIAS TELLS YOU TO DROP YOUR WEIGHTS, HE'S SAID IT TO ALL OF US.",
+      "THE ARCHIVE ISN'T COUNTING THE DEAD. IT'S COUNTING THE CHANCES."] },
+  };
+  for (const k in TAPES) DOCS[k] = { title: 'TAPE · ' + TAPES[k].title, body: TAPES[k].lines, tape: k };
+  S.TAPES = TAPES;
+  S.playTape = function (key) {
+    const tp = TAPES[key]; if (!tp) return;
+    S.noteDoc(DOCS[key]); A.sfx('click'); A.sfx('static', 0, 0.6);
+    let t = B.time + 0.8;
+    for (const line of tp.lines) { const dur = Math.min(7, 2.4 + line.length * 0.06); Q.push({ who: tp.who, label: tp.label, text: line, at: t, dur }); t += dur + 0.4; }
+    S.after(() => A.sfx('click'), (t - B.time) * 1000);
+  };
   S.DOCS = DOCS;
 
   // ------------------------------------------------------------------ captions and comms
@@ -4078,7 +4129,7 @@ void main(){
       const q = Q[k];
       if (B.time >= q.at) {
         Q.splice(k, 1);
-        S.caps.push({ who: q.who, text: q.text, until: B.time + q.dur });
+        S.caps.push({ who: q.who, text: q.text, until: B.time + q.dur, label: q.label });
         if (!q.quiet && q.who !== 'hud') A.voice(q.who === 'new' ? 'new' : q.who === 'mara' ? 'mara' : 'tobias', q.dur * 0.8);
         if (q.who === 'hud') A.sfx('beep');
       }
@@ -4224,6 +4275,7 @@ void main(){
     // Salvage
     const it = (k, p, o) => E.item(k, p.x, p.y, p.z, Object.assign({ sid: 'a1.' + k + '.' + Math.round(p.x) + '.' + Math.round(p.y) }, o));
     const shelf = (dx, dy) => { const x = 104 + dx, y = 80 + dy; return { x, y, z: H(x, y) - 0.5 }; };
+    it('tape', shelf(5, -3), { tape: 'tape1', title: 'A SURVEY CASSETTE' });
     it('ti', shelf(3, -6)); it('o2', shelf(6, 5)); it('flare', shelf(-2, 8)); it('log', shelf(9, -1), { doc: DOCS.stake, title: 'SURVEY STAKE 7' });
     it('lime', tp(0, 40)); it('foam', tp(0, 50, 0.6, -0.1)); it('log', tp(0, 33, 0.6, 0.08), { doc: DOCS.asher4, title: 'ARRAY ELEMENT ASHER-4' });
     it('cu', tp(1, 36)); it('ti', tp(1, 50, 0.6, -0.15)); it('cer', tp(1, 42, 0.6, 0.2));
@@ -4234,7 +4286,7 @@ void main(){
     // the Gannet bell, the Halvard Four
     const bp = tp(6, 40, 1.6); E.prop(() => MD.bell({ lit: true }), bp.x, bp.y, bp.z, { solid: true, r: 1.4 }); S.bellPos = bp;
     E.bubble(bp.x, bp.y, bp.z - 2, 1);
-    it('lung', tp(6, 40, 0.5, 0.05), { title: 'THE SECOND LUNG' }); it('log', tp(6, 37, 0.6, -0.08), { doc: DOCS.gannet, title: 'GREASE PENCIL ON THE BELL' });
+    it('lung', tp(6, 40, 0.5, 0.05), { title: 'THE SECOND LUNG' }); it('tape', tp(6, 43, 0.6, -0.06), { tape: 'tape2', title: 'THE BELL RECORDER' }); it('log', tp(6, 37, 0.6, -0.08), { doc: DOCS.gannet, title: 'GREASE PENCIL ON THE BELL' });
     it('lime', tp(6, 50, 0.6, 0.15)); it('o2', tp(6, 33, 0.6, 0.18));
     for (const [r, a] of [[46, -0.15], [34, 0.12]]) { const p = tp(6, r, 0.4, a); S.corpse(p.x, p.y, p.z, '94', a * 9); }
     // whale fall
@@ -4300,6 +4352,7 @@ void main(){
       E.prop(() => MD.debris({ seed: i + 3 }), x, y, z, { solid: true, r: 2.2, flatZ: 1.6 });
       loot[i].forEach((k, j) => { const o = k === 'log' ? { doc: DOCS.barge, title: 'MANIFEST: BARGE GULL' } : {}; it(k, x + Math.cos(j * 2.1) * 2.8, y + Math.sin(j * 2.1) * 2.8, z - 0.5 + j * 0.3, o); });
       if (i === 1 || i === 4 || i === 7) E.cairn(x, y - 2.6, z - 1.2);
+      if (i === 3) it('tape', x - 1.5, y + 2.2, z - 0.6, { tape: 'tape3', title: "THE GULL'S BRIDGE RECORDER" });
     });
     // the Processions
     const p1 = path(0.27), p2 = { x: C + 60, y: C + 30 }, p3 = path(0.72);
@@ -4321,6 +4374,7 @@ void main(){
     E.cairn(VX + 2, VY - 1.5, VZ - 6);
     it('hand', VX + 0.4, VY - 1.6, VZ - 0.2, { title: "THE CARTOGRAPHER'S HAND" });
     it('log', VX - 0.6, VY - 1.4, VZ + 0.2, { doc: DOCS.vigil, title: "SZABO'S NOTEBOOK" });
+    it('tape', VX + 1.3, VY - 1.5, VZ - 0.1, { tape: 'tape4', title: "SZABO'S REEL-TO-REEL" });
     it('shard', VX + 3, VY + 1, VZ + 1.5); it('ti', VX - 3, VY - 2, VZ - 5.6); it('cer', VX + 5, VY - 1, VZ - 5.8);
     // Magpie-3 on its ledge
     const mz = H(MX, MY) - 0.9;
@@ -4368,6 +4422,7 @@ void main(){
     it('log', lx + 1.5, ly + 1, { doc: DOCS.tern, title: 'TERN-7 DATA CARD' });
     // helmets on the plain
     const helm = (x, y, era, doc, title) => { const pr = E.prop(() => MD.helmet({ era, yaw: x, cracked: true }), x, y, H(x, y) - 0.3, { anchor: false }); pr.mopts = { dead: true, lut: era === '94' ? 3 : 2, scale: era === '94' ? 2 : 3 }; if (doc) pr.interact = { label: () => 'READ: ' + title, fn: () => B.Hud.openDoc(doc) }; };
+    it('tape', 88 + 1.6, 82 + 1.2, { tape: 'tape5', title: 'A SUIT RECORDER' });
     helm(88, 82, 'mara', DOCS.hv417, 'HELMET HV-0417'); helm(140, 70, 'old', DOCS.plainhelm, 'HELMET, NO SERIAL'); helm(70, 150, '94'); helm(205, 120, '71'); helm(160, 210, 'old');
     // brine lakes, with preserved shapes under the mirror
     const LA = f.lakes[0];
@@ -4977,6 +5032,50 @@ void main(){
     }
     return [ix, iy];
   }
+  // The viewport cracking under crush debt: a crack graph grown from an impact point, revealed in order as
+  // the debt climbs past a third, sealing again (the gel layer) as it falls. Kept in buffer fractions.
+  let crackG = null, crackShow = 0;
+  function buildCracks(seed) {
+    const r = B.rng(seed), segs = [], ox = 0.7 + r() * 0.16, oy = 0.2 + r() * 0.2;
+    const grow = (x, y, a, L, o0, depth) => {
+      let len = 0;
+      while (len < L) {
+        const st = 0.008 + r() * 0.014; a += (r() - 0.5) * 0.8;
+        const nx = x + Math.cos(a) * st, ny = y + Math.sin(a) * st * 1.6;
+        segs.push([x, y, nx, ny, o0 + (len / L) * (1 - o0) * 0.9]);
+        if (depth < 2 && r() < 0.1) grow(nx, ny, a + (r() < 0.5 ? -1 : 1) * (0.6 + r() * 0.6), L * 0.4, o0 + (len / L) * 0.5, depth + 1);
+        x = nx; y = ny; len += st;
+      }
+    };
+    for (let b = 0; b < 8; b++) grow(ox, oy, b / 8 * Math.PI * 2 + r() * 0.5, 0.12 + r() * 0.42, r() * 0.12, 0);
+    for (let k = 1; k <= 3; k++) { const rad = 0.018 * k; for (let a = 0; a < Math.PI * 2; a += 0.35) if (r() < 0.75) segs.push([ox + Math.cos(a) * rad, oy + Math.sin(a) * rad * 1.7, ox + Math.cos(a + 0.35) * rad, oy + Math.sin(a + 0.35) * rad * 1.7, 0.2 + k * 0.15]); }
+    return { segs, ox, oy };
+  }
+  function glassCracks(P) {
+    const want = M.clamp((P.crush - 33) / 62, 0, 1);
+    const before = crackShow;
+    crackShow = want > crackShow ? Math.min(want, crackShow + 1 / 60 * 0.8) : Math.max(want, crackShow - 1 / 60 * 0.05);
+    if (Math.floor(crackShow * 12) > Math.floor(before * 12)) A.sfx('crackle');
+    if (crackShow <= 0.001) return;
+    if (!crackG) crackG = buildCracks(7 + (B.state ? B.state.deaths : 0));
+    const W = R.W, Hh = R.H, hi = C32('#c4e6ee'), lo = C32('#0e2338'), out = R.out32;
+    for (const sg of crackG.segs) {
+      if (sg[4] > crackShow) continue;
+      const x0 = sg[0] * W, y0 = sg[1] * Hh, x1 = sg[2] * W, y1 = sg[3] * Hh, n = Math.max(1, Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0))));
+      const tip = crackShow - sg[4] < 0.03;
+      for (let k = 0; k <= n; k++) {
+        const x = Math.round(x0 + (x1 - x0) * k / n), y = Math.round(y0 + (y1 - y0) * k / n);
+        if (x < 1 || y < 1 || x >= W - 1 || y >= Hh - 1) continue;
+        // refraction: the pixel beside the crack shows what's one pixel over
+        out[y * W + x + 1] = out[(y - 1) * W + x + 1];
+        out[y * W + x] = tip && (B.frame >> 2) & 1 ? lo : hi;
+        if ((x + y) & 1) out[(y + 1) * W + x] = lo;
+      }
+    }
+    const cx = Math.round(crackG.ox * W), cy = Math.round(crackG.oy * Hh);
+    for (let k = -2; k <= 2; k++) { R.pset(cx + k, cy, hi); R.pset(cx, cy + k, hi); }
+  }
+  Hd.resetCracks = () => { crackG = null; crackShow = 0; };
   function tunnel(k, seed) {
     if (k <= 0.01) return;
     const W = R.W, Hh = R.H, out = R.out32;
@@ -5054,6 +5153,7 @@ void main(){
         if (B.act === 'act3' && B.facePulse > 0) macroFace();
         const tk = (P.breathHold ? 0.35 : 0) + (P.suffoT > 0 ? Math.min(0.9, P.suffoT / 20) : 0) + (P.paco2 > 70 && !B.settings.honest ? (P.paco2 - 70) / 40 : 0) + (P.braced ? 0.15 : 0);
         tunnel(Math.min(0.95, tk), B.frame >> 3);
+        glassCracks(P);
         const [ix, iy] = bezel(); inset = [ix, iy];
         const dim = !P.powered;
         const a2 = dim ? amber(1) : amber(2), a3 = dim ? amber(1) : amber(3);
@@ -5125,12 +5225,14 @@ void main(){
   // ------------------------------------------------------------------ objective and transponder beacon
   // The objective line sits at the top; it brightens when it changes and after each ping. The beacon is
   // the transponder's bearing, shown for a few seconds after a ping (and always on deck).
-  let obText = '', obT = -99;
+  let obText = '', obT = -99, heardPing = -99;
   function drawObjective(ix, iy) {
     const P = B.player, ob = B.Story.objective && B.Story.objective();
     if (!ob || !B.settings.markers) return;
     if (ob.text !== obText) { obText = ob.text; obT = B.time; if (B.time > 2) A.sfx('beep'); }
     const lastPing = P.pings && P.pings.length ? P.pings[P.pings.length - 1].t0 : -99, fresh = Math.max(obT, lastPing);
+    // the transponder answers a ping after the sound has crossed the water and come back
+    if (lastPing > heardPing && ob.x !== undefined && B.act !== 'deck') { heardPing = lastPing; A.sfxAt('transponder', Math.min(2.5, 0.25 + Math.hypot(ob.x - P.x, ob.y - P.y, ob.z - P.z) / 750)); }
     const age = B.time - fresh, act3 = B.act === 'act3';
     const tc = age < 6 ? ((age < 1 && (B.frame >> 3) & 1) ? amber(2) : amber(3)) : amber(1);
     const t = (act3 && B.facePulse > 0 ? '· ' : '◆ ') + ob.text;
@@ -5256,7 +5358,7 @@ void main(){
   function captionLines() {
     const caps = B.Story ? B.Story.caps : [], lines = [];
     for (const c of caps) {
-      const who = c.who === 'tobias' ? 'TOBIAS: ' : c.who === 'mara' ? 'MARA: ' : c.who === 'new' ? (B.act === 'deck' ? 'CREW: ' : 'HV-0420: ') : '';
+      const who = c.label || (c.who === 'tobias' ? 'TOBIAS: ' : c.who === 'mara' ? 'MARA: ' : c.who === 'new' ? (B.act === 'deck' ? 'CREW: ' : 'HV-0420: ') : '');
       const col = c.who === 'tobias' ? amber(3) : c.who === 'mara' ? COL.g6 : c.who === 'new' ? amber(2) : COL.b10;
       for (const l of Hd.wrap(who + c.text, Math.floor((R.W - 150) / 6))) lines.push([l, col]);
     }
@@ -5385,9 +5487,22 @@ void main(){
     if ((B.frame >> 5) & 1) Hd.center(R.H / 2 + 22, I.touchMode ? 'TAP TO CONTINUE' : 'CLICK OR PRESS ANY KEY', amber(1));
     Hd.center(R.H - 22, 'HEADPHONES · A DARK ROOM', C32('#4a3a20'));
   };
+  const TAGS = ["THE DEEP DOESN'T KILL YOU. IT KEEPS YOU.", 'EVERY LIGHT YOU MAKE IS A PROMISE TO SOMETHING HUNGRY.', 'FOUR KILOMETRES OF WATER. ONE LAMP. NOBODY COMING.'];
   Hd.drawTitle = function () {
-    Hd.center(26, 'BENTHOS', amber(3), 4, true);
-    Hd.center(58, 'THE SILENT PRESSURE', amber(2), 1, true);
+    // the logo, pressed on by the water: a dark band behind it, and now and then a row slips sideways
+    const lw = Hd.tw('BENTHOS', 4), lx = Math.round((R.W - lw) / 2), ly = 26;
+    R.shadeRect(0, ly - 10, R.W, 52, COL.k, 0.55);
+    Hd.text(lx + 2, ly + 2, 'BENTHOS', COL.a0, 4);
+    Hd.text(lx, ly, 'BENTHOS', amber(3), 4, true);
+    const g = Math.floor(B.time * 3);
+    if (B.hash2(g, 1, 3) > 0.82) {
+      const row = ly + Math.floor(B.hash2(g, 2, 3) * 28), sh = B.hash2(g, 3, 3) > 0.5 ? 2 : -2, out = R.out32;
+      for (let y = row; y < row + 2 + (g & 3); y++) { const r0 = y * R.W; const tmp = out.slice(r0 + lx - 4, r0 + lx + lw + 4); for (let x = 0; x < tmp.length; x++) { const tx = lx - 4 + x + sh; if (tx >= 0 && tx < R.W) out[r0 + tx] = tmp[x]; } }
+    }
+    Hd.center(ly + 34, 'THE SILENT PRESSURE', amber(2), 1, true);
+    // the taglines surface and sink, one at a time
+    const per = 7, k = Math.floor(B.time / per) % TAGS.length, ph = (B.time % per) / per, a = Math.min(1, ph * 5, (1 - ph) * 5);
+    if (a > 0.05) { const t = TAGS[k], w = Hd.tw(t), x = Math.round((R.W - w) / 2); for (let i = 0; i < t.length; i++) if (B.hash2(i, k, 9) < a) Hd.text(x + i * 6, R.H - 26, t[i], COL.b10); }
     const n = 26 + B.meta.deaths;
     Hd.text(8, R.H - 12, 'THE ARCHIVE HOLDS ' + n, C32('#4a3a20'));
     Hd.text(R.W - 8 - Hd.tw('V' + B.VERSION), R.H - 12, 'V' + B.VERSION, C32('#4a3a20'));

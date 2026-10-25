@@ -66,6 +66,44 @@
       'DON\'T LET THEM SEND ANOTHER ONE.'] },
     plainhelm: { title: 'HELMET · NO SERIAL', body: ['THE VISOR IS PAINTED BLACK FROM THE INSIDE.', 'SCRATCHED UNDER THE PAINT: FOUR BEATS AND A GAP.'] },
   };
+  // Tapes: recorders found in the water. They play as voices over the comms, and their transcripts go
+  // into the journal with the documents.
+  const TAPES = {
+    tape1: { title: 'SURVEY CASSETTE · ARNESEN · 1994', who: 'new', label: 'ARNESEN (TAPE): ', lines: [
+      'SURVEY TAPE, ASHER DEEP, DAY ONE. ARNESEN. THIRTY-FOUR METRES, THE SUNLIT WALL.',
+      'VISIBILITY TWENTY. THE WALL GOES STRAIGHT DOWN, LIKE SOMEONE CUT IT.',
+      'STAKE SEVEN IS IN. THE SHELF RINGS WHEN YOU TAP IT. HOLLOW, MAYBE.',
+      '...SOMETHING IS TAPPING BACK. ECHO, PROBABLY. NOTE IT ANYWAY.'] },
+    tape2: { title: 'BELL RECORDER · HALVARD FOUR · 1994', who: 'new', label: 'HALVARD FOUR (TAPE): ', lines: [
+      "BELL RECORDER, HALVARD FOUR. WE'VE LOST THE UMBILICAL.",
+      "PELL'S COUNTING HEADS. HE KEEPS GETTING FIVE.",
+      'THERE ARE FOUR OF US IN HERE. THERE HAVE ALWAYS BEEN FOUR.',
+      'THE FIFTH ONE IS VERY POLITE. IT WAITS ITS TURN TO BREATHE.'] },
+    tape3: { title: 'BRIDGE RECORDER · BARGE GULL · 1994', who: 'new', label: 'GULL (TAPE): ', lines: [
+      'GULL TO HALVARD FOUR. GULL TO HALVARD FOUR. NOTHING ON THE LINE.',
+      'THE WINCH IS PAYING OUT ON ITS OWN. TWO THOUSAND METRES AND STILL GOING.',
+      'CAPTAIN SAYS CUT IT. NOBODY WANTS TO BE THE ONE.',
+      '...WE CUT IT. IT KEPT PAYING OUT.'] },
+    tape4: { title: 'REEL-TO-REEL · L. SZABO · THALASSA VIGIL · 1971', who: 'new', label: 'SZABO (TAPE): ', lines: [
+      'SZABO, VIGIL, THIRD DAY HOLDING STATION. THE GASOLINE KEEPS US UP.',
+      'THE LIGHT BELOW IS NOT OURS. IT ANSWERS WHEN WE SIGNAL.',
+      'KOVACS OPENED THE HATCH THIS MORNING. FROM THE INSIDE. HE SAID SOMEONE KNOCKED.',
+      'I HAVE STOPPED COUNTING THE KNOCKS. THEY COME IN FOURS, WITH A GAP.'] },
+    tape5: { title: 'SUIT RECORDER · HV-0419 · DATE UNREADABLE', who: 'mara', label: 'HV-0419 (TAPE): ', lines: [
+      "THIS IS EKDAHL. HV-0419. IF YOU'RE HEARING THIS IN MY VOICE, YOU'RE ME.",
+      "I DON'T KNOW WHICH COPY YOU ARE. I THINK I WAS THE SECOND.",
+      "WHEN TOBIAS TELLS YOU TO DROP YOUR WEIGHTS, HE'S SAID IT TO ALL OF US.",
+      "THE ARCHIVE ISN'T COUNTING THE DEAD. IT'S COUNTING THE CHANCES."] },
+  };
+  for (const k in TAPES) DOCS[k] = { title: 'TAPE · ' + TAPES[k].title, body: TAPES[k].lines, tape: k };
+  S.TAPES = TAPES;
+  S.playTape = function (key) {
+    const tp = TAPES[key]; if (!tp) return;
+    S.noteDoc(DOCS[key]); A.sfx('click'); A.sfx('static', 0, 0.6);
+    let t = B.time + 0.8;
+    for (const line of tp.lines) { const dur = Math.min(7, 2.4 + line.length * 0.06); Q.push({ who: tp.who, label: tp.label, text: line, at: t, dur }); t += dur + 0.4; }
+    S.after(() => A.sfx('click'), (t - B.time) * 1000);
+  };
   S.DOCS = DOCS;
 
   // ------------------------------------------------------------------ captions and comms
@@ -102,7 +140,7 @@
       const q = Q[k];
       if (B.time >= q.at) {
         Q.splice(k, 1);
-        S.caps.push({ who: q.who, text: q.text, until: B.time + q.dur });
+        S.caps.push({ who: q.who, text: q.text, until: B.time + q.dur, label: q.label });
         if (!q.quiet && q.who !== 'hud') A.voice(q.who === 'new' ? 'new' : q.who === 'mara' ? 'mara' : 'tobias', q.dur * 0.8);
         if (q.who === 'hud') A.sfx('beep');
       }
@@ -248,6 +286,7 @@
     // Salvage
     const it = (k, p, o) => E.item(k, p.x, p.y, p.z, Object.assign({ sid: 'a1.' + k + '.' + Math.round(p.x) + '.' + Math.round(p.y) }, o));
     const shelf = (dx, dy) => { const x = 104 + dx, y = 80 + dy; return { x, y, z: H(x, y) - 0.5 }; };
+    it('tape', shelf(5, -3), { tape: 'tape1', title: 'A SURVEY CASSETTE' });
     it('ti', shelf(3, -6)); it('o2', shelf(6, 5)); it('flare', shelf(-2, 8)); it('log', shelf(9, -1), { doc: DOCS.stake, title: 'SURVEY STAKE 7' });
     it('lime', tp(0, 40)); it('foam', tp(0, 50, 0.6, -0.1)); it('log', tp(0, 33, 0.6, 0.08), { doc: DOCS.asher4, title: 'ARRAY ELEMENT ASHER-4' });
     it('cu', tp(1, 36)); it('ti', tp(1, 50, 0.6, -0.15)); it('cer', tp(1, 42, 0.6, 0.2));
@@ -258,7 +297,7 @@
     // the Gannet bell, the Halvard Four
     const bp = tp(6, 40, 1.6); E.prop(() => MD.bell({ lit: true }), bp.x, bp.y, bp.z, { solid: true, r: 1.4 }); S.bellPos = bp;
     E.bubble(bp.x, bp.y, bp.z - 2, 1);
-    it('lung', tp(6, 40, 0.5, 0.05), { title: 'THE SECOND LUNG' }); it('log', tp(6, 37, 0.6, -0.08), { doc: DOCS.gannet, title: 'GREASE PENCIL ON THE BELL' });
+    it('lung', tp(6, 40, 0.5, 0.05), { title: 'THE SECOND LUNG' }); it('tape', tp(6, 43, 0.6, -0.06), { tape: 'tape2', title: 'THE BELL RECORDER' }); it('log', tp(6, 37, 0.6, -0.08), { doc: DOCS.gannet, title: 'GREASE PENCIL ON THE BELL' });
     it('lime', tp(6, 50, 0.6, 0.15)); it('o2', tp(6, 33, 0.6, 0.18));
     for (const [r, a] of [[46, -0.15], [34, 0.12]]) { const p = tp(6, r, 0.4, a); S.corpse(p.x, p.y, p.z, '94', a * 9); }
     // whale fall
@@ -324,6 +363,7 @@
       E.prop(() => MD.debris({ seed: i + 3 }), x, y, z, { solid: true, r: 2.2, flatZ: 1.6 });
       loot[i].forEach((k, j) => { const o = k === 'log' ? { doc: DOCS.barge, title: 'MANIFEST: BARGE GULL' } : {}; it(k, x + Math.cos(j * 2.1) * 2.8, y + Math.sin(j * 2.1) * 2.8, z - 0.5 + j * 0.3, o); });
       if (i === 1 || i === 4 || i === 7) E.cairn(x, y - 2.6, z - 1.2);
+      if (i === 3) it('tape', x - 1.5, y + 2.2, z - 0.6, { tape: 'tape3', title: "THE GULL'S BRIDGE RECORDER" });
     });
     // the Processions
     const p1 = path(0.27), p2 = { x: C + 60, y: C + 30 }, p3 = path(0.72);
@@ -345,6 +385,7 @@
     E.cairn(VX + 2, VY - 1.5, VZ - 6);
     it('hand', VX + 0.4, VY - 1.6, VZ - 0.2, { title: "THE CARTOGRAPHER'S HAND" });
     it('log', VX - 0.6, VY - 1.4, VZ + 0.2, { doc: DOCS.vigil, title: "SZABO'S NOTEBOOK" });
+    it('tape', VX + 1.3, VY - 1.5, VZ - 0.1, { tape: 'tape4', title: "SZABO'S REEL-TO-REEL" });
     it('shard', VX + 3, VY + 1, VZ + 1.5); it('ti', VX - 3, VY - 2, VZ - 5.6); it('cer', VX + 5, VY - 1, VZ - 5.8);
     // Magpie-3 on its ledge
     const mz = H(MX, MY) - 0.9;
@@ -392,6 +433,7 @@
     it('log', lx + 1.5, ly + 1, { doc: DOCS.tern, title: 'TERN-7 DATA CARD' });
     // helmets on the plain
     const helm = (x, y, era, doc, title) => { const pr = E.prop(() => MD.helmet({ era, yaw: x, cracked: true }), x, y, H(x, y) - 0.3, { anchor: false }); pr.mopts = { dead: true, lut: era === '94' ? 3 : 2, scale: era === '94' ? 2 : 3 }; if (doc) pr.interact = { label: () => 'READ: ' + title, fn: () => B.Hud.openDoc(doc) }; };
+    it('tape', 88 + 1.6, 82 + 1.2, { tape: 'tape5', title: 'A SUIT RECORDER' });
     helm(88, 82, 'mara', DOCS.hv417, 'HELMET HV-0417'); helm(140, 70, 'old', DOCS.plainhelm, 'HELMET, NO SERIAL'); helm(70, 150, '94'); helm(205, 120, '71'); helm(160, 210, 'old');
     // brine lakes, with preserved shapes under the mirror
     const LA = f.lakes[0];

@@ -77,11 +77,11 @@
       type: 'item', kind, x, y, z, n: o.n || 1, scrap: SCRAP.has(kind), r: 0.4, sid: o.sid,
       draw() {
         const t = B.time;
-        R.model(this.x, this.y, this.z, MD.item(this.kind, t + this.id), { minLight: this.kind === 'shard' || this.kind === 'log' ? 0.05 : 0.02 });
+        R.model(this.x, this.y, this.z, MD.item(this.kind, t + this.id), { minLight: this.kind === 'shard' || this.kind === 'log' || this.kind === 'tape' ? 0.05 : 0.02 });
         // a faint glint so pickups read in the dark when the lamp touches them
         if (E.inLamp(this.x, this.y, this.z, 12) > 0.1 && ((t * 3 + this.id) % 4) < 0.25) R.point(this.x, this.y, this.z - 0.2, 1, 1.5, 1.5, 1.4, 1);
       },
-      interact: { label: () => (e.kind === 'log' ? 'READ ' : 'TAKE ') + (e.title || ITEM_NAME[e.kind]), fn: () => B.Player.take(e) },
+      interact: { label: () => (e.kind === 'log' ? 'READ ' : e.kind === 'tape' ? 'PLAY ' : 'TAKE ') + (e.title || ITEM_NAME[e.kind]), fn: () => B.Player.take(e) },
     }, o));
     // saved pickups stay taken
     if (e.sid && B.state && B.state.taken && B.state.taken[e.sid]) e.alive = false;

@@ -239,6 +239,10 @@
       case 'shell': return [P.c([-0.07, 0, bob], [0.07, 0, bob], 0.035, c('#d0a040'), { m: 3 })];
       case 'air': return [P.c([-0.25, 0, bob], [0.25, 0, bob], 0.09, c('#5d6266'), { m: 3 })];
       case 'chitin': return [P.e(0, 0, bob, AX, [0.25, 0.15, 0.05], c('#c8b896'))];
+      case 'tape': { // a recorder: two reels behind a window and a red record light that still blinks
+        const on = Math.sin(t * 4) > 0 ? [0.9, 0.05, 0.02] : null;
+        return [P.b(0, 0, bob, P.basis(1, 0.2, 0), [0.2, 0.12, 0.05], c('#3a3f47'), { m: 3 }), P.s(-0.07, 0.01, bob - 0.05, 0.045, c('#9aa2ab')), P.s(0.07, 0.01, bob - 0.05, 0.045, c('#9aa2ab')), P.s(0.16, -0.06, bob - 0.04, 0.02, c('#5c1414'), on ? { e: on } : {})];
+      }
       case 'log': return [P.b(0, 0, bob, P.basis(1, 0.3, 0), [0.18, 0.13, 0.02], c('#2a2a2e')), P.s(0.12, 0, bob - 0.03, 0.025, c('#ffb43a'), { e: [0.4, 0.2, 0.02] })];
       case 'lung': return [P.e(0, 0, bob, AX, [0.3, 0.22, 0.12 + Math.sin(t * 0.42 * Math.PI) * 0.04], c('#2a2a2a')), P.c([0.3, 0, bob], [0.5, 0.1, bob], 0.03, c('#2a2a2a'))];
       case 'hand': return [P.b(0, 0, bob, P.basis(1, 0.2, 0), [0.3, 0.22, 0.02], c('#1c1c1c')), P.c([0.1, 0.1, bob - 0.06], [0.35, 0.05, bob - 0.1], 0.06, c('#d8d0bc'))];

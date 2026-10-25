@@ -552,7 +552,7 @@
   function captionLines() {
     const caps = B.Story ? B.Story.caps : [], lines = [];
     for (const c of caps) {
-      const who = c.who === 'tobias' ? 'TOBIAS: ' : c.who === 'mara' ? 'MARA: ' : c.who === 'new' ? (B.act === 'deck' ? 'CREW: ' : 'HV-0420: ') : '';
+      const who = c.label || (c.who === 'tobias' ? 'TOBIAS: ' : c.who === 'mara' ? 'MARA: ' : c.who === 'new' ? (B.act === 'deck' ? 'CREW: ' : 'HV-0420: ') : '');
       const col = c.who === 'tobias' ? amber(3) : c.who === 'mara' ? COL.g6 : c.who === 'new' ? amber(2) : COL.b10;
       for (const l of Hd.wrap(who + c.text, Math.floor((R.W - 150) / 6))) lines.push([l, col]);
     }

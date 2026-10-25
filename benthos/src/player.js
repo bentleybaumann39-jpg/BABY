@@ -105,6 +105,7 @@
     if (B.state && it.sid) B.state.taken[it.sid] = true;
     it.alive = false;
     if (k === 'log') { A.sfx('pickup'); B.Hud.openDoc(it.doc); B.Story.onRead && B.Story.onRead(it.doc); return; }
+    if (k === 'tape') { B.Story.playTape(it.tape); return; }
     if (k === 'o2') P.carts += it.n; else if (k === 'lime') P.limes += it.n; else if (k === 'air') P.air = Math.min(100, P.air + 50);
     else if (k === 'lung') { P.relics.lung = true; P.o2Max = 432; }
     else if (k === 'hand') P.relics.hand = true;
