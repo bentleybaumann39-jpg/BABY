@@ -28,7 +28,7 @@ window.B = window.B || {};
   // Compressed world projection: 12 px per metre east-west, 8 px per metre north-south, 2.5 px per metre of depth.
   // The trench is far too deep to draw at scale, so depth is squashed. Models (suits, creatures) use the
   // natural camera below so they are not squashed with it.
-  B.PX = 12; B.PY = 8; B.PZ = 2.5;
+  B.PX = 12; B.PY = 8; B.PZ = 2.5; B.SC = 1; // SC doubles everything for the Machine's Eye (finer, not wider)
   B.SN = 0.6667; B.CS = 0.7454; // natural camera elevation (sin, cos), about 42 degrees
   B.OFF = -30;                   // the diver sits a little above the centre so more of "below" is visible
 
@@ -91,7 +91,7 @@ window.B = window.B || {};
     up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
     boost: ['ShiftLeft', 'ShiftRight'], rise: ['Space'], sink: ['KeyC'], ping: ['KeyR'], lamp: ['KeyF'],
     interact: ['KeyE'], clamp: ['KeyQ'], powerhead: ['KeyX'], graft: ['KeyG'], breath: ['KeyV'], gauge: ['KeyH'],
-    craft: ['Tab'], map: ['KeyM'], pause: ['Escape', 'KeyP'], wipe: ['KeyZ'], swap: ['KeyT'], listen: [],
+    craft: ['Tab'], map: ['KeyM'], pause: ['Escape', 'KeyP'], wipe: ['KeyZ'], swap: ['KeyT'], listen: [], lens: ['KeyB'],
     c1: ['Digit1'], c2: ['Digit2'], c3: ['Digit3'], c4: ['Digit4'], c5: ['Digit5'],
     confirm: ['Enter', 'Space', 'KeyE'], back: ['Escape', 'Backspace'],
     mUp: ['ArrowUp', 'KeyW'], mDown: ['ArrowDown', 'KeyS'], mLeft: ['ArrowLeft', 'KeyA'], mRight: ['ArrowRight', 'KeyD'],
@@ -966,14 +966,14 @@ window.B = window.B || {};
    *   outline (default true), dead (unlit, dead palette), minLight, dim, noFog } */
   R.model = function (ox, oy, oz, prims, o) {
     o = o || {};
-    const scale = o.scale || 1, flip = !!o.flip;
+    const scale = o.scale || 1, flip = !!o.flip, K = 12 * B.SC;
     const ax = ox * B.PX - cam.ox + W / 2, ay = oy * B.PY + oz * B.PZ - cam.oy + H / 2 + B.OFF;
     let u0 = 1e9, u1 = -1e9, w0 = 1e9, w1 = -1e9;
     for (let k = 0; k < prims.length; k++) {
       const q = prep(prims[k]); const qu = flip ? -q.u : q.u;
       if (qu - q.R < u0) u0 = qu - q.R; if (qu + q.R > u1) u1 = qu + q.R; if (q.w - q.R < w0) w0 = q.w - q.R; if (q.w + q.R > w1) w1 = q.w + q.R;
     }
-    let x0 = Math.floor(ax + u0 * 12), x1 = Math.ceil(ax + u1 * 12), y0 = Math.floor(ay + w0 * 12), y1 = Math.ceil(ay + w1 * 12);
+    let x0 = Math.floor(ax + u0 * K), x1 = Math.ceil(ax + u1 * K), y0 = Math.floor(ay + w0 * K), y1 = Math.ceil(ay + w1 * K);
     if (x1 < 0 || y1 < 0 || x0 >= W || y0 >= H) return null;
     // snap the block grid so 2x2/3x3 art pixels stay locked to the screen
     if (scale > 1) { x0 -= ((x0 % scale) + scale) % scale; y0 -= ((y0 % scale) + scale) % scale; }
@@ -983,13 +983,13 @@ window.B = window.B || {};
     gcov.fill(0, 0, gn); gf.fill(-1e9, 0, gn);
     for (let k = 0; k < prims.length; k++) {
       const p = prims[k], q = p._, qu = flip ? -q.u : q.u;
-      const gx0 = Math.max(0, Math.floor((ax + (qu - q.R) * 12 - x0) / scale)), gx1 = Math.min(gwid - 1, Math.ceil((ax + (qu + q.R) * 12 - x0) / scale));
-      const gy0 = Math.max(0, Math.floor((ay + (q.w - q.R) * 12 - y0) / scale)), gy1 = Math.min(ghei - 1, Math.ceil((ay + (q.w + q.R) * 12 - y0) / scale));
+      const gx0 = Math.max(0, Math.floor((ax + (qu - q.R) * K - x0) / scale)), gx1 = Math.min(gwid - 1, Math.ceil((ax + (qu + q.R) * K - x0) / scale));
+      const gy0 = Math.max(0, Math.floor((ay + (q.w - q.R) * K - y0) / scale)), gy1 = Math.min(ghei - 1, Math.ceil((ay + (q.w + q.R) * K - y0) / scale));
       const c = p.c, e = p.e, mt = p.m || 0, pal = p.di === undefined ? 255 : p.di;
       for (let gy = gy0; gy <= gy1; gy++) {
-        const pw = (y0 + (gy + 0.5) * scale - ay) / 12;
+        const pw = (y0 + (gy + 0.5) * scale - ay) / K;
         for (let gx = gx0; gx <= gx1; gx++) {
-          let pu = (x0 + (gx + 0.5) * scale - ax) / 12; if (flip) pu = -pu;
+          let pu = (x0 + (gx + 0.5) * scale - ax) / K; if (flip) pu = -pu;
           const f = hit(p, q, pu, pw);
           const gi = gy * gwid + gx;
           if (f > gf[gi]) {
@@ -1105,7 +1105,7 @@ window.B = window.B || {};
   R.lineL = function (ox, oy, oz, p, q, r, g, b, emissive) {
     const ax = ox * B.PX - cam.ox + W / 2, ay = oy * B.PY + oz * B.PZ - cam.oy + H / 2 + B.OFF;
     const a = toCam(p[0], p[1], p[2], [0, 0, 0]), c = toCam(q[0], q[1], q[2], [0, 0, 0]);
-    const x1 = ax + a[0] * 12, y1 = ay + a[1] * 12, x2 = ax + c[0] * 12, y2 = ay + c[1] * 12;
+    const K = 12 * B.SC, x1 = ax + a[0] * K, y1 = ay + a[1] * K, x2 = ax + c[0] * K, y2 = ay + c[1] * K;
     let cr = r, cg = g, cb = b;
     const wx = ox + (p[0] + q[0]) / 2, wy = oy + (p[1] + q[1]) / 2, wz = oz + (p[2] + q[2]) / 2;
     if (emissive) { trans(wx, wy, wz); cr *= TR_R; cg *= TR_G; cb *= TR_B; }
@@ -1120,7 +1120,7 @@ window.B = window.B || {};
   };
   // Dithered disc in world space (silt, mucus, glow clouds). density 0..1.
   R.disc = function (x, y, z, rad, r, g, b, density, emissive, flat) {
-    const sx = R.sx(x), sy = R.sy(y, z), rx = rad * 12, ry = rad * (flat ? 8 : 11);
+    const sx = R.sx(x), sy = R.sy(y, z), rx = rad * 12 * B.SC, ry = rad * (flat ? 8 : 11) * B.SC;
     const x0 = Math.max(0, Math.floor(sx - rx)), x1 = Math.min(W - 1, Math.ceil(sx + rx));
     const y0 = Math.max(0, Math.floor(sy - ry)), y1 = Math.min(H - 1, Math.ceil(sy + ry));
     if (x0 > x1 || y0 > y1) return;
@@ -1138,7 +1138,7 @@ window.B = window.B || {};
   };
   // Darken a dithered flat ellipse on a surface (drop shadow).
   R.shadow = function (x, y, z, rad, density) {
-    const sx = R.sx(x), sy = R.sy(y, z), rx = rad * 12, ry = rad * 8;
+    const sx = R.sx(x), sy = R.sy(y, z), rx = rad * 12 * B.SC, ry = rad * 8 * B.SC;
     const x0 = Math.max(0, Math.floor(sx - rx)), x1 = Math.min(W - 1, Math.ceil(sx + rx)), y0 = Math.max(0, Math.floor(sy - ry)), y1 = Math.min(H - 1, Math.ceil(sy + ry));
     for (let py = y0; py <= y1; py++) for (let px = x0; px <= x1; px++) {
       const dx = (px - sx) / rx, dy = (py - sy) / ry, d = dx * dx + dy * dy; if (d > 1) continue;
@@ -1169,20 +1169,24 @@ window.B = window.B || {};
 
   // ------------------------------------------------------------------ quantise
   const overlays = []; const wires = [];
+  // R.lens = { x, y, r } shows a circle at full palette: the Lossless Shard.
   R.quantize = function (worldLUT, fid) {
     const luts = [worldLUT, B.diverLUT(fid), B.lut('d71'), B.lut('d94'), B.lut('dmara'), B.lut('eye')];
-    const spread = R.spread || 0.1, GT = B.GT, GTS = B.GTS, BA = B.BAYER;
+    const spread = R.spread || 0.1, GT = B.GT, GTS = B.GTS, BA = B.BAYER, lens = R.lens, full = lens ? B.lut('top') : null;
     for (let y = 0; y < H; y++) {
       const by = (y & 3) * 4;
       for (let x = 0; x < W; x++) {
-        const i = y * W + x, d = BA[by + (x & 3)] * spread;
+        const i = y * W + x;
+        const inLens = lens && (x - lens.x) * (x - lens.x) + (y - lens.y) * (y - lens.y) < lens.r * lens.r;
+        const d = BA[by + (x & 3)] * (inLens ? 0.04 : spread);
         let r = FR[i], g = FG[i], b = FB[i];
+        if (R.mono) { const v = Math.max(r, g, b) * 2.4; r = g = b = v; } // the machine sees brightness, not colour
         r = r <= 0 ? 0 : r >= 1.5 ? GT[4096] : GT[(r * GTS) | 0];
         g = g <= 0 ? 0 : g >= 1.5 ? GT[4096] : GT[(g * GTS) | 0];
         b = b <= 0 ? 0 : b >= 1.5 ? GT[4096] : GT[(b * GTS) | 0];
         let ri = ((r + d) * 31 + 0.5) | 0, gi = ((g + d) * 31 + 0.5) | 0, bi = ((b + d) * 31 + 0.5) | 0;
         ri = ri < 0 ? 0 : ri > 31 ? 31 : ri; gi = gi < 0 ? 0 : gi > 31 ? 31 : gi; bi = bi < 0 ? 0 : bi > 31 ? 31 : bi;
-        let c = luts[LID[i]][(ri << 10) | (gi << 5) | bi];
+        let c = (inLens && LID[i] === 0 ? full : luts[LID[i]])[(ri << 10) | (gi << 5) | bi];
         if (EM[i]) c = (c & 0x00ffffff) | 0x80000000;
         OUT32[i] = c;
       }
@@ -2723,7 +2727,8 @@ void main(){
         const Pp = pl(); if (Pp) B.flange = Math.max(B.flange || 0, Math.hypot(this.x - Pp.x, this.y - Pp.y, this.z - Pp.z) < 10 ? 1 : 0);
       },
       draw() {
-        const st = B.Player.state();
+        const st = B.Player.state(), L = B.lensOn;
+        if (L && Math.hypot(L.x - R.sx(this.x), L.y - R.sy(this.y, this.z)) < L.r) return; // the lens sees no copy
         R.model(this.x, this.y, this.z, MD.diver({ yaw: MD.quant8(this.yaw), t: B.time, kick: this.kick, lamp: this.lamp, fill: 0.5, tankCol: [0.35, 0.05, 0.4] }), { scale: st.res, lut: 1, flip: st.flipped && Math.cos(this.yaw) < -0.3 });
         if (this.lamp === 'white') R.addLight(this.x + Math.cos(this.yaw) * 2, this.y + Math.sin(this.yaw) * 2, this.z + 1, 1, 0.9, 0.8, 8, 0.8);
       },
@@ -3314,9 +3319,11 @@ void main(){
     const flip = P.flipped && west;
     const yaw = flip ? Math.PI - MD.quant8(P.yaw) : MD.quant8(P.yaw);
     const top = P.cells[P.cells.length - 1];
+    // through the Lossless Shard her helmet is empty
+    const L = B.lensOn, hollow = !!(L && Math.hypot(L.x - R.sx(P.x), L.y - R.sy(P.y, P.z) + 6) < L.r);
     const prims = MD.diver({
       yaw, pitch: P.thrust * 0.25 * (P.boost ? 1.4 : 1), t: B.time, kick: P.kick, lamp: R.env.lamp.on ? P.lampMode : 'off',
-      fill: P.cells.length / P.cap, tankCol: top ? STRAIN[top].col : null, growth: P.growth,
+      fill: P.cells.length / P.cap, tankCol: top ? STRAIN[top].col : null, growth: P.growth, hollow,
     });
     R.model(P.x, P.y, P.z, prims, { scale: P.res, flip, lut: 1, minLight: 0.12 });
     // the Pick line
@@ -3623,7 +3630,7 @@ void main(){
     radio.interact = { label: () => 'TURN OFF THE RADIO', fn: () => { A.stopWaltz(); S.say('mara', '...'); radio.interact = null; } };
     A.waltz('radio');
     S.say('hud', 'MSV HALCYON MERCY · ASHER DEEP · 05:52 · SEA STATE 5', { delay: 0.6, dur: 5 });
-    S.say('hud', 'WASD: WALK · E: INTERACT', { delay: 3, dur: 5 });
+    S.say('hud', 'WASD: WALK · E: INTERACT · TOBIAS IS WAITING UNDER THE TARP', { delay: 3, dur: 7 });
   };
   S.tobiasDeck = function () {
     const fl = st().flags;
@@ -3708,8 +3715,13 @@ void main(){
   };
   S.onCageArrive = function (c) {
     const fl = st().flags;
-    if (c.stop === 1 && !fl.stop1) { fl.stop1 = true; S.say('tobias', 'ANYTHING HALVARD LEFT ON THAT SHELF IS YOURS. CAIRNS ARE THE YELLOW TRANSPONDERS. THEY SAVE YOU, AND THE FABRICATOR WORKS THERE.'); B.Hud.tip('move'); }
-    if (c.stop >= 2) S.say('tobias', 'CAGE IS AT ' + Math.round(c.z + 4) + '. THE LEDGE IS TO YOUR ' + S.dirTo(B.terracePoint([0, 0, 1, 1, 3, 3, 6, 6, 8][c.stop + (c.stop > 2 ? c.stop - 2 : 0)] || 1, 40)) + '.');
+    if (c.stop === 1 && !fl.stop1) {
+      fl.stop1 = true; B.Hud.tip('move');
+      S.say('tobias', 'ANYTHING HALVARD LEFT ON THAT SHELF IS YOURS. CAIRNS ARE THE YELLOW TRANSPONDERS. THEY SAVE YOU, AND THE FABRICATOR WORKS THERE.');
+      S.after(() => { B.Hud.tip('trim'); S.say('tobias', 'WHEN YOU WANT TO GO DEEPER, GET BACK IN THE CAGE. OR FLOOD YOUR TANK AND WALK DOWN THE WALL.'); }, 12000);
+    }
+    const SEC = { 2: 1, 3: 3, 4: 6, 5: 8 };
+    if (SEC[c.stop] !== undefined) S.say('tobias', 'CAGE IS AT ' + Math.round(c.z + 4) + '. THE LEDGE IS TO YOUR ' + S.dirTo(B.terracePoint(SEC[c.stop], 40)) + '.');
     S.checkpoint(null); st().cageStop = c.stop; S.save();
   };
   S.dirTo = function (t) { const p = P(); const a = Math.atan2(t.y - p.y, t.x - p.x); return ['EAST', 'SOUTH-EAST', 'SOUTH', 'SOUTH-WEST', 'WEST', 'NORTH-WEST', 'NORTH', 'NORTH-EAST'][((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8]; };
@@ -4044,7 +4056,7 @@ void main(){
     const fl = st().flags;
     if (it.kind === 'lung') S.say('mara', 'IT IS STILL BREATHING. NOTHING IS ATTACHED TO IT.', { delay: 0.6 });
     if (it.kind === 'hand') { S.say('mara', 'A MAP. DRAWN IN THE DARK. IT IS... ACCURATE.', { delay: 0.6 }); S.say('hud', 'M: CHART', { delay: 3 }); }
-    if (it.kind === 'shard' && !fl.shard1) { fl.shard1 = true; S.say('hud', 'HOLD L2 / RIGHT-CLICK + SHIFT... USE AT A CAIRN: +3 FIDELITY', { quiet: true, dur: 0.01 }); S.say('mara', 'VIEWPORT ACRYLIC. MY SERIAL.', { delay: 0.6 }); }
+    if (it.kind === 'shard' && !fl.shard1) { fl.shard1 = true; S.say('mara', 'VIEWPORT ACRYLIC. MY SERIAL.', { delay: 0.6 }); S.say('hud', 'HOLD B: LOOK THROUGH THE SHARD · OR CONSUME ONE AT A CAIRN FOR +3 FIDELITY', { delay: 3, dur: 6 }); }
   };
   S.onRead = function (doc) {
     if (doc === DOCS.gannet) S.say('mara', 'PELL ARNESEN. I KNEW HIS DAUGHTER.', { delay: 1 });
@@ -4289,7 +4301,7 @@ void main(){
       { name: 'SCRUBBER +20%', cost: { cu: 1, cell: 1 }, max: 3, lvl: P.up.scrub, fn: () => P.up.scrub++ },
       { name: 'THRUSTER SHROUD (QUIETER, SLOWER)', cost: { foam: 1, cell: 1 }, max: 2, lvl: P.up.thr, fn: () => P.up.thr++ },
       { name: 'SONAR (RANGE, SHORTER RING)', cost: { cu: 2, cer: 1 }, max: 3, lvl: P.up.sonar, fn: () => P.up.sonar++ },
-      { name: 'CULTURE TANK +1 CELL', cost: { glass: 1, chitin: 0, cer: 1 }, max: 2, lvl: P.up.tank, fn: () => P.up.tank++, alt: { chitin: 1, cer: 1 } },
+      { name: 'CULTURE TANK +1 CELL', cost: { glass: 1, cer: 1 }, max: 2, lvl: P.up.tank, fn: () => P.up.tank++, alt: { chitin: 1, cer: 1 } },
       { name: 'SCRUBBER CANISTER', cost: { cer: 1, foam: 1 }, fn: () => P.limes++ },
       { name: 'O2 CANDLE', cost: { cu: 1, cell: 1 }, fn: () => P.carts++ },
       { name: 'FLARE', cost: { cu: 1 }, fn: () => inv.flare++ },
@@ -4709,14 +4721,14 @@ void main(){
   Hd.machineEye = function (done) {
     const P = B.player, L = B.Story.eyeLake;
     const a = Math.atan2(L.y - P.y, L.x - P.x);
-    const cam = { x: P.x + Math.cos(a) * 10, y: P.y + Math.sin(a) * 10 - 4, z: P.z - 3 };
+    const cam = { x: P.x + Math.cos(a) * 3, y: P.y + Math.sin(a) * 3 - 1.5, z: P.z - 1 };
     A.sfx('click');
     B.scene = {
       t: 0, world: true, cam, lut: 'eye', hollow: true, res: [960, 540],
       update(dt) {
         this.t += dt;
         if (this.t > 7.5 && !this.f1) { this.f1 = true; A.sfx('eyeshut'); A.sfx('static', null, 0.6); }
-        if (this.t > 9) { B.setRes(B.state.ng ? 320 : 480, B.state.ng ? 180 : 270); B.scene = null; B.mode = 'play'; P.lockT = 1.5; P.reach = 1;
+        if (this.t > 9) { B.setRes(B.state.ng ? 320 : 480, B.state.ng ? 180 : 270); B.SC = 1; B.PX = 12; B.PY = 8; B.PZ = 2.5; B.OFF = -30; B.scene = null; B.mode = 'play'; P.lockT = 1.5; P.reach = 1;
           // the arm moves on its own: tether torn, camera thrown into the brine
           const e = B.E.add({ type: 'eyeCam', x: P.x, y: P.y, z: P.z - 0.5, vx: Math.cos(a) * 5, vy: Math.sin(a) * 5, vz: -1, t: 0,
             update(dt2) { this.t += dt2; this.x += this.vx * dt2; this.y += this.vy * dt2; this.vx *= 0.97; this.vy *= 0.97; this.vz += dt2 * 1.5; this.z += this.vz * dt2; if (this.t > 30) this.alive = false; },
@@ -4726,12 +4738,14 @@ void main(){
         }
       },
       draw() {
+        R.addLight(cam.x, cam.y + 2, cam.z, 1, 1, 1, 34, 3.2); // the ROV's own lamps
         Hd.text(8, 8, 'MAGPIE-3 CAM1 · LIVE · 960X540 · 1-BIT', COL.g6, 2);
         Hd.text(8, R.H - 22, 'T+' + (71 + this.t / 60).toFixed(2) + ' H', COL.g6, 2);
         if (this.t > 7.5) { for (let k = 0; k < 2000; k++) R.pset(Math.random() * R.W, Math.random() * R.H, Math.random() < 0.5 ? COL.k : COL.g6); Hd.center(R.H / 2 - 7, 'OPTICAL FAULT · CAMERA DISCARDED', COL.g6, 2); }
       },
     };
-    B.setRes(960, 540);
+    B.setRes(960, 540); B.SC = 2; B.PX = 24; B.PY = 16; B.PZ = 5; B.OFF = -60;
+    R.addLight(cam.x, cam.y + 2, cam.z, 1, 1, 1, 34, 3.2);
     B.mode = 'scene';
   };
 
@@ -5085,7 +5099,19 @@ void main(){
     if (B.ghostFrame && B.mode === 'play') { const g = B.ghostFrame; R.model(g.x, g.y, g.z, B.MD.diver({ yaw: B.MD.quant8(g.yaw), t: B.time, kick: 0.5, lamp: 'off' }), { scale: P.res, lut: 1 }); B.ghostFrame = null; }
     // distant lights: pinpricks at their bearing when they're too deep to draw
     if (P && B.mode !== 'title') for (const L of S.distantLights()) {
-      if (L.z > zCut + maxView - 2) { const fl = 0.8 + 0.2 * Math.sin(B.time * 3 + L.x); R.point(L.x, L.y, zCut + maxView - 1, 2, L.c[0] * fl, L.c[1] * fl, L.c[2] * fl, 3); }
+      if (L.z > zCut + maxView - 2) {
+        const fl = 0.8 + 0.2 * Math.sin(B.time * 3 + L.x), zz = zCut + maxView - 1;
+        let sx = R.sx(L.x), sy = R.sy(L.y, zz);
+        const inside = sx > 4 && sy > 4 && sx < R.W - 4 && sy < R.H - 4;
+        if (inside) R.point(L.x, L.y, zz, 2, L.c[0] * fl, L.c[1] * fl, L.c[2] * fl, 3);
+        else {
+          // off-screen: pin it to the edge on its bearing, so there is always a light to steer by
+          const cx = R.W / 2, cy = R.H / 2, dx = sx - cx, dy = sy - cy, k = Math.min((R.W / 2 - 6) / Math.abs(dx || 1e-6), (R.H / 2 - 6) / Math.abs(dy || 1e-6));
+          sx = Math.round(cx + dx * k); sy = Math.round(cy + dy * k);
+          const b = R.buffers(), i = sy * R.W + sx;
+          for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) { const j = i + oy * R.W + ox; if (j >= 0 && j < b.FR.length) { const k = (ox || oy ? 0.5 : 1) * fl; b.FR[j] += L.c[0] * k; b.FG[j] += L.c[1] * k; b.FB[j] += L.c[2] * k; b.EM[j] = 1; } }
+        }
+      }
     }
     const ox = R.cam.ox, oy = R.cam.oy;
     if (!topside) snow.draw(dt, ox - lastOx, oy - lastOy);
@@ -5094,7 +5120,9 @@ void main(){
     // the lamp beam made visible by particulate; strong in the scattering layer and in silt
     if (P && env.lamp.on && B.mode !== 'title' && !(sc && sc.cam)) {
       const L = env.lamp, turb = (B.Z.inLayer(P.z) ? 0.24 : 0.07) + (E.inSilt(P.x, P.y, P.z) ? 0.25 : 0);
-      R.beam(R.sx(L.x), R.sy(L.y, L.z), L.dx * B.PX, L.dy * B.PY, Math.sqrt(L.r2) * B.PX * 0.85, L.mode === 'red' ? 0.45 : 0.32, turb, L.cr * 0.5, L.cg * 0.5, L.cb * 0.5);
+      // scattered light reads blue-white in water
+      if (L.mode === 'red') R.beam(R.sx(L.x), R.sy(L.y, L.z), L.dx * B.PX, L.dy * B.PY, Math.sqrt(L.r2) * B.PX * 0.85, 0.45, turb, 0.5, 0.04, 0.02);
+      else R.beam(R.sx(L.x), R.sy(L.y, L.z), L.dx * B.PX, L.dy * B.PY, Math.sqrt(L.r2) * B.PX * 0.85, 0.32, turb, 0.3, 0.42, 0.5);
     }
     // god rays near the surface
     if (eyeZ < 110 && !topside && B.mode !== 'title') {
@@ -5104,7 +5132,17 @@ void main(){
     let lut = sc && sc.lut ? sc.lut : B.mode === 'title' ? 'ben2' : B.zoneFor(B.act, eyeZ);
     if (P && B.mode === 'play' && !topside) { if (P.listening) lut = 'listen'; else if (env.lamp.on && P.lampMode === 'red') lut = 'red'; }
     R.spread = B.zoneDither[lut] || 0.1;
+    R.mono = lut === 'eye';
+    // the Lossless Shard: hold B to look through a piece of your own viewport
+    R.lens = null;
+    if (P && B.mode === 'play' && !topside && P.relics.shards > 0 && I.down('lens')) {
+      let lx = R.sx(P.x) + P.aimX * 70, ly = R.sy(P.y, P.z) + P.aimY * 46;
+      if (I.mouse.inside && !I.usingPad) { lx = I.mouse.x; ly = I.mouse.y; }
+      R.lens = { x: lx, y: ly, r: 32 };
+    }
+    B.lensOn = R.lens;
     R.quantize(B.lut(lut), P ? P.fidelity : 16);
+    if (R.lens) R.ellipse(R.lens.x, R.lens.y, 33, 33, 0xffeee6c4);
     R.flushWires(); R.flushOverlays();
     if (B.mode === 'play' && P && !topside) Hd.drawSonar();
     if (sc && sc.dimWorld) R.shadeRect(0, 0, R.W, R.H, 0xff000000, 0.5);

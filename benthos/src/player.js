@@ -546,9 +546,11 @@
     const flip = P.flipped && west;
     const yaw = flip ? Math.PI - MD.quant8(P.yaw) : MD.quant8(P.yaw);
     const top = P.cells[P.cells.length - 1];
+    // through the Lossless Shard her helmet is empty
+    const L = B.lensOn, hollow = !!(L && Math.hypot(L.x - R.sx(P.x), L.y - R.sy(P.y, P.z) + 6) < L.r);
     const prims = MD.diver({
       yaw, pitch: P.thrust * 0.25 * (P.boost ? 1.4 : 1), t: B.time, kick: P.kick, lamp: R.env.lamp.on ? P.lampMode : 'off',
-      fill: P.cells.length / P.cap, tankCol: top ? STRAIN[top].col : null, growth: P.growth,
+      fill: P.cells.length / P.cap, tankCol: top ? STRAIN[top].col : null, growth: P.growth, hollow,
     });
     R.model(P.x, P.y, P.z, prims, { scale: P.res, flip, lut: 1, minLight: 0.12 });
     // the Pick line

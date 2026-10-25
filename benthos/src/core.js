@@ -11,7 +11,7 @@ window.B = window.B || {};
   // Compressed world projection: 12 px per metre east-west, 8 px per metre north-south, 2.5 px per metre of depth.
   // The trench is far too deep to draw at scale, so depth is squashed. Models (suits, creatures) use the
   // natural camera below so they are not squashed with it.
-  B.PX = 12; B.PY = 8; B.PZ = 2.5;
+  B.PX = 12; B.PY = 8; B.PZ = 2.5; B.SC = 1; // SC doubles everything for the Machine's Eye (finer, not wider)
   B.SN = 0.6667; B.CS = 0.7454; // natural camera elevation (sin, cos), about 42 degrees
   B.OFF = -30;                   // the diver sits a little above the centre so more of "below" is visible
 
@@ -74,7 +74,7 @@ window.B = window.B || {};
     up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
     boost: ['ShiftLeft', 'ShiftRight'], rise: ['Space'], sink: ['KeyC'], ping: ['KeyR'], lamp: ['KeyF'],
     interact: ['KeyE'], clamp: ['KeyQ'], powerhead: ['KeyX'], graft: ['KeyG'], breath: ['KeyV'], gauge: ['KeyH'],
-    craft: ['Tab'], map: ['KeyM'], pause: ['Escape', 'KeyP'], wipe: ['KeyZ'], swap: ['KeyT'], listen: [],
+    craft: ['Tab'], map: ['KeyM'], pause: ['Escape', 'KeyP'], wipe: ['KeyZ'], swap: ['KeyT'], listen: [], lens: ['KeyB'],
     c1: ['Digit1'], c2: ['Digit2'], c3: ['Digit3'], c4: ['Digit4'], c5: ['Digit5'],
     confirm: ['Enter', 'Space', 'KeyE'], back: ['Escape', 'Backspace'],
     mUp: ['ArrowUp', 'KeyW'], mDown: ['ArrowDown', 'KeyS'], mLeft: ['ArrowLeft', 'KeyA'], mRight: ['ArrowRight', 'KeyD'],

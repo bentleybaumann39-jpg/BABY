@@ -555,7 +555,8 @@
         const Pp = pl(); if (Pp) B.flange = Math.max(B.flange || 0, Math.hypot(this.x - Pp.x, this.y - Pp.y, this.z - Pp.z) < 10 ? 1 : 0);
       },
       draw() {
-        const st = B.Player.state();
+        const st = B.Player.state(), L = B.lensOn;
+        if (L && Math.hypot(L.x - R.sx(this.x), L.y - R.sy(this.y, this.z)) < L.r) return; // the lens sees no copy
         R.model(this.x, this.y, this.z, MD.diver({ yaw: MD.quant8(this.yaw), t: B.time, kick: this.kick, lamp: this.lamp, fill: 0.5, tankCol: [0.35, 0.05, 0.4] }), { scale: st.res, lut: 1, flip: st.flipped && Math.cos(this.yaw) < -0.3 });
         if (this.lamp === 'white') R.addLight(this.x + Math.cos(this.yaw) * 2, this.y + Math.sin(this.yaw) * 2, this.z + 1, 1, 0.9, 0.8, 8, 0.8);
       },

@@ -134,7 +134,7 @@
       { name: 'SCRUBBER +20%', cost: { cu: 1, cell: 1 }, max: 3, lvl: P.up.scrub, fn: () => P.up.scrub++ },
       { name: 'THRUSTER SHROUD (QUIETER, SLOWER)', cost: { foam: 1, cell: 1 }, max: 2, lvl: P.up.thr, fn: () => P.up.thr++ },
       { name: 'SONAR (RANGE, SHORTER RING)', cost: { cu: 2, cer: 1 }, max: 3, lvl: P.up.sonar, fn: () => P.up.sonar++ },
-      { name: 'CULTURE TANK +1 CELL', cost: { glass: 1, chitin: 0, cer: 1 }, max: 2, lvl: P.up.tank, fn: () => P.up.tank++, alt: { chitin: 1, cer: 1 } },
+      { name: 'CULTURE TANK +1 CELL', cost: { glass: 1, cer: 1 }, max: 2, lvl: P.up.tank, fn: () => P.up.tank++, alt: { chitin: 1, cer: 1 } },
       { name: 'SCRUBBER CANISTER', cost: { cer: 1, foam: 1 }, fn: () => P.limes++ },
       { name: 'O2 CANDLE', cost: { cu: 1, cell: 1 }, fn: () => P.carts++ },
       { name: 'FLARE', cost: { cu: 1 }, fn: () => inv.flare++ },
@@ -554,14 +554,14 @@
   Hd.machineEye = function (done) {
     const P = B.player, L = B.Story.eyeLake;
     const a = Math.atan2(L.y - P.y, L.x - P.x);
-    const cam = { x: P.x + Math.cos(a) * 10, y: P.y + Math.sin(a) * 10 - 4, z: P.z - 3 };
+    const cam = { x: P.x + Math.cos(a) * 3, y: P.y + Math.sin(a) * 3 - 1.5, z: P.z - 1 };
     A.sfx('click');
     B.scene = {
       t: 0, world: true, cam, lut: 'eye', hollow: true, res: [960, 540],
       update(dt) {
         this.t += dt;
         if (this.t > 7.5 && !this.f1) { this.f1 = true; A.sfx('eyeshut'); A.sfx('static', null, 0.6); }
-        if (this.t > 9) { B.setRes(B.state.ng ? 320 : 480, B.state.ng ? 180 : 270); B.scene = null; B.mode = 'play'; P.lockT = 1.5; P.reach = 1;
+        if (this.t > 9) { B.setRes(B.state.ng ? 320 : 480, B.state.ng ? 180 : 270); B.SC = 1; B.PX = 12; B.PY = 8; B.PZ = 2.5; B.OFF = -30; B.scene = null; B.mode = 'play'; P.lockT = 1.5; P.reach = 1;
           // the arm moves on its own: tether torn, camera thrown into the brine
           const e = B.E.add({ type: 'eyeCam', x: P.x, y: P.y, z: P.z - 0.5, vx: Math.cos(a) * 5, vy: Math.sin(a) * 5, vz: -1, t: 0,
             update(dt2) { this.t += dt2; this.x += this.vx * dt2; this.y += this.vy * dt2; this.vx *= 0.97; this.vy *= 0.97; this.vz += dt2 * 1.5; this.z += this.vz * dt2; if (this.t > 30) this.alive = false; },
@@ -571,12 +571,14 @@
         }
       },
       draw() {
+        R.addLight(cam.x, cam.y + 2, cam.z, 1, 1, 1, 34, 3.2); // the ROV's own lamps
         Hd.text(8, 8, 'MAGPIE-3 CAM1 · LIVE · 960X540 · 1-BIT', COL.g6, 2);
         Hd.text(8, R.H - 22, 'T+' + (71 + this.t / 60).toFixed(2) + ' H', COL.g6, 2);
         if (this.t > 7.5) { for (let k = 0; k < 2000; k++) R.pset(Math.random() * R.W, Math.random() * R.H, Math.random() < 0.5 ? COL.k : COL.g6); Hd.center(R.H / 2 - 7, 'OPTICAL FAULT · CAMERA DISCARDED', COL.g6, 2); }
       },
     };
-    B.setRes(960, 540);
+    B.setRes(960, 540); B.SC = 2; B.PX = 24; B.PY = 16; B.PZ = 5; B.OFF = -60;
+    R.addLight(cam.x, cam.y + 2, cam.z, 1, 1, 1, 34, 3.2);
     B.mode = 'scene';
   };
 

@@ -371,14 +371,14 @@
    *   outline (default true), dead (unlit, dead palette), minLight, dim, noFog } */
   R.model = function (ox, oy, oz, prims, o) {
     o = o || {};
-    const scale = o.scale || 1, flip = !!o.flip;
+    const scale = o.scale || 1, flip = !!o.flip, K = 12 * B.SC;
     const ax = ox * B.PX - cam.ox + W / 2, ay = oy * B.PY + oz * B.PZ - cam.oy + H / 2 + B.OFF;
     let u0 = 1e9, u1 = -1e9, w0 = 1e9, w1 = -1e9;
     for (let k = 0; k < prims.length; k++) {
       const q = prep(prims[k]); const qu = flip ? -q.u : q.u;
       if (qu - q.R < u0) u0 = qu - q.R; if (qu + q.R > u1) u1 = qu + q.R; if (q.w - q.R < w0) w0 = q.w - q.R; if (q.w + q.R > w1) w1 = q.w + q.R;
     }
-    let x0 = Math.floor(ax + u0 * 12), x1 = Math.ceil(ax + u1 * 12), y0 = Math.floor(ay + w0 * 12), y1 = Math.ceil(ay + w1 * 12);
+    let x0 = Math.floor(ax + u0 * K), x1 = Math.ceil(ax + u1 * K), y0 = Math.floor(ay + w0 * K), y1 = Math.ceil(ay + w1 * K);
     if (x1 < 0 || y1 < 0 || x0 >= W || y0 >= H) return null;
     // snap the block grid so 2x2/3x3 art pixels stay locked to the screen
     if (scale > 1) { x0 -= ((x0 % scale) + scale) % scale; y0 -= ((y0 % scale) + scale) % scale; }
@@ -388,13 +388,13 @@
     gcov.fill(0, 0, gn); gf.fill(-1e9, 0, gn);
     for (let k = 0; k < prims.length; k++) {
       const p = prims[k], q = p._, qu = flip ? -q.u : q.u;
-      const gx0 = Math.max(0, Math.floor((ax + (qu - q.R) * 12 - x0) / scale)), gx1 = Math.min(gwid - 1, Math.ceil((ax + (qu + q.R) * 12 - x0) / scale));
-      const gy0 = Math.max(0, Math.floor((ay + (q.w - q.R) * 12 - y0) / scale)), gy1 = Math.min(ghei - 1, Math.ceil((ay + (q.w + q.R) * 12 - y0) / scale));
+      const gx0 = Math.max(0, Math.floor((ax + (qu - q.R) * K - x0) / scale)), gx1 = Math.min(gwid - 1, Math.ceil((ax + (qu + q.R) * K - x0) / scale));
+      const gy0 = Math.max(0, Math.floor((ay + (q.w - q.R) * K - y0) / scale)), gy1 = Math.min(ghei - 1, Math.ceil((ay + (q.w + q.R) * K - y0) / scale));
       const c = p.c, e = p.e, mt = p.m || 0, pal = p.di === undefined ? 255 : p.di;
       for (let gy = gy0; gy <= gy1; gy++) {
-        const pw = (y0 + (gy + 0.5) * scale - ay) / 12;
+        const pw = (y0 + (gy + 0.5) * scale - ay) / K;
         for (let gx = gx0; gx <= gx1; gx++) {
-          let pu = (x0 + (gx + 0.5) * scale - ax) / 12; if (flip) pu = -pu;
+          let pu = (x0 + (gx + 0.5) * scale - ax) / K; if (flip) pu = -pu;
           const f = hit(p, q, pu, pw);
           const gi = gy * gwid + gx;
           if (f > gf[gi]) {
@@ -510,7 +510,7 @@
   R.lineL = function (ox, oy, oz, p, q, r, g, b, emissive) {
     const ax = ox * B.PX - cam.ox + W / 2, ay = oy * B.PY + oz * B.PZ - cam.oy + H / 2 + B.OFF;
     const a = toCam(p[0], p[1], p[2], [0, 0, 0]), c = toCam(q[0], q[1], q[2], [0, 0, 0]);
-    const x1 = ax + a[0] * 12, y1 = ay + a[1] * 12, x2 = ax + c[0] * 12, y2 = ay + c[1] * 12;
+    const K = 12 * B.SC, x1 = ax + a[0] * K, y1 = ay + a[1] * K, x2 = ax + c[0] * K, y2 = ay + c[1] * K;
     let cr = r, cg = g, cb = b;
     const wx = ox + (p[0] + q[0]) / 2, wy = oy + (p[1] + q[1]) / 2, wz = oz + (p[2] + q[2]) / 2;
     if (emissive) { trans(wx, wy, wz); cr *= TR_R; cg *= TR_G; cb *= TR_B; }
@@ -525,7 +525,7 @@
   };
   // Dithered disc in world space (silt, mucus, glow clouds). density 0..1.
   R.disc = function (x, y, z, rad, r, g, b, density, emissive, flat) {
-    const sx = R.sx(x), sy = R.sy(y, z), rx = rad * 12, ry = rad * (flat ? 8 : 11);
+    const sx = R.sx(x), sy = R.sy(y, z), rx = rad * 12 * B.SC, ry = rad * (flat ? 8 : 11) * B.SC;
     const x0 = Math.max(0, Math.floor(sx - rx)), x1 = Math.min(W - 1, Math.ceil(sx + rx));
     const y0 = Math.max(0, Math.floor(sy - ry)), y1 = Math.min(H - 1, Math.ceil(sy + ry));
     if (x0 > x1 || y0 > y1) return;
@@ -543,7 +543,7 @@
   };
   // Darken a dithered flat ellipse on a surface (drop shadow).
   R.shadow = function (x, y, z, rad, density) {
-    const sx = R.sx(x), sy = R.sy(y, z), rx = rad * 12, ry = rad * 8;
+    const sx = R.sx(x), sy = R.sy(y, z), rx = rad * 12 * B.SC, ry = rad * 8 * B.SC;
     const x0 = Math.max(0, Math.floor(sx - rx)), x1 = Math.min(W - 1, Math.ceil(sx + rx)), y0 = Math.max(0, Math.floor(sy - ry)), y1 = Math.min(H - 1, Math.ceil(sy + ry));
     for (let py = y0; py <= y1; py++) for (let px = x0; px <= x1; px++) {
       const dx = (px - sx) / rx, dy = (py - sy) / ry, d = dx * dx + dy * dy; if (d > 1) continue;
@@ -574,20 +574,24 @@
 
   // ------------------------------------------------------------------ quantise
   const overlays = []; const wires = [];
+  // R.lens = { x, y, r } shows a circle at full palette: the Lossless Shard.
   R.quantize = function (worldLUT, fid) {
     const luts = [worldLUT, B.diverLUT(fid), B.lut('d71'), B.lut('d94'), B.lut('dmara'), B.lut('eye')];
-    const spread = R.spread || 0.1, GT = B.GT, GTS = B.GTS, BA = B.BAYER;
+    const spread = R.spread || 0.1, GT = B.GT, GTS = B.GTS, BA = B.BAYER, lens = R.lens, full = lens ? B.lut('top') : null;
     for (let y = 0; y < H; y++) {
       const by = (y & 3) * 4;
       for (let x = 0; x < W; x++) {
-        const i = y * W + x, d = BA[by + (x & 3)] * spread;
+        const i = y * W + x;
+        const inLens = lens && (x - lens.x) * (x - lens.x) + (y - lens.y) * (y - lens.y) < lens.r * lens.r;
+        const d = BA[by + (x & 3)] * (inLens ? 0.04 : spread);
         let r = FR[i], g = FG[i], b = FB[i];
+        if (R.mono) { const v = Math.max(r, g, b) * 2.4; r = g = b = v; } // the machine sees brightness, not colour
         r = r <= 0 ? 0 : r >= 1.5 ? GT[4096] : GT[(r * GTS) | 0];
         g = g <= 0 ? 0 : g >= 1.5 ? GT[4096] : GT[(g * GTS) | 0];
         b = b <= 0 ? 0 : b >= 1.5 ? GT[4096] : GT[(b * GTS) | 0];
         let ri = ((r + d) * 31 + 0.5) | 0, gi = ((g + d) * 31 + 0.5) | 0, bi = ((b + d) * 31 + 0.5) | 0;
         ri = ri < 0 ? 0 : ri > 31 ? 31 : ri; gi = gi < 0 ? 0 : gi > 31 ? 31 : gi; bi = bi < 0 ? 0 : bi > 31 ? 31 : bi;
-        let c = luts[LID[i]][(ri << 10) | (gi << 5) | bi];
+        let c = (inLens && LID[i] === 0 ? full : luts[LID[i]])[(ri << 10) | (gi << 5) | bi];
         if (EM[i]) c = (c & 0x00ffffff) | 0x80000000;
         OUT32[i] = c;
       }

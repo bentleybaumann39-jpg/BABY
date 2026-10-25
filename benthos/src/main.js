@@ -194,7 +194,19 @@
     if (B.ghostFrame && B.mode === 'play') { const g = B.ghostFrame; R.model(g.x, g.y, g.z, B.MD.diver({ yaw: B.MD.quant8(g.yaw), t: B.time, kick: 0.5, lamp: 'off' }), { scale: P.res, lut: 1 }); B.ghostFrame = null; }
     // distant lights: pinpricks at their bearing when they're too deep to draw
     if (P && B.mode !== 'title') for (const L of S.distantLights()) {
-      if (L.z > zCut + maxView - 2) { const fl = 0.8 + 0.2 * Math.sin(B.time * 3 + L.x); R.point(L.x, L.y, zCut + maxView - 1, 2, L.c[0] * fl, L.c[1] * fl, L.c[2] * fl, 3); }
+      if (L.z > zCut + maxView - 2) {
+        const fl = 0.8 + 0.2 * Math.sin(B.time * 3 + L.x), zz = zCut + maxView - 1;
+        let sx = R.sx(L.x), sy = R.sy(L.y, zz);
+        const inside = sx > 4 && sy > 4 && sx < R.W - 4 && sy < R.H - 4;
+        if (inside) R.point(L.x, L.y, zz, 2, L.c[0] * fl, L.c[1] * fl, L.c[2] * fl, 3);
+        else {
+          // off-screen: pin it to the edge on its bearing, so there is always a light to steer by
+          const cx = R.W / 2, cy = R.H / 2, dx = sx - cx, dy = sy - cy, k = Math.min((R.W / 2 - 6) / Math.abs(dx || 1e-6), (R.H / 2 - 6) / Math.abs(dy || 1e-6));
+          sx = Math.round(cx + dx * k); sy = Math.round(cy + dy * k);
+          const b = R.buffers(), i = sy * R.W + sx;
+          for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) { const j = i + oy * R.W + ox; if (j >= 0 && j < b.FR.length) { const k = (ox || oy ? 0.5 : 1) * fl; b.FR[j] += L.c[0] * k; b.FG[j] += L.c[1] * k; b.FB[j] += L.c[2] * k; b.EM[j] = 1; } }
+        }
+      }
     }
     const ox = R.cam.ox, oy = R.cam.oy;
     if (!topside) snow.draw(dt, ox - lastOx, oy - lastOy);
@@ -203,7 +215,9 @@
     // the lamp beam made visible by particulate; strong in the scattering layer and in silt
     if (P && env.lamp.on && B.mode !== 'title' && !(sc && sc.cam)) {
       const L = env.lamp, turb = (B.Z.inLayer(P.z) ? 0.24 : 0.07) + (E.inSilt(P.x, P.y, P.z) ? 0.25 : 0);
-      R.beam(R.sx(L.x), R.sy(L.y, L.z), L.dx * B.PX, L.dy * B.PY, Math.sqrt(L.r2) * B.PX * 0.85, L.mode === 'red' ? 0.45 : 0.32, turb, L.cr * 0.5, L.cg * 0.5, L.cb * 0.5);
+      // scattered light reads blue-white in water
+      if (L.mode === 'red') R.beam(R.sx(L.x), R.sy(L.y, L.z), L.dx * B.PX, L.dy * B.PY, Math.sqrt(L.r2) * B.PX * 0.85, 0.45, turb, 0.5, 0.04, 0.02);
+      else R.beam(R.sx(L.x), R.sy(L.y, L.z), L.dx * B.PX, L.dy * B.PY, Math.sqrt(L.r2) * B.PX * 0.85, 0.32, turb, 0.3, 0.42, 0.5);
     }
     // god rays near the surface
     if (eyeZ < 110 && !topside && B.mode !== 'title') {
@@ -213,7 +227,17 @@
     let lut = sc && sc.lut ? sc.lut : B.mode === 'title' ? 'ben2' : B.zoneFor(B.act, eyeZ);
     if (P && B.mode === 'play' && !topside) { if (P.listening) lut = 'listen'; else if (env.lamp.on && P.lampMode === 'red') lut = 'red'; }
     R.spread = B.zoneDither[lut] || 0.1;
+    R.mono = lut === 'eye';
+    // the Lossless Shard: hold B to look through a piece of your own viewport
+    R.lens = null;
+    if (P && B.mode === 'play' && !topside && P.relics.shards > 0 && I.down('lens')) {
+      let lx = R.sx(P.x) + P.aimX * 70, ly = R.sy(P.y, P.z) + P.aimY * 46;
+      if (I.mouse.inside && !I.usingPad) { lx = I.mouse.x; ly = I.mouse.y; }
+      R.lens = { x: lx, y: ly, r: 32 };
+    }
+    B.lensOn = R.lens;
     R.quantize(B.lut(lut), P ? P.fidelity : 16);
+    if (R.lens) R.ellipse(R.lens.x, R.lens.y, 33, 33, 0xffeee6c4);
     R.flushWires(); R.flushOverlays();
     if (B.mode === 'play' && P && !topside) Hd.drawSonar();
     if (sc && sc.dimWorld) R.shadeRect(0, 0, R.W, R.H, 0xff000000, 0.5);

@@ -200,7 +200,7 @@
     radio.interact = { label: () => 'TURN OFF THE RADIO', fn: () => { A.stopWaltz(); S.say('mara', '...'); radio.interact = null; } };
     A.waltz('radio');
     S.say('hud', 'MSV HALCYON MERCY · ASHER DEEP · 05:52 · SEA STATE 5', { delay: 0.6, dur: 5 });
-    S.say('hud', 'WASD: WALK · E: INTERACT', { delay: 3, dur: 5 });
+    S.say('hud', 'WASD: WALK · E: INTERACT · TOBIAS IS WAITING UNDER THE TARP', { delay: 3, dur: 7 });
   };
   S.tobiasDeck = function () {
     const fl = st().flags;
@@ -285,8 +285,13 @@
   };
   S.onCageArrive = function (c) {
     const fl = st().flags;
-    if (c.stop === 1 && !fl.stop1) { fl.stop1 = true; S.say('tobias', 'ANYTHING HALVARD LEFT ON THAT SHELF IS YOURS. CAIRNS ARE THE YELLOW TRANSPONDERS. THEY SAVE YOU, AND THE FABRICATOR WORKS THERE.'); B.Hud.tip('move'); }
-    if (c.stop >= 2) S.say('tobias', 'CAGE IS AT ' + Math.round(c.z + 4) + '. THE LEDGE IS TO YOUR ' + S.dirTo(B.terracePoint([0, 0, 1, 1, 3, 3, 6, 6, 8][c.stop + (c.stop > 2 ? c.stop - 2 : 0)] || 1, 40)) + '.');
+    if (c.stop === 1 && !fl.stop1) {
+      fl.stop1 = true; B.Hud.tip('move');
+      S.say('tobias', 'ANYTHING HALVARD LEFT ON THAT SHELF IS YOURS. CAIRNS ARE THE YELLOW TRANSPONDERS. THEY SAVE YOU, AND THE FABRICATOR WORKS THERE.');
+      S.after(() => { B.Hud.tip('trim'); S.say('tobias', 'WHEN YOU WANT TO GO DEEPER, GET BACK IN THE CAGE. OR FLOOD YOUR TANK AND WALK DOWN THE WALL.'); }, 12000);
+    }
+    const SEC = { 2: 1, 3: 3, 4: 6, 5: 8 };
+    if (SEC[c.stop] !== undefined) S.say('tobias', 'CAGE IS AT ' + Math.round(c.z + 4) + '. THE LEDGE IS TO YOUR ' + S.dirTo(B.terracePoint(SEC[c.stop], 40)) + '.');
     S.checkpoint(null); st().cageStop = c.stop; S.save();
   };
   S.dirTo = function (t) { const p = P(); const a = Math.atan2(t.y - p.y, t.x - p.x); return ['EAST', 'SOUTH-EAST', 'SOUTH', 'SOUTH-WEST', 'WEST', 'NORTH-WEST', 'NORTH', 'NORTH-EAST'][((Math.round(a / (Math.PI / 4)) % 8) + 8) % 8]; };
@@ -621,7 +626,7 @@
     const fl = st().flags;
     if (it.kind === 'lung') S.say('mara', 'IT IS STILL BREATHING. NOTHING IS ATTACHED TO IT.', { delay: 0.6 });
     if (it.kind === 'hand') { S.say('mara', 'A MAP. DRAWN IN THE DARK. IT IS... ACCURATE.', { delay: 0.6 }); S.say('hud', 'M: CHART', { delay: 3 }); }
-    if (it.kind === 'shard' && !fl.shard1) { fl.shard1 = true; S.say('hud', 'HOLD L2 / RIGHT-CLICK + SHIFT... USE AT A CAIRN: +3 FIDELITY', { quiet: true, dur: 0.01 }); S.say('mara', 'VIEWPORT ACRYLIC. MY SERIAL.', { delay: 0.6 }); }
+    if (it.kind === 'shard' && !fl.shard1) { fl.shard1 = true; S.say('mara', 'VIEWPORT ACRYLIC. MY SERIAL.', { delay: 0.6 }); S.say('hud', 'HOLD B: LOOK THROUGH THE SHARD · OR CONSUME ONE AT A CAIRN FOR +3 FIDELITY', { delay: 3, dur: 6 }); }
   };
   S.onRead = function (doc) {
     if (doc === DOCS.gannet) S.say('mara', 'PELL ARNESEN. I KNEW HIS DAUGHTER.', { delay: 1 });

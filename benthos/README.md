@@ -27,6 +27,7 @@ The full design is in [DESIGN.md](DESIGN.md). The game is a compressed, playable
 | 1–5, G | Use a biomass cell (Siphon jet, Caul shield, Bloom decoy) / Graft it into the hull |
 | X | Powerhead (three shells in the whole game, very loud) |
 | V / H / T | Hold breath / read the chest gauge (the truth) / swap the scrubber canister |
+| B | Look through a Lossless Shard (full palette, no copies) |
 | Tab · M · Z | Fabricator at a Cairn · Szabo's chart · wipe the visor |
 | Esc | Pause |
 
