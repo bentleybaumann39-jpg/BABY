@@ -264,6 +264,8 @@
       const want = Math.atan2(P.aimY, P.aimX), d = M.wrap(want - P.yaw); P.yaw += M.clamp(d, -1.5 * dt, 1.5 * dt);
     }
     const thrLvl = P.up.thr, F = P.thrust * (P.boost ? 4.7 : 1.09) * (1 - thrLvl * 0.08);
+    // the thrusters are heard: a murmur at cruise, a roar at boost; the shroud upgrade takes the edge off
+    if (P.thrust > 0.45 && (P.thrNoiseT = (P.thrNoiseT || 0) - dt) <= 0) { P.thrNoiseT = 0.5; B.noise(P.x, P.y, P.z, (P.boost ? 56 : 33) - thrLvl * 4, P.boost ? 'boost' : 'thrust'); }
     if (mag > 0.01) { P.vx += mv.x / Math.max(mag, 0.01) * F * dt; P.vy += mv.y / Math.max(mag, 0.01) * F * dt; }
     // anisotropic quadratic drag: sideways is 2.4x harder than forward
     const fx = Math.cos(P.yaw), fy = Math.sin(P.yaw);

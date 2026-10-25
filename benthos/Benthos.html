@@ -3724,6 +3724,8 @@ void main(){
       const want = Math.atan2(P.aimY, P.aimX), d = M.wrap(want - P.yaw); P.yaw += M.clamp(d, -1.5 * dt, 1.5 * dt);
     }
     const thrLvl = P.up.thr, F = P.thrust * (P.boost ? 4.7 : 1.09) * (1 - thrLvl * 0.08);
+    // the thrusters are heard: a murmur at cruise, a roar at boost; the shroud upgrade takes the edge off
+    if (P.thrust > 0.45 && (P.thrNoiseT = (P.thrNoiseT || 0) - dt) <= 0) { P.thrNoiseT = 0.5; B.noise(P.x, P.y, P.z, (P.boost ? 56 : 33) - thrLvl * 4, P.boost ? 'boost' : 'thrust'); }
     if (mag > 0.01) { P.vx += mv.x / Math.max(mag, 0.01) * F * dt; P.vy += mv.y / Math.max(mag, 0.01) * F * dt; }
     // anisotropic quadratic drag: sideways is 2.4x harder than forward
     const fx = Math.cos(P.yaw), fy = Math.sin(P.yaw);
@@ -5385,6 +5387,30 @@ void main(){
       void max;
     }
     Hd.center(16, 'CHEST GAUGE', COL.g4);
+    crewPhoto(W - 98, Hh / 2 - 44, P);
+  }
+  // A photo taped beside the gauges: Mara and Tobias on the deck of the Halcyon Mercy. The gauge view tells
+  // the truth, so after the breach she isn't in it any more; on the plain there are two of her.
+  function crewPhoto(x, y, P) {
+    const w = 74, h = 56, ix = x + 4, iy = y + 4, iw = w - 8, ih = h - 16;
+    R.rect(x + 2, y + 2, w, h, C32('#0c0c0e'));
+    R.rect(x, y, w, h, C32('#d8d0bc'));
+    for (let yy = 0; yy < ih; yy++) for (let xx = 0; xx < iw; xx++) {
+      const v = yy / ih, sea = yy > ih * 0.52, rail = yy > ih * 0.74;
+      let c = sea ? (((xx + (yy >> 1)) & 3) ? C32('#275a7c') : C32('#357396')) : (B.BAYER[(yy & 3) * 4 + (xx & 3)] + 0.5 < v * 1.4 ? C32('#93c8da') : C32('#c4e6ee'));
+      if (rail) c = (yy & 2) ? C32('#5d6266') : C32('#4a4a52');
+      R.pset(ix + xx, iy + yy, c);
+    }
+    const fig = (fx, suit, head, hat) => {
+      R.rect(fx, iy + 12, 6, 14, C32(suit)); R.rect(fx + 1, iy + 6, 4, 5, C32(head)); if (hat) R.rect(fx, iy + 5, 6, 2, C32(hat));
+      R.rect(fx + 1, iy + 26, 1, 4, C32('#2a2a2a')); R.rect(fx + 4, iy + 26, 1, 4, C32('#2a2a2a'));
+    };
+    fig(ix + 14, '#d8b020', '#b07a5a', '#b02a1a'); // Tobias
+    const st = B.state && B.state.flags;
+    if (!st || !st.breached) fig(ix + 36, '#d4621e', '#c89070', '#3a2416');
+    else if (B.act === 'act3') { fig(ix + 30, '#d4621e', '#c89070', '#3a2416'); fig(ix + 42, '#d4621e', '#c89070', '#3a2416'); }
+    else R.rect(ix + 37, iy + 30, 5, 1, C32('#1c4563')); // only her shadow on the deck
+    Hd.text(x + 5, y + h - 10, st && st.breached && B.act !== 'act3' ? 'T.W. + ' : 'T.W. + M.E.', C32('#4a3a20'));
   }
   Hd.draw = function () {
     const P = B.player;
@@ -5807,10 +5833,11 @@ void main(){
   Hd.playFootage = function (done) {
     B.scene = {
       t: 0, world: true, dimWorld: true,
-      update(dt) { this.t += dt; if (this.t > 13) { B.scene = null; B.mode = 'play'; done && done(); } if (this.t > 9 && !this.said) { this.said = true; A.voice('mara', 2.4); } if (this.t > 11.2 && !this.st) { this.st = true; A.sfx('static', null, 1.2); } },
+      update(dt) { this.t += dt; if (this.t > 2 && B.meta.runs > 1 && (I.pressed('confirm') || I.pressed('click') || I.pressed('interact')) && this.t < 12) this.t = 12; if (this.t > 13) { B.scene = null; B.mode = 'play'; done && done(); } if (this.t > 9 && !this.said) { this.said = true; A.voice('mara', 2.4); } if (this.t > 11.2 && !this.st) { this.st = true; A.sfx('static', null, 1.2); } },
       draw() {
         const t = this.t, w = Math.min(R.W - 40, 260), h = Math.round(w * 0.56), x0 = Math.round((R.W - w) / 2), y0 = Math.round((R.H - h) / 2) - 10;
         R.shadeRect(0, 0, R.W, R.H, COL.k, 0.8);
+        if (B.meta.runs > 1 && t > 2 && t < 12) Hd.text(R.W - 8 - Hd.tw(I.touchMode ? 'TAP: SKIP' : 'E: SKIP'), R.H - 12, I.touchMode ? 'TAP: SKIP' : 'E: SKIP', amber(1));
         box(x0 - 6, y0 - 6, w + 12, h + 20, C32('#1a1c20'), COL.g2);
         if (t > 11.2) { for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) R.pset(x0 + x, y0 + y, Math.random() < 0.5 ? COL.g2 : COL.k); if (t > 12) { R.rect(x0, y0, w, h, COL.k); Hd.center(y0 + h / 2 - 3, 'SIGNAL LOST', COL.g4); } return; }
         const focus = M.clamp((t - 4) / 2, 0, 1);
