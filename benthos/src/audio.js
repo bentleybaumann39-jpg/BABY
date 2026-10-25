@@ -190,6 +190,10 @@
     transponder(t) { for (let k = 0; k < 2; k++) { tone(exterior, 'sine', 3100, 3300, t + k * 0.13, 0.003, 0.03, 0.08, 0.05); tone(revSend, 'sine', 3100, 3300, t + k * 0.13, 0.003, 0.02, 0.4, 0.03); } },
     // viewport glass crazing under load
     crackle(t) { for (let k = 0; k < 5; k++) burst(interior, 'highpass', 5000 + Math.random() * 3000, 2, t + Math.random() * 0.25, 0.0005, 0.001, 0.012, 0.18); },
+    // a sperm whale's click: a hard broadband snap with a long tail in the water
+    whaleClick(t) { burst(exterior, 'bandpass', 2800, 1.2, t, 0.0005, 0.001, 0.025, 0.5); burst(revSend, 'bandpass', 2200, 1, t, 0.0005, 0.002, 0.4, 0.15); },
+    // a black smoker: a deep roar breathing up out of the floor
+    vent(t) { burst(exterior, 'lowpass', 220, 0.8, t, 0.6, 1.2, 1.5, 0.35, brown); burst(exterior, 'bandpass', 900, 0.6, t + 0.2, 0.4, 0.8, 1, 0.05); },
     splash(t) { burst(exterior, 'lowpass', 1500, 0.6, t, 0.01, 0.2, 1.2, 0.6, white, 300); },
   };
   function I_rumble(a, b, ms) { if (B.I) B.I.rumble(a, b, ms); }

@@ -366,5 +366,88 @@
     R.model(b.x, b.y, b.z, BM[b.kind](b), { outline: b.kind !== 'osedax', minLight: glowing ? 0.04 : 0 });
   }
 
+  // ------------------------------------------------------------------ the sperm whale
+  // One pass in Act I, the biggest living thing in the game and the only one that means no harm. You
+  // can't light all of it; the plankton draws its outline as it pushes through, and it clicks at you.
+  function whalePrims(t) {
+    const T = MD.frame(0, 0), skin = c('#3a3f47'), out = [], sw = Math.sin(t * 0.9) * 0.6;
+    const scar = (pu, pw) => (Math.abs(Math.sin(pu * 7 + pw * 3)) > 0.97 ? 1.5 : 0.85 + 0.15 * Math.sin(pu * 2));
+    out.push(P.b(...T(4.5, 0, 0), [T(1, 0, 0), T(0, 1, 0), T(0, 0, 1)], [2.6, 1.15, 1.35], skin, { tex: scar }));      // the great square head
+    out.push(P.e(...T(0.5, 0, 0.1), [T(1, 0, 0), T(0, 1, 0), T(0, 0, 1)], [3.4, 1.3, 1.4], skin, { tex: scar }));    // body
+    out.push(P.e(...T(-3.6, 0, 0.1 + sw * 0.2), [T(1, 0, 0.1), T(0, 1, 0), T(0, 0, 1)], [2.4, 0.7, 0.75], skin));     // tail stock
+    out.push(P.c(T(5.5, 0, 1.1), T(1.8, 0, 1.0), 0.18, c('#d8d0bc')));                                             // narrow lower jaw
+    for (const sd of [-1, 1]) {
+      out.push(P.e(...T(-6.2, sd * 1.1, sw), [T(0.3, sd * 1, 0), T(1, 0, 0), T(0, 0, 1)], [1.4, 0.55, 0.08], skin)); // flukes
+      out.push(P.e(...T(2.6, sd * 1.25, 0.8), [T(0.5, sd * 1, 0.4), T(1, 0, 0), T(0, 0, 1)], [0.7, 0.3, 0.06], skin)); // flippers
+      out.push(P.s(...T(3.0, sd * 1.05, 0.25), 0.09, c('#000000'), { m: 2 }));
+    }
+    return out;
+  }
+  E.whale = function (x, y, z, dir) {
+    return E.add({
+      type: 'whale', x, y, z, dir, t: 0, r: 6, clickT: 0, layer: 2,
+      update(dt) {
+        this.t += dt; this.vx = Math.cos(this.dir) * 1.9; this.vy = Math.sin(this.dir) * 1.9;
+        this.x += this.vx * dt; this.y += this.vy * dt; this.z += Math.sin(this.t * 0.3) * dt * 0.2;
+        // click trains: regular at first, then a creak as it looks you over
+        const Pp = pl(), d = Pp ? Math.hypot(this.x - Pp.x, this.y - Pp.y) : 99;
+        if ((this.clickT -= dt) <= 0) { const creak = d < 18; this.clickT = creak ? 0.08 : 0.55; B.A.at('whaleClick', this.x, this.y, this.z, creak ? 1.4 : 1); if (creak && Pp) Pp.ring = Math.max(Pp.ring || 0, 1.5); }
+        // the plankton lights its outline
+        const dens = wakeDensity(this.z) + 0.25;
+        for (let k = 0; k < 3; k++) if (Math.random() < dt * 90 * dens) {
+          const u = M.rnd(-7, 7), a = Math.random() * 6.28, rr = u > 2 ? 1.25 : u > -3 ? 1.35 : 0.8 * (1 - (-3 - u) / 5);
+          const cx = Math.cos(this.dir), cy = Math.sin(this.dir);
+          Lf.spark(this.x + cx * u - cy * Math.cos(a) * rr, this.y + cy * u + cx * Math.cos(a) * rr, this.z + Math.sin(a) * rr, -this.vx * 0.15, -this.vy * 0.15, 0, M.rnd(0.8, 2.2), 0);
+        }
+        // its passing shoves the water
+        if (Pp && d < 9) { Pp.vx += this.vx * dt * 0.25; Pp.vy += this.vy * dt * 0.25; }
+        if (this.t > 60) this.alive = false;
+      },
+      draw() {
+        const prims = whalePrims(this.t);
+        // rotate the model to its heading by drawing in a frame turned by dir
+        const T = MD.frame(this.dir, 0), rot = prims.map(p => rotPrim(p, T));
+        R.model(this.x, this.y, this.z, rot, { minLight: 0.01 });
+        if (B.Player.revealed(this)) R.wire(this.x, this.y, this.z, rot, B.SONAR);
+      },
+    });
+  };
+  // Re-express a primitive built facing east in a frame T (from MD.frame).
+  function rotPrim(p, T) {
+    const q = Object.assign({}, p); delete q._;
+    if (p.t === 'c') { q.a = T(...p.a); q.b = T(...p.b); return q; }
+    const o = T(p.x, p.y, p.z); q.x = o[0]; q.y = o[1]; q.z = o[2];
+    if (p.ax) q.ax = p.ax.map(v => T(...v));
+    return q;
+  }
+
+  // ------------------------------------------------------------------ hydrothermal vents
+  // Black smokers on the abyssal plain: the only warm light below 3,000 m. Tube worms crowd the base.
+  E.vent = function (x, y, z, h) {
+    const puffs = []; for (let k = 0; k < 14; k++) puffs.push({ t: Math.random() * 6, a: Math.random() * 6.28 });
+    return E.add({
+      type: 'vent', x, y, z, h, r: 1.2, solid: true, anchor: true, puffs, rumT: Math.random() * 5,
+      update(dt) {
+        for (const p of this.puffs) { p.t += dt; if (p.t > 6) { p.t = 0; p.a = Math.random() * 6.28; } }
+        if ((this.rumT -= dt) <= 0) { this.rumT = M.rnd(4, 9); B.A.at('vent', this.x, this.y, this.z, 0.9); }
+      },
+      draw() {
+        const out = [], h = this.h, rock = c('#25282e');
+        const cracks = (nu, nw, nf, pu, pw) => Math.max(0, Math.sin(pw * 23 + Math.sin(pu * 17) * 2) - 0.86) * 7 * (0.7 + 0.3 * Math.sin(B.time * 3 + pw * 5));
+        for (let k = 0; k < 5; k++) { const t0 = k / 5, t1 = (k + 1) / 5, r0 = 0.9 - t0 * 0.55, r1 = 0.9 - t1 * 0.55, wob = Math.sin(k * 2.3 + this.x) * 0.15; out.push(P.c([wob, 0, -t0 * h], [wob * 0.6, wob * 0.5, -t1 * h], (r0 + r1) / 2, rock, { e: [1.0, 0.35, 0.06], emFn: cracks })); }
+        out.push(P.e(0, 0, -h - 0.1, AXV, [0.45, 0.45, 0.2], c('#16161b')));
+        for (let k = 0; k < 9; k++) { const a = k * 0.7 + this.y, rr = 1.1 + (k % 3) * 0.35, x2 = Math.cos(a) * rr, y2 = Math.sin(a) * rr, hh = 0.6 + (k % 4) * 0.25; out.push(P.c([x2, y2, 0], [x2, y2, -hh], 0.04, c('#e8e4d8')), P.s(x2, y2, -hh - 0.05, 0.07, c('#c83a22'))); }
+        R.model(this.x, this.y, this.z, out, { minLight: 0.02 });
+        R.addLight(this.x, this.y, this.z - 0.6, 1, 0.45, 0.12, 7, 0.9 + 0.2 * Math.sin(B.time * 2 + this.x));
+        // the plume: black water boiling upward, dithered thinner as it rises
+        for (const p of this.puffs) {
+          const k = p.t / 6, rise = k * 9, spread = 0.4 + k * 2.2;
+          R.disc(this.x + Math.cos(p.a) * k * 1.2, this.y + Math.sin(p.a) * k * 0.8, this.z - h - rise, spread, 0.012, 0.01, 0.01, (1 - k) * 0.55, false);
+        }
+        if (B.Player.revealed(this)) R.wire(this.x, this.y, this.z, out, B.SONAR);
+      },
+    });
+  };
+
   Lf.count = () => ({ sparks: sn, drifters: E.byType('drift').length, benthos: E.byType('benthos').length });
 })(window.B);

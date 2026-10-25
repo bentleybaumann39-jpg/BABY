@@ -445,6 +445,9 @@
     // the Grain
     E.grain(f.wf.x + 6, f.wf.y - 4, H(f.wf.x, f.wf.y) - 3, 1000); E.grain(f.lakes[1].x, f.lakes[1].y + 14, H(f.lakes[1].x, f.lakes[1].y + 14) - 3, 900); E.grain(f.AX - 8, f.AY - 10, 4180, 1200);
     for (let k = 0; k < 2; k++) E.squid(110 + k * 50, 90 + k * 40, H(110 + k * 50, 90 + k * 40) - 8, 'mourning');
+    // a field of black smokers: the only warm light on the plain
+    for (const [vx, vy, vh] of [[122, 206, 4.5], [127.5, 211, 6.5], [117, 214, 3.2], [131, 204, 2.6]]) E.vent(vx, vy, H(vx, vy) + 0.2, vh);
+    E.cairn(126, 199, H(126, 199) - 0.6);
     // the Archive: one helmet for every death in this save, laid into the spiral, stencils facing in
     S.buildArchive(f.AX, f.AY, s.deaths);
     if (!s.reliquaryDead && fl.reliquary) S.spawnReliquary();
@@ -732,6 +735,11 @@
       if (p.z > 150) once('sunGone', () => S.say('mara', "THAT'S THE LAST OF THE SUN."));
       if (p.z > 205) once('tipLamp', () => B.Hud.tip('lamp'));
       if (p.z > 240) once('tipPing', () => B.Hud.tip('ping'));
+      if (p.z > 225 && p.z < 420) once('whale', () => {
+        // a sperm whale crosses the shaft: harmless, enormous, and pinging you back
+        E.whale(80 - 30, 80 - 6, p.z - 4, 0.12);
+        S.after(() => S.convo([['tobias', "HULL MIC'S FULL OF CLICKS. THAT'S A SPERM WHALE, {N}. SHE'S PINGING YOU."], ['mara', "SHE'S BIGGER THAN THE CAGE."], ['tobias', 'SAY HELLO. SHE DIVES DEEPER THAN YOU DO.']]), 4000);
+      });
       if (p.z > 270) once('engines', () => S.say('tobias', "YOU'LL LOSE OUR ENGINES AROUND THREE HUNDRED, {N}. DON'T TAKE IT PERSONALLY."));
       if (p.z > 370) once('reliquary', () => { S.spawnReliquary(); S.after(() => S.convo([['tobias', 'BIG CONTACT ON YOUR HULL MIC. SLOW. FOLLOWING.'], ['tobias', 'PROBABLY AN ISOPOD.'], ['tobias', 'PROBABLY.']]), 6000); });
       if (p.z > 405) once('layer', () => S.say('tobias', "THAT'S THE SCATTERING LAYER UNDER YOU. SONAR WILL SHOW YOU A FLOOR THAT ISN'T THERE. YOUR LAMP WILL BLIND YOU IN IT. TRY RED."));

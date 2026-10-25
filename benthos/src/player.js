@@ -196,7 +196,7 @@
     P.pingFlag = 1;
     const inCone = (x, y) => { if (!narrow) return true; const dx = x - P.x, dy = y - P.y, d = Math.hypot(dx, dy) || 1; return (dx * P.aimX + dy * P.aimY) / d > cosC; };
     for (const e of E.list) {
-      if (!e.alive || !['reliquary', 'sleeper', 'squid', 'procession', 'double', 'cage', 'prop', 'carcass', 'item', 'cairn', 'corpse'].includes(e.type)) continue;
+      if (!e.alive || !['reliquary', 'sleeper', 'squid', 'procession', 'double', 'cage', 'prop', 'carcass', 'item', 'cairn', 'corpse', 'whale', 'vent'].includes(e.type)) continue;
       let ex = e.x, ey = e.y, ez = e.z;
       if (e.type === 'procession') { ez = M.clamp(P.z, e.zTop, e.zTop + e.len * e.cf); ex = e.px[0]; ey = e.py[0]; }
       const d = Math.hypot(ex - P.x, ey - P.y, (ez - P.z) * 0.7);
