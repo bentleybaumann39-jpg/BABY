@@ -249,7 +249,7 @@
         sparksUpdate(dt);
         const Pp = pl(); if (!Pp || B.act === 'deck') return;
         // keep the drifter ring full, recycle anything left behind
-        const tab = drifterTable(Pp.z), want = Math.round(tab.n * (B.settings.quality === 0 ? 0.6 : 1));
+        const tab = drifterTable(Pp.z), want = Math.round(tab.n * [0.45, 0.65, 1][B.settings.quality | 0]);
         for (const d of this.drifters) if (Math.hypot(d.x - Pp.x, (d.y - Pp.y) * 1.2, (d.z - Pp.z) * 0.8) > 42) d.alive = false;
         this.drifters = this.drifters.filter(d => d.alive);
         let tries = 3;
@@ -291,7 +291,7 @@
     const i0 = Math.floor((Pp.x - 26) / CELL), i1 = Math.floor((Pp.x + 26) / CELL), j0 = Math.floor((Pp.y - 14) / CELL), j1 = Math.floor((Pp.y + 30) / CELL);
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
       const key = i * 4096 + j, hv = B.hash2(i, j, 501);
-      const dens = (B.act === 'act3' ? 0.5 : Pp.z < 160 ? 0.32 : 0.62) * (B.settings.quality === 0 ? 0.6 : 1); if (hv > dens) continue;
+      const dens = (B.act === 'act3' ? 0.5 : Pp.z < 160 ? 0.32 : 0.62) * [0.45, 0.65, 1][B.settings.quality | 0]; if (hv > dens) continue;
       const x = (i + 0.2 + 0.6 * B.hash2(i, j, 502)) * CELL, y = (j + 0.2 + 0.6 * B.hash2(i, j, 503)) * CELL;
       if (x < 1 || y < 1 || x > map.size - 1 || y > map.size - 1) continue;
       const z = H(x, y); if (z < zCut + 0.3 || z > zMax) continue;

@@ -15,14 +15,17 @@
     B.W = w; B.H = h; R.alloc(w, h); R.resize(); snow.init();
   };
   // The play resolution: 480x270, 400x225 in performance mode, 320x180 for the Second Copy (NG+).
-  B.playRes = function (ng) { if (ng) B.setRes(320, 180); else if (B.settings.quality === 0) B.setRes(400, 225); else B.setRes(480, 270); };
-  // One automatic step down the first time play runs slow; the setting can be put back by hand.
+  // The play resolution by quality: 480x270 high, 400x225 medium, 320x180 low (and always for the Second Copy).
+  const QRES = [[320, 180], [400, 225], [480, 270]], QNAME = ['LOW', 'MEDIUM', 'HIGH'];
+  B.playRes = function (ng) { const r = ng ? QRES[0] : QRES[M.clamp(B.settings.quality | 0, 0, 2)]; B.setRes(r[0], r[1]); };
+  // Up to two automatic steps down the first time play runs slow; the setting can be put back by hand.
   let slowT = 0;
   function autoQuality(dt) {
     if (B.noAutoPause || B.settings.qualityChecked || B.mode !== 'play' || !B.player) return;
     slowT += dt; if (slowT < 6) return;
-    B.settings.qualityChecked = true;
-    if (B.settings.quality === 1 && B.renderMs > 30) { B.settings.quality = 0; B.playRes(B.state && B.state.ng); Hd.toast('PERFORMANCE MODE · CHANGE IT IN SETTINGS'); }
+    slowT = 0;
+    if (B.renderMs > 28 && B.settings.quality > 0) { B.settings.quality--; B.playRes(B.state && B.state.ng); Hd.toast('QUALITY ' + QNAME[B.settings.quality] + ' · CHANGE IT IN SETTINGS'); if (B.settings.quality === 0) B.settings.qualityChecked = true; }
+    else B.settings.qualityChecked = true;
     B.saveSettings();
   }
 
@@ -99,7 +102,7 @@
         Object.assign({ label: 'HONEST HUD (NO CO2 LIES)', keep: true }, tog('honest')), Object.assign({ label: 'STEADY TRIM ASSIST', keep: true }, tog('steady')),
         Object.assign({ label: 'OBJECTIVE AND BEACON', keep: true }, tog('markers')),
         Object.assign({ label: 'SCREEN SHAKE', keep: true }, tog('shake')), Object.assign({ label: I.touchMode ? 'VIBRATION' : 'RUMBLE', keep: true }, tog('rumble')),
-        { label: 'QUALITY', keep: true, adj: () => { B.settings.quality = B.settings.quality ? 0 : 1; B.saveSettings(); if (B.state && B.mode !== 'title') B.playRes(B.state.ng); else B.playRes(false); }, value: () => (B.settings.quality ? 'HIGH' : 'PERFORMANCE') },
+        { label: 'QUALITY', keep: true, adj: d => { B.settings.quality = (B.settings.quality + (d || 1) + 3) % 3; B.saveSettings(); if (B.state && B.mode !== 'title') B.playRes(B.state.ng); else B.playRes(false); }, value: () => QNAME[B.settings.quality | 0] },
         { label: 'FULLSCREEN', keep: true, fn: toggleFullscreen, value: () => (document.fullscreenElement ? 'ON' : 'OFF') },
         { label: 'BACK', fn: back },
       ],

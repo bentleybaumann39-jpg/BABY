@@ -46,7 +46,7 @@ Taps work as clicks in menus and skip scenes. Prompts and tips name the touch co
 * Difficulty: story, diver or abyssal (air use, damage and crush debt).
 * Objective line and transponder beacon.
 * Honest HUD (turns off the CO₂ lies), photosensitivity mode, steady trim.
-* Quality: high (480×270) or performance (400×225, thinner ambient life). The game steps down once on its own if it runs slow.
+* Quality: high (480×270), medium (400×225) or low (320×180), with thinner ambient life lower down. The game steps down on its own if it runs slow.
 * Volume, music, CRT shader, screen shake, rumble or vibration, fullscreen.
 
 ## What's in it
@@ -100,7 +100,7 @@ Taps work as clicks in menus and skip scenes. Prompts and tips name the touch co
 * **The viewport** cracks as crush debt climbs, and seals again as it falls.
 
 **Story**
-* Fifteen documents and five tapes. The tapes play as voices over the comms; one of them is in a voice you know.
+* Seventeen documents and five tapes. The tapes play as voices over the comms; one of them is in a voice you know.
 * The first few deaths of each kind tell you, in a line, what went wrong.
 * A records page counts descents, deaths, helmets in the Archive and endings found.
 
