@@ -4198,6 +4198,11 @@ void main(){
     hv417: { title: 'HELMET · HV-0417 · 2019', body: [
       'I CAME BACK UP.', 'SOMETHING CAME BACK UP WITH ME.', 'IT HAS MY FACE AND IT ANSWERS TO MY NAME AND IT LIKES THE COFFEE.',
       'DON\'T LET THEM SEND ANOTHER ONE.'] },
+    magpie1: { title: 'DATA PLATE · MAGPIE-1 · 2016', body: [
+      'HALVARD MARINE · WORK-CLASS ROV · S/N M1', 'LOST 2016-11-03 AT 560 M. TETHER PARTED WITH NO LOAD ON IT.', '',
+      'LAST FRAME RECOVERED FROM THE BLACK BOX:', 'A DIVER IN AN HV-SERIES HARDSUIT, CLOSE TO THE LENS, WAVING.', '', 'THE HV SERIES ENTERED SERVICE IN 2019.'] },
+    hopper: { title: 'SHOT HOPPER · STENCIL: T. VIGIL · 1971', body: [
+      'A STEEL BALLAST HOPPER FROM A BATHYSCAPHE. IRON SHOT, RELEASED TO RISE.', 'IT IS EMPTY. THE VIGIL DROPPED ITS WEIGHTS HERE.', '', 'THE VIGIL IS STILL DOWN THERE.'] },
     plainhelm: { title: 'HELMET · NO SERIAL', body: ['THE VISOR IS PAINTED BLACK FROM THE INSIDE.', 'SCRATCHED UNDER THE PAINT: FOUR BEATS AND A GAP.'] },
   };
   // Tapes: recorders found in the water. They play as voices over the comms, and their transcripts go
@@ -4472,6 +4477,11 @@ void main(){
     it('ti', tp(3, 36, 0.6, -0.1)); it('cer', tp(3, 50)); it('lime', tp(3, 40, 0.6, 0.18));
     it('o2', tp(4, 40)); it('cu', tp(4, 50, 0.6, 0.15)); it('flare', tp(4, 32, 0.6, -0.15));
     it('ti', tp(5, 38)); it('ti', tp(5, 50, 0.6, 0.12)); it('cer', tp(5, 44, 0.6, -0.18));
+    // Magpie-1, lost here in 2016, and the Vigil's ballast hopper on the ledge above
+    const m1 = tp(5, 46, 0.7, -0.05); E.prop(() => MD.magpie({ lamps: false }), m1.x, m1.y, m1.z, { solid: true, r: 1.4, flatZ: 1 });
+    it('log', m1.x - 1.6, m1.y + 1.2, m1.z + 0.2, { doc: DOCS.magpie1, title: 'MAGPIE-1 DATA PLATE' });
+    const hp = tp(3, 46, 0.5, 0.06); E.prop(() => [MD.box(0, 0, -0.5, 0.5, 0.5, 0.45, '#5d6266'), R.P.c([0, 0, -0.05], [0, 0, 0.35], 0.28, B.linHex('#4a4a52'), { m: 3 })], hp.x, hp.y, hp.z, { solid: true, r: 0.8 });
+    it('log', hp.x + 1.2, hp.y + 0.6, hp.z + 0.3, { doc: DOCS.hopper, title: 'A STENCILLED HOPPER' });
     // the Gannet bell, the Halvard Four
     const bp = tp(6, 40, 1.6); E.prop(() => MD.bell({ lit: true }), bp.x, bp.y, bp.z, { solid: true, r: 1.4 }); S.bellPos = bp;
     E.bubble(bp.x, bp.y, bp.z - 2, 1);
