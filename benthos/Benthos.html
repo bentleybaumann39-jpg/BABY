@@ -5735,27 +5735,45 @@ void main(){
     });
   }
   function drawMap() {
-    const m = B.map, P = B.player;
+    const m = B.map, P = B.player, N = 150;
     if (mapAct !== m.name) {
-      mapAct = m.name; const N = 150; mapImg = new Uint32Array(N * N);
+      // shaded relief with contour lines every depth band, built once per map
+      mapAct = m.name; mapImg = new Uint32Array(N * N);
+      const hs = new Float32Array(N * N);
+      for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) hs[j * N + i] = B.World.H(m, (i + 0.5) / N * m.size, (j + 0.5) / N * m.size);
+      const band = h => m.name === 'act1' ? Math.floor(h / 100) : m.name === 'act2' ? (h < 3000 ? 1 : 0) : Math.floor((h - 3300) / 60);
       for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
-        const h = B.World.H(m, (i + 0.5) / N * m.size, (j + 0.5) / N * m.size);
+        const h = hs[j * N + i];
         const base = m.name === 'act1' ? Math.min(1, h / 1100) : m.name === 'act2' ? (h < 3000 ? 0.7 : 0.05) : Math.min(1, (h - 3300) / 900);
-        const v = Math.round(40 + base * 120);
+        const edge = (i > 0 && band(hs[j * N + i - 1]) !== band(h)) || (j > 0 && band(hs[(j - 1) * N + i]) !== band(h));
+        const v = Math.round((40 + base * 120) * (edge ? 0.55 : 1));
         mapImg[j * N + i] = B.rgb32(Math.round(v * 0.85), Math.round(v * 0.78), Math.round(v * 0.6));
       }
     }
-    const N = 150, x0 = Math.round((R.W - N) / 2), y0 = Math.round((R.H - N) / 2);
-    box(x0 - 6, y0 - 16, N + 12, N + 24, C32('#1c1c1c'), COL.g4);
+    const x0 = Math.round((R.W - N) / 2), y0 = Math.max(30, Math.round((R.H - N) / 2) - 16);
+    box(x0 - 6, y0 - 16, N + 12, N + 34, C32('#1c1c1c'), COL.g4);
     Hd.text(x0, y0 - 11, "SZABO'S CHART · " + m.name.toUpperCase(), COL.g5);
     for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) R.pset(x0 + i, y0 + j, mapImg[j * N + i]);
-    const mk = (x, y, c, s) => R.rect(x0 + x / m.size * N - (s >> 1), y0 + y / m.size * N - (s >> 1), s, s, c);
+    const px = x => x0 + x / m.size * N, py = y => y0 + y / m.size * N;
+    const mk = (x, y, c, s) => R.rect(Math.round(px(x) - (s >> 1)), Math.round(py(y) - (s >> 1)), s, s, c);
+    if (B.act === 'act2' && B.Story.islands) B.Story.islands.forEach((is, k) => mk(is.x, is.y, k <= (B.Story.islandIdx || -1) ? COL.g2 : COL.g4, 2));
     for (const e of B.E.list) if (e.alive && e.type === 'cairn') mk(e.x, e.y, COL.a3, 3);
+    const cage = B.act === 'act1' && B.E.byType('cage')[0]; if (cage) mk(cage.x, cage.y, COL.g6, 3);
     if (B.Story.magpie && B.act === 'act2') mk(B.Story.magpie.x, B.Story.magpie.y, COL.o0, 3);
     if (B.act === 'act3') mk(B.map.features.AX, B.map.features.AY, COL.s0, 3);
-    if (P.relics.hand && B.act === 'act2') { const v = { x: 210 - 30, y: 210 + 40 }; mk(v.x, v.y, COL.g6, 2); }
-    if ((B.frame >> 4) & 1) mk(P.x, P.y, COL.s0, 2);
+    if (P.relics.hand && B.act === 'act2' && B.Story.vigilPos) mk(B.Story.vigilPos.x, B.Story.vigilPos.y, COL.g6, 2);
+    // the objective, and you
+    const ob = B.Story.objective && B.Story.objective();
+    if (ob && ob.x !== undefined && (B.frame >> 3) & 1) { const ox = Math.round(px(ob.x)), oy = Math.round(py(ob.y)); for (let k = -2; k <= 2; k++) { R.pset(ox + k, oy, COL.a3); R.pset(ox, oy + k, COL.a3); } }
+    if ((B.frame >> 4) & 1) mk(P.x, P.y, COL.s0, 3); else mk(P.x, P.y, COL.k, 1);
+    // legend
+    const ly = y0 + N + 5;
+    R.rect(x0, ly + 2, 3, 3, COL.s0); Hd.text(x0 + 5, ly, 'YOU', COL.g4);
+    R.rect(x0 + 30, ly + 2, 3, 3, COL.a3); Hd.text(x0 + 35, ly, 'CAIRN', COL.g4);
+    Hd.text(x0 + 70, ly, '+ GOAL', COL.a3);
+    Hd.text(x0 + N - Hd.tw(Math.round(P.z) + ' M'), ly, Math.round(P.z) + ' M', COL.g4);
   }
+
   const FACE = (function () {
     const f = new Float32Array(32 * 32);
     for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
