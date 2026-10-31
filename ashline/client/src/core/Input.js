@@ -35,7 +35,7 @@ export class Input {
     });
   }
   lock() { if (this.forced) { this.locked = true; return; } if (this.canvas.requestPointerLock) { const p = this.canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } }
-  unlock() { if (this.forced) return; if (document.pointerLockElement) document.exitPointerLock(); }
+  unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
   down(code) { return this.keys.has(code); }
   hit(code) { return this.pressed.has(code); }
   btn(i) { return !!(this.mouse.b & (1 << i)); }

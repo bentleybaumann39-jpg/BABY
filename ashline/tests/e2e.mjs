@@ -29,14 +29,16 @@ const srv = await startServer({ port: 0, countdown: 2, players: 30, timeScale: 0
 const BASE = `http://localhost:${srv.port}`;
 const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'] });
 
+const openPages = [];
 async function open(url, { name = 'Tester', block = false } = {}) {
   const page = await browser.newPage({ viewport: { width: 640, height: 360 } });
+  openPages.push(page);
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.addInitScript((n) => { localStorage.setItem('ashline.settings', JSON.stringify({ quality: 'low', name: n })); }, name);
   if (block) await page.route(/^https?:|^wss?:/, r => r.abort());
-  await page.goto(url);
+  await page.goto(url, { timeout: 120000 });
   await page.waitForFunction(() => window.__ashline && !document.getElementById('loading').classList.contains('show'), null, { timeout: 180000 });
   return { page, errors };
 }
@@ -62,7 +64,11 @@ async function click(page, sel) {
 }
 const forceLock = (page) => A(page, () => { const a = window.__ashline; a.input.forced = true; a.input.locked = true; });
 
-const scenario = async (name, fn) => { if (!run(name)) return; try { await fn(); } catch (e) { ok(false, `${name}: exception ${e.message.split('\n')[0]}`); } };
+const scenario = async (name, fn) => {
+  if (!run(name)) return;
+  try { await fn(); } catch (e) { ok(false, `${name}: exception ${e.message.split('\n')[0]}`); }
+  for (const p of openPages.splice(0)) await p.close().catch(() => {});
+};
 {
   // ------------------------------------------------------------------ practice
   await scenario('practice', async () => {
