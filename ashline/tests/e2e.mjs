@@ -80,15 +80,25 @@ try {
     await A(page, () => { const m = window.__ashline.match; m.yaw = 0; m.pitch = -0.02; });
     await page.waitForTimeout(1500);
     await shot(page, 'e2e-04-ground');
-    const kills0 = await A(page, () => window.__ashline.match.kills);
+    // hold fire (hip) to prove automatic fire, then aim down sights in short re-aimed bursts like a player would
     await A(page, () => { window.__ashline.input.mouse.b = 1; });
-    await waitFor(page, (k) => window.__ashline.match.kills > k || window.__ashline.match.predMag < 20, 60000, kills0).catch(() => {});
+    await waitFor(page, () => window.__ashline.match.predMag < 22, 60000).catch(() => {});
     await shot(page, 'e2e-05-firing');
     await A(page, () => { window.__ashline.input.mouse.b = 0; });
     const fired = await A(page, () => 30 - window.__ashline.match.predMag);
     ok(fired >= 5, `held fire shoots automatically (${fired} rounds)`);
-    await waitFor(page, () => window.__ashline.match.kills > 0, 30000).catch(() => {});
-    ok(await A(page, () => window.__ashline.match.kills) > 0, 'the bot in front of us was killed by server-validated shots');
+    let hits = 0;
+    for (let i = 0; i < 40 && !(await A(page, () => window.__ashline.match.kills > 0)); i++) {
+      await A(page, () => { const m = window.__ashline.match; let t = null; for (const r of m.remotes.values()) if (r.cur && r.cur.mode === 0 && !m.isMate(r.id) && (!t || Math.hypot(r.cur.x - m.pred.x, r.cur.z - m.pred.z) < Math.hypot(t.x - m.pred.x, t.z - m.pred.z))) t = r.cur;
+        if (t) { const dx = t.x - m.pred.x, dz = t.z - m.pred.z; m.yaw = Math.atan2(-dx, -dz); m.pitch = Math.atan2(t.y + 1.25 - (m.pred.y + 1.62), Math.hypot(dx, dz)); m.recoilP = 0; }
+        window.__ashline.input.mouse.b = 1 | 4; });
+      await page.waitForTimeout(350);
+      await A(page, () => { window.__ashline.input.mouse.b = 4; });
+      await page.waitForTimeout(250);
+      hits = await A(page, () => document.getElementById('hitmarker').className.includes('show') ? 1 : 0) + hits;
+    }
+    await A(page, () => { window.__ashline.input.mouse.b = 0; });
+    ok(await A(page, () => window.__ashline.match.kills) > 0, 'aimed bursts kill the bot (hits validated and applied by the server)');
     await page.keyboard.press('Tab'); await page.waitForTimeout(1500);
     ok(await page.isVisible('#inventory'), 'inventory opens');
     await shot(page, 'e2e-06-inventory');

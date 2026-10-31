@@ -56,7 +56,7 @@ class App {
     this.profile = null; this.conn = null; this.match = null;
     this.menu = new Menu(this);
     this.setupPreview();
-    this.input.onLock = (locked) => { if (!locked && this.match && !this.hud.inventoryOpen && !this.hud.mapOpen && !this.leaving) this.menu.showPause(); };
+    this.input.onLock = (locked) => { if (!locked && this.match && !this.hud.inventoryOpen && !this.hud.mapOpen && !this.leaving && !this.resultsShown) this.menu.showPause(); };
     window.addEventListener('pointerdown', () => this.audio.init(), { once: true });
     window.addEventListener('keydown', () => this.audio.init(), { once: true });
     // Compile shaders once with the menu view.
@@ -161,13 +161,14 @@ class App {
       case 'err': this.menu.setError(m.m); setTimeout(() => this.menu.setError(''), 4000); break;
       case 'pong': this.ping = performance.now() - m.c; break;
       case 'match': this.startMatchView(m.init); break;
-      case 'results': this.profile = m.profile; this.menu.renderProfile(); setTimeout(() => { if (this.match) { this.input.unlock(); this.menu.showResults(m); } }, 1500); break;
+      case 'results': this.profile = m.profile; this.menu.renderProfile(); setTimeout(() => { if (this.match) { this.resultsShown = true; this.menu.hidePause(); this.input.unlock(); this.menu.showResults(m); } }, 1500); break;
       case 'lobby': this.endMatchView(); break;
     }
   }
 
   startMatchView(init) {
     this.endMatchView();
+    this.resultsShown = false;
     this.menu.close(); this.menu.hideResults();
     this.match = new MatchView(this, init);
     this.input.enabled = true;
