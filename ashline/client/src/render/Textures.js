@@ -376,10 +376,10 @@ function terrainGravel() {
     const w = smp(nz.white, x, y), hi = smp(nz.hi, x, y, 2), mid = smp(nz.mid, x, y), lo = smp(nz.lo, x, y, 1, 9, 31);
     const stone = smooth(0.45, 0.75, smp(nz.hi, x, y, 4, 13, 2));
     const rut = smooth(0.12, 0.02, Math.abs(((x / S) * 4 % 1) - 0.5) - 0.3) * 0.0;
-    const puddle = smooth(0.7, 0.76, lo);
+    const puddle = smooth(0.8, 0.86, lo) * 0.7;
     let v = 0.33 + stone * 0.18 + (mid - 0.5) * 0.1 + (w > 0.9 ? 0.08 : 0) - rut;
     o.r = v * 1.03; o.g = v * 0.99; o.b = v * 0.92;
-    o.r = mix(o.r, 0.13, puddle); o.g = mix(o.g, 0.12, puddle); o.b = mix(o.b, 0.11, puddle);
+    o.r = mix(o.r, 0.2, puddle); o.g = mix(o.g, 0.19, puddle); o.b = mix(o.b, 0.17, puddle);
     o.h = 0.4 + stone * 0.5 + (hi - 0.5) * 0.2 - puddle * 0.3;
     o.ro = mix(0.9, 0.12, puddle);
   };

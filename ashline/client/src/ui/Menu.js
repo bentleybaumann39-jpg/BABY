@@ -153,6 +153,7 @@ export class Menu {
   showResults(m) {
     const r = m.you, xp = m.xp;
     $('results').classList.add('show');
+    document.getElementById('hud').classList.remove('show');
     $('res-place').textContent = r.place === 1 ? 'LAST SQUAD STANDING' : `#${r.place}`;
     $('res-place').className = r.place === 1 ? 'win' : '';
     $('res-sub').textContent = r.place === 1 ? 'You outlasted the ash.' : `Winners: ${m.winners.join(', ')}`;

@@ -126,7 +126,7 @@ class BotBrain {
     }
     if (fighting && !(outside && zone.dmg >= 5)) { this.state = 'fight'; return; }
     if (zoneUrgent) { this.state = 'zone'; if (this.goalKind !== 'zone' || !this.goal) this.setGoal(this.zonePoint(), 'zone'); return; }
-    if (mate && (!this.target || now - this.seenAt > TICK_RATE * 6)) { this.state = 'revive'; this.setGoal({ x: mate.m.x, z: mate.m.z }, 'revive'); this.reviveId = mate.id; return; }
+    if (mate && (!this.target || now - this.seenAt > TICK_RATE * 2.5 || Math.hypot(mate.m.x - p.m.x, mate.m.z - p.m.z) < 12)) { this.state = 'revive'; this.setGoal({ x: mate.m.x, z: mate.m.z }, 'revive'); this.reviveId = mate.id; return; }
     // heal
     const hasHeal = p.inv.heal.kit > 0 || (p.inv.heal.bandage > 0 && p.hp < 75) || (p.inv.heal.stim > 0 && p.boost < 40);
     if (p.hp < 70 && hasHeal && now - this.seenAt > TICK_RATE * 4 && this.healCD <= 0 && !p.act) { this.state = 'heal'; return; }
@@ -425,7 +425,7 @@ class BotBrain {
   bestItem() {
     const p = this.p, sim = this.sim;
     let best = null, bs = 0.25;
-    sim.itemsNear(p.m.x, p.m.z, 45, gi => {
+    sim.itemsNear(p.m.x, p.m.z, 65, gi => {
       if (this.blacklist.has(gi.id)) return;
       if (gi.y > sim.world.heightAt(gi.x, gi.z) + 1.3) return; // upper floors: skip
       if (this.nav && this.nav.blockedAt(gi.x, gi.z)) return;

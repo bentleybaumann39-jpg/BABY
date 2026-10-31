@@ -58,6 +58,7 @@ void main() {
   // teal shadows / warm highlights
   vec3 tealOrange = mix( vec3( 0.92, 1.0, 1.06 ), vec3( 1.06, 1.0, 0.9 ), smoothstep( 0.05, 0.6, l ) );
   col = mix( col, col * tealOrange, grade );
+  col = mix( col, col * col * ( 3.0 - 2.0 * col ), 0.35 * grade );
   col = mix( col, col * vec3( 1.25, 0.6, 0.55 ), redden );
   // ash: brown-grey choke
   col = mix( col, vec3( l ) * vec3( 0.62, 0.52, 0.44 ) + vec3( 0.05, 0.035, 0.02 ), ash * 0.65 );

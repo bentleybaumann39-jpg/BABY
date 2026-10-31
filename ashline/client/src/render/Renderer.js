@@ -4,7 +4,7 @@ import * as THREE from 'three';
 import { PostFX } from './PostFX.js';
 
 export const SUN_DIR = new THREE.Vector3(-0.62, 0.36, 0.7).normalize();
-export const FOG_COLOR = new THREE.Color(0.47, 0.45, 0.42);
+export const FOG_COLOR = new THREE.Color(0.36, 0.355, 0.34);
 
 const SKY_VERT = /* glsl */`
 varying vec3 vDir;
@@ -36,7 +36,7 @@ void main() {
     cloudCol *= 0.85 + 0.3 * fbm(uv * 2.3 + 4.0);
     col = mix(col, cloudCol, cov * smoothstep(0.0, 0.18, d.y) * 0.85);
   }
-  col = mix(col, horizon * 0.95, smoothstep(0.12, -0.02, d.y));
+  col = mix(col, horizon * 0.72, smoothstep(0.12, -0.02, d.y));
   col = mix(col, vec3(0.32, 0.27, 0.23), ash * 0.7);
   gl_FragColor = vec4(col, 1.0);
 }`;
@@ -60,7 +60,7 @@ export class Renderer {
     // Sky dome
     this.skyU = {
       sunDir: { value: SUN_DIR.clone() }, time: { value: 0 }, ash: { value: 0 },
-      horizon: { value: new THREE.Color(0.62, 0.58, 0.52) }, zenith: { value: new THREE.Color(0.33, 0.39, 0.47) }, sunCol: { value: new THREE.Color(1.6, 1.15, 0.75) },
+      horizon: { value: new THREE.Color(0.5, 0.48, 0.44) }, zenith: { value: new THREE.Color(0.27, 0.32, 0.39) }, sunCol: { value: new THREE.Color(1.6, 1.15, 0.75) },
     };
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(3000, 32, 16), new THREE.ShaderMaterial({ vertexShader: SKY_VERT, fragmentShader: SKY_FRAG, uniforms: this.skyU, side: THREE.BackSide, depthWrite: false, fog: false }));
     this.sky.frustumCulled = false;
@@ -119,7 +119,7 @@ export class Renderer {
     Object.assign(s.camera, { left: -d, right: d, top: d, bottom: -d, near: 1, far: 900 });
     s.camera.updateProjectionMatrix();
     this.shadowDist = d;
-    this.scene.fog.density = 2.2 / q.view;
+    this.scene.fog.density = 1.6 / q.view;
     this.camera.far = Math.max(1600, q.view * 2.5);
     this.camera.updateProjectionMatrix();
   }

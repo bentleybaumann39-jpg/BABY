@@ -326,11 +326,15 @@ export function buildVegetation(map, tex, quality) {
   const birchTrunk = new THREE.CylinderGeometry(0.08, 0.17, 8, 7); birchTrunk.translate(0, 4, 0);
   const blobs = [];
   for (let k = 0; k < 4; k++) {
-    const b = displace(new THREE.IcosahedronGeometry(1.6 - k * 0.15, 1), 0.35, 40 + k);
-    b.translate(Math.sin(k * 2.1) * 0.8, 5.2 + k * 0.9, Math.cos(k * 2.1) * 0.8);
-    blobs.push([b, [0.27, 0.27, 0.12, 9]]);
+    for (let c = 0; c < 3; c++) {
+      const pl = new THREE.PlaneGeometry(3.4 - k * 0.3, 2.8, 1, 1);
+      pl.rotateY(c * Math.PI / 3 + k * 0.4);
+      pl.translate(Math.sin(k * 2.1) * 0.7, 5.0 + k * 1.0, Math.cos(k * 2.1) * 0.7);
+      blobs.push([pl, [0.95, 0.9, 0.62]]);
+    }
   }
   const birchLeaves = mergeGeos(blobs);
+  const birchLeafMat = windMaterial(new THREE.MeshStandardMaterial({ map: leafTexture(), alphaTest: 0.5, side: THREE.DoubleSide, vertexColors: true, roughness: 0.95 }), 0.012, wind);
   // dead tree: trunk + a few bare branches
   const deadParts = [[new THREE.CylinderGeometry(0.07, 0.22, 8, 6).translate(0, 4, 0), [0.25, 0.22, 0.19]]];
   for (let k = 0; k < 4; k++) {
@@ -361,17 +365,20 @@ export function buildVegetation(map, tex, quality) {
   inst(pineTrunk, barkMat, byType[0], false, sh);
   inst(pineLeaves, leafMat, byType[0], true, sh);
   inst(birchTrunk, birchBark, byType[1], false, sh);
-  inst(birchLeaves, leafMat, byType[1], true, sh);
+  inst(birchLeaves, birchLeafMat, byType[1], true, sh);
   inst(deadGeo, deadMat, byType[2], false, sh);
 
   // bushes
-  const bushGeo = mergeGeos([[displace(new THREE.IcosahedronGeometry(0.9, 1), 0.45, 77).translate(0, 0.45, 0), [0.16, 0.19, 0.1, 1.2]]]);
-  const bushMat = windMaterial(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95 }), 0.04, wind);
+  const cards = [];
+  for (let k = 0; k < 4; k++) { const pl = new THREE.PlaneGeometry(1.7, 1.25, 2, 2); pl.translate(0, 0.6, 0); pl.rotateY(k * Math.PI / 4); cards.push([pl, [1, 1, 1, 1.2]]); }
+  const top = new THREE.PlaneGeometry(1.4, 1.4); top.rotateX(-Math.PI / 2); top.translate(0, 1.05, 0); cards.push([top, [1, 1, 1]]);
+  const bushGeo = mergeGeos(cards);
+  const bushMat = windMaterial(new THREE.MeshStandardMaterial({ map: leafTexture(), alphaTest: 0.5, side: THREE.DoubleSide, vertexColors: true, roughness: 0.95 }), 0.04, wind);
   const bm = new THREE.InstancedMesh(bushGeo, bushMat, map.bushes.length);
   map.bushes.forEach((b, i) => {
     q.setFromAxisAngle(up, b[0]); s.set(b[3], b[3] * 0.75, b[3]); p.set(b[0], b[1] - 0.1, b[2]);
     m4.compose(p, q, s); bm.setMatrixAt(i, m4);
-    const v = 0.75 + hash3(i, 2, 2) * 0.5; bm.setColorAt(i, new THREE.Color(v * (b[4] === 2 ? 1.5 : 1), v, v * 0.85));
+    const v = 0.7 + hash3(i, 2, 2) * 0.45; bm.setColorAt(i, new THREE.Color(v * (b[4] === 2 ? 1.25 : 1), v, v * 0.9));
   });
   bm.receiveShadow = true; bm.castShadow = false;
   group.add(bm);
@@ -396,18 +403,18 @@ export function buildVegetation(map, tex, quality) {
 export class Grass {
   constructor(map, world, count) {
     this.map = map; this.world = world;
-    this.R = 64;
+    this.R = 48;
     this.count = count;
     const blades = [];
     for (let k = 0; k < 3; k++) {
-      const pl = new THREE.PlaneGeometry(0.9, 0.55, 1, 2);
-      pl.translate(0, 0.275, 0); pl.rotateY(k * Math.PI / 3);
+      const pl = new THREE.PlaneGeometry(0.55, 0.42, 1, 2);
+      pl.translate(0, 0.21, 0); pl.rotateY(k * Math.PI / 3);
       blades.push(pl);
     }
     const geo = mergeGeos(blades.map(b => [b, [1, 1, 1]]));
     const tex = grassTexture();
     this.wind = { value: 0 };
-    const mat = windMaterial(new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.45, side: THREE.DoubleSide, color: new THREE.Color(0.95, 0.9, 0.7), roughness: 1 }), 0.25, this.wind);
+    const mat = windMaterial(new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.45, side: THREE.DoubleSide, color: new THREE.Color(0.62, 0.66, 0.46), roughness: 1 }), 0.25, this.wind);
     this.mesh = new THREE.InstancedMesh(geo, mat, Math.max(1, count));
     this.mesh.frustumCulled = false;
     this.mesh.receiveShadow = true;
@@ -449,13 +456,33 @@ function grassTexture() {
   const c = document.createElement('canvas'); c.width = 128; c.height = 128;
   const g = c.getContext('2d');
   g.clearRect(0, 0, 128, 128);
-  for (let i = 0; i < 46; i++) {
-    const x = 4 + Math.random() * 120, w = 1.5 + Math.random() * 2.5, h = 60 + Math.random() * 66, bend = (Math.random() - 0.5) * 30;
-    const tone = Math.random();
-    g.strokeStyle = `rgb(${Math.round(70 + tone * 60)},${Math.round(80 + tone * 40)},${Math.round(35 + tone * 20)})`;
+  for (let i = 0; i < 70; i++) {
+    const x = 4 + Math.random() * 120, w = 1 + Math.random() * 1.6, h = 50 + Math.random() * 76, bend = (Math.random() - 0.5) * 34;
+    const tone = Math.random(), dry = Math.random() < 0.3;
+    g.strokeStyle = dry ? `rgb(${Math.round(120 + tone * 40)},${Math.round(108 + tone * 30)},${Math.round(64 + tone * 20)})` : `rgb(${Math.round(64 + tone * 40)},${Math.round(84 + tone * 40)},${Math.round(36 + tone * 18)})`;
     g.lineWidth = w;
     g.beginPath(); g.moveTo(x, 128); g.quadraticCurveTo(x + bend * 0.3, 128 - h * 0.6, x + bend, 128 - h); g.stroke();
   }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function leafTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, 256, 256);
+  for (let i = 0; i < 900; i++) {
+    const a = Math.random() * Math.PI * 2, r = Math.pow(Math.random(), 0.6) * 118;
+    const x = 128 + Math.cos(a) * r, y = 128 + Math.sin(a) * r * 0.85 + 10;
+    const tone = Math.random(), dead = Math.random() < 0.15;
+    g.fillStyle = dead ? `rgb(${Math.round(100 + tone * 40)},${Math.round(80 + tone * 30)},${Math.round(40 + tone * 20)})` : `rgb(${Math.round(36 + tone * 34)},${Math.round(52 + tone * 40)},${Math.round(24 + tone * 16)})`;
+    g.save(); g.translate(x, y); g.rotate(Math.random() * Math.PI * 2);
+    g.beginPath(); g.ellipse(0, 0, 5 + Math.random() * 4, 2.2 + Math.random() * 1.5, 0, 0, Math.PI * 2); g.fill();
+    g.restore();
+  }
+  g.strokeStyle = 'rgb(48,38,28)'; g.lineWidth = 2;
+  for (let i = 0; i < 9; i++) { g.beginPath(); g.moveTo(128, 250); g.quadraticCurveTo(128 + (Math.random() - 0.5) * 80, 180, 128 + (Math.random() - 0.5) * 200, 40 + Math.random() * 100); g.stroke(); }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   return t;

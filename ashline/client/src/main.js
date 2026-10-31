@@ -46,12 +46,13 @@ class App {
     this.structures = buildStructures(map, this.mats); scene.add(this.structures);
     setLoad(0.85, 'growing forests…'); await tick();
     this.veg = buildVegetation(map, this.tex, this.settings.q); scene.add(this.veg);
-    this.grass = new Grass(map, world, Math.round(5000 * this.settings.q.grass));
+    this.grass = new Grass(map, world, Math.round(9000 * this.settings.q.grass));
     scene.add(this.grass.mesh);
     this.effects = new Effects(scene, this.renderer.camera);
     this.hud = new HUD(this);
     this.hud.setMap(map);
     setLoad(0.95, 'warming up…'); await tick();
+    this.warmup();
     this.profile = null; this.conn = null; this.match = null;
     this.menu = new Menu(this);
     this.setupPreview();
@@ -66,6 +67,22 @@ class App {
     requestAnimationFrame((t) => this.loop(t));
     window.__ashline = this;
     if (/[?&]practice/.test(location.search)) this.goPractice();
+  }
+
+  // Compile every material once (effects, items, characters, viewmodel) so the first firefight doesn't hitch.
+  warmup() {
+    const fx = this.effects, R = this.renderer;
+    const c = R.camera;
+    c.position.set(0, 60, 0); c.lookAt(10, 55, 10);
+    const tmp = [];
+    fx.sprite({ x: 0, y: 55, z: 5, s: 1, life: 0.01 }); fx.sprite({ x: 0, y: 55, z: 5, s: 1, life: 0.01, add: true, tex: fx.tSpark });
+    fx.tracer(0, 55, 0, 0, 55, -20); fx.flashLight(0, 55, 0, 1, 0.01);
+    fx.holes[0].visible = true; fx.nades.set(-1, new THREE.Mesh(fx.nadeGeo, fx.nadeMat)); fx.group.add(fx.nades.get(-1));
+    const ch = new Character(this.tex, DEFAULT_COS); ch.setWeapon('kr5'); ch.root.position.set(3, 55, 3); R.scene.add(ch.root); tmp.push(ch.root);
+    try { R.r.compile(R.scene, c); R.r.compile(R.vmScene, R.vmCamera); } catch (e) { console.warn('warmup', e); }
+    for (const o of tmp) o.removeFromParent();
+    fx.group.remove(fx.nades.get(-1)); fx.nades.delete(-1); fx.holes[0].visible = false;
+    for (const s of fx.sprites) s.visible = false; for (const t of fx.tracers) t.visible = false;
   }
 
   defaultServer() { return location.protocol.startsWith('http') ? `${location.host}` : ''; }
@@ -218,13 +235,16 @@ class App {
   menuFrame(dt) {
     const s = this.previewSpot, cam = this.renderer.camera;
     const locker = this.menuTab === 'locker';
-    const a = Math.sin(this.renderer.time * 0.08) * 0.25 + 0.35;
-    const dist = locker ? 3.1 : 4.6;
-    cam.position.set(s.x + Math.sin(a) * dist + (locker ? 0 : -1.2), s.y + (locker ? 1.35 : 1.6), s.z - Math.cos(a) * dist);
-    cam.lookAt(s.x + (locker ? 0.6 : -0.6), s.y + (locker ? 1.05 : 1.4), s.z);
+    const a = 2.6 + Math.sin(this.renderer.time * 0.07) * 0.18;
+    const dist = locker ? 3.0 : 4.2;
+    const dir = { x: Math.sin(a), z: -Math.cos(a) };
+    const right = { x: dir.z, z: -dir.x };
+    const k = locker ? 0.9 : 1.5;
+    cam.position.set(s.x + dir.x * dist, s.y + (locker ? 1.35 : 1.55), s.z + dir.z * dist);
+    cam.lookAt(s.x - right.x * k, s.y + (locker ? 1.0 : 1.3), s.z - right.z * k);
     this.renderer.setZoom(1);
     this.preview.root.visible = true;
-    this.preview.update({ x: s.x, y: s.y, z: s.z, yaw: Math.atan2(cam.position.x - s.x, cam.position.z - s.z) + Math.PI + 0.35, pitch: -0.05, mode: 0, flags: 0 }, dt, 3);
+    this.preview.update({ x: s.x, y: s.y, z: s.z, yaw: Math.atan2(-dir.x, -dir.z) + 0.45, pitch: -0.05, mode: 0, flags: 0 }, dt, 3);
     this.renderer.followShadow(s.x, s.y, s.z);
     this.effects.update(dt, cam.position, 0.15);
     this.audio.setListener(cam);

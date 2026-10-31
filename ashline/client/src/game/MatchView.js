@@ -76,6 +76,10 @@ export class MatchView {
     s.remove(this.items.group, this.ash.mesh, this.plane);
     for (const t of this.terminals) s.remove(t.m);
     for (const r of this.remotes.values()) r.char.dispose();
+    if (this.selfCharObj) this.selfCharObj.dispose();
+    for (const h of this.fx.holes) h.visible = false;
+    for (const c of this.fx.clouds) for (const p of c.puffs) p.removeFromParent();
+    this.fx.clouds = [];
     this.vm.root.removeFromParent();
     this.fx.setNades([]);
     for (const c of this.fx.crates) c.removeFromParent();
@@ -655,7 +659,9 @@ export class MatchView {
     const R = this.R;
     R.post.u.ash.value += ((outside ? 0.85 : 0) - R.post.u.ash.value) * Math.min(1, dt * 2);
     R.skyU.ash.value = R.post.u.ash.value;
-    R.scene.fog.density = (2.2 / this.app.settings.q.view) * (1 + R.post.u.ash.value * 6);
+    const agl = this.camPos.y - this.world.heightAt(this.camPos.x, this.camPos.z);
+    const alt = Math.min(1, Math.max(0.1, 1 - (agl - 30) / 320));
+    R.scene.fog.density = (1.6 / this.app.settings.q.view) * (1 + R.post.u.ash.value * 6) * alt;
     const hpLow = this.status.alive ? Math.max(0, 1 - this.status.hp / 40) : 0;
     const hitFlash = Math.max(0, 1 - (performance.now() - this.lastHitTime) / 450);
     R.post.u.dmg.value = Math.max(hitFlash * 0.8, hpLow * 0.5, p.mode === MODE.KNOCKED ? 0.6 : 0);

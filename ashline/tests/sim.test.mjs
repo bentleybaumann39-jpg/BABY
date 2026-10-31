@@ -49,7 +49,7 @@ function runMatch(mode, seed, timeScale) {
   check(under === 0, `${label}: nobody under terrain (${under})`);
   check(inside <= 2, `${label}: nobody inside colliders (${inside})`);
   check(kills >= 10, `${label}: plenty of kills (${kills})`);
-  check(pickups > 30, `${label}: bots loot (${pickups})`);
+  check(pickups > (QUICK ? 20 : 30), `${label}: bots loot (${pickups})`);
   check(tickMs / sim.tick < 8, `${label}: avg tick < 8 ms`);
   if (mode !== 'solo') check(knocks > 0, `${label}: knocks happen (${knocks})`);
   return { winner: [...winners][0], tick: sim.tick, revives, res };

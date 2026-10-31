@@ -217,11 +217,11 @@ export class Lobby {
       seed, mode, total: this.opts.players, timeScale: this.opts.timeScale,
       groups: groups.map(g => g.map(s => ({ id: s.id, name: s.profile.name, cos: s.profile.cos }))),
     });
+    sim.start();
     const runner = new MatchRunner(this, sim, mode);
     this.matches.add(runner);
     for (const g of groups) for (const s of g) runner.attach(s);
     for (const g of groups) for (const s of g) if (s.party) this.pushParty(s.party);
-    sim.start();
     runner.run();
     console.log(`[match ${seed}] ${mode}: ${groups.flat().length} human(s), ${sim.list.length} players`);
   }

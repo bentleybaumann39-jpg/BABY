@@ -8,6 +8,7 @@ export class Input {
     this.mousePressed = 0;
     this.locked = false;
     this.enabled = false;
+    this.forced = false;          // automated tests: behave as if the pointer is locked
     this.onKey = null;            // (code, down) for UI hooks
     window.addEventListener('keydown', (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
@@ -28,13 +29,13 @@ export class Input {
     window.addEventListener('mousemove', (e) => { if (this.locked) { this.mouse.dx += e.movementX; this.mouse.dy += e.movementY; } });
     window.addEventListener('wheel', (e) => { if (this.locked) this.mouse.wheel += Math.sign(e.deltaY); }, { passive: true });
     document.addEventListener('pointerlockchange', () => {
-      this.locked = document.pointerLockElement === canvas;
+      this.locked = this.forced || document.pointerLockElement === canvas;
       if (!this.locked) { this.mouse.b = 0; }
       if (this.onLock) this.onLock(this.locked);
     });
   }
-  lock() { if (this.canvas.requestPointerLock) { const p = this.canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } }
-  unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
+  lock() { if (this.forced) { this.locked = true; return; } if (this.canvas.requestPointerLock) { const p = this.canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } }
+  unlock() { if (this.forced) return; if (document.pointerLockElement) document.exitPointerLock(); }
   down(code) { return this.keys.has(code); }
   hit(code) { return this.pressed.has(code); }
   btn(i) { return !!(this.mouse.b & (1 << i)); }

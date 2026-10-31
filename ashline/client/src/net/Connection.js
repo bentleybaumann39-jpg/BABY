@@ -76,6 +76,7 @@ export class LocalServer {
     if (this.host) return;
     const seed = (Date.now() & 0x7fffffff) | 1;
     const sim = buildMatch({ seed, mode: this.party.mode, groups: [[{ id: 1, name: this.profile.name, cos: this.profile.cos }]], total: 30, skill: [0.2, 0.75] });
+    sim.start();
     const host = this.host = new MatchHost(sim, { test: this.debug });
     host.attach(1, { send: (o) => this.emit(o), sendBin: (b) => this.emit(b) });
     host.onEnd = (results) => {
@@ -84,7 +85,6 @@ export class LocalServer {
       saveLocalProfile(this.profile);
       this.emit({ t: 'results', results, you: r, xp, profile: this.view(), winners: results.filter(x => x.place === 1).map(x => x.name) });
     };
-    sim.start();
     let acc = 0, last = performance.now();
     this.timer = setInterval(() => {
       const now = performance.now();

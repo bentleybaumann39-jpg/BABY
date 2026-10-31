@@ -86,7 +86,8 @@ export class MatchHost {
       case 'botnear': {
         let best = null, bd = 1e9;
         for (const o of sim.list) if (o.bot && o.alive) { const d = Math.hypot(o.m.x - p.m.x, o.m.z - p.m.z); if (d < bd) { bd = d; best = o; } }
-        if (best && c.place) { best.m.mode = 0; best.m.x = p.m.x + (c.dx || 0); best.m.z = p.m.z + (c.dz || -8); best.m.y = sim.world.heightAt(best.m.x, best.m.z) + 0.1; best.m.vx = best.m.vy = best.m.vz = 0; }
+        if (best && c.place) { best.m.mode = 0; best.m.x = p.m.x + (c.dx ?? 0); best.m.z = p.m.z + (c.dz ?? -8); best.m.y = sim.world.heightAt(best.m.x, best.m.z) + 0.1; best.m.vx = best.m.vy = best.m.vz = 0; best.yaw = Math.atan2(-(p.m.x - best.m.x), -(p.m.z - best.m.z)); }
+        if (best && c.gear) { best.inv.w[0] = { id: c.gear, mag: 30, att: { optic: null, mag: null, muzzle: null, grip: null } }; best.inv.slot = 0; best.inv.helmet = { tier: 2, dur: 150 }; best.inv.vest = { tier: 2, dur: 220 }; best.inv.pack = 2; }
         this.clients.get(pid)?.send({ t: 'test', op: 'botnear', id: best ? best.id : -1, hp: best ? best.hp : 0, x: best?.m.x, y: best?.m.y, z: best?.m.z });
         break;
       }
