@@ -459,9 +459,11 @@
     if (lastPing > heardPing && ob.x !== undefined && B.act !== 'deck') { heardPing = lastPing; A.sfxAt('transponder', Math.min(2.5, 0.25 + Math.hypot(ob.x - P.x, ob.y - P.y, ob.z - P.z) / 750)); }
     const age = B.time - fresh, act3 = B.act === 'act3';
     const tc = age < 6 ? ((age < 1 && (B.frame >> 3) & 1) ? amber(2) : amber(3)) : amber(1);
-    const t = (act3 && B.facePulse > 0 ? '· ' : '◆ ') + ob.text;
-    Hd.center(iy + 4, t, tc);
-    if (ob.opt && age < 10) Hd.center(iy + 13, ob.opt, amber(1));
+    // fit between the O2 cluster and the depth readout, wrapping onto a second line on narrow screens
+    const t = (act3 && B.facePulse > 0 ? '· ' : '◆ ') + ob.text, maxc = Math.max(16, Math.floor((R.W - 2 * (ix + 64)) / 6));
+    const tl = Hd.wrap(t, maxc).slice(0, 2);
+    tl.forEach((l, k) => Hd.center(iy + 4 + k * 9, l, tc));
+    if (ob.opt && age < 10) { const ol = Hd.wrap(ob.opt, maxc); if (ol.length + tl.length <= 3) ol.forEach((l, k) => Hd.center(iy + 4 + (tl.length + k) * 9, l, amber(1))); }
     if (ob.x === undefined) return;
     const show = B.act === 'deck' || age < 8;
     if (!show) return;
