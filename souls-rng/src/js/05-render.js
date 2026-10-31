@@ -43,12 +43,12 @@ class Post {
     this.type = (gl2 && r.extensions.has('EXT_color_buffer_float')) ? THREE.HalfFloatType : THREE.UnsignedByteType;
     this.msaaOK = gl2 && !!THREE.WebGLMultisampleRenderTarget;
     this.samples = 4;
-    this.bright = new THREE.ShaderMaterial({ uniforms: { t: { value: null }, th: { value: 0.78 }, px: { value: new THREE.Vector2() } }, vertexShader: QUAD_VS,
+    this.bright = new THREE.ShaderMaterial({ uniforms: { t: { value: null }, th: { value: 0.88 }, px: { value: new THREE.Vector2() } }, vertexShader: QUAD_VS,
       fragmentShader: 'uniform sampler2D t;uniform float th;uniform vec2 px;varying vec2 vUv;void main(){vec3 c=texture2D(t,vUv+px*vec2(-.5,-.5)).rgb+texture2D(t,vUv+px*vec2(.5,-.5)).rgb+texture2D(t,vUv+px*vec2(-.5,.5)).rgb+texture2D(t,vUv+px*vec2(.5,.5)).rgb;c*=.25;float l=max(c.r,max(c.g,c.b));gl_FragColor=vec4(c*smoothstep(th,th+.4,l),1.);}' });
     this.blur = new THREE.ShaderMaterial({ uniforms: { t: { value: null }, dir: { value: new THREE.Vector2() } }, vertexShader: QUAD_VS,
       fragmentShader: 'uniform sampler2D t;uniform vec2 dir;varying vec2 vUv;void main(){vec3 c=texture2D(t,vUv).rgb*.227027;c+=(texture2D(t,vUv+dir*1.3846).rgb+texture2D(t,vUv-dir*1.3846).rgb)*.3162162;c+=(texture2D(t,vUv+dir*3.2308).rgb+texture2D(t,vUv-dir*3.2308).rgb)*.0702703;gl_FragColor=vec4(c,1.);}' });
     this.comp = new THREE.ShaderMaterial({
-      uniforms: { tS: { value: null }, b0: { value: null }, b1: { value: null }, b2: { value: null }, str: { value: 0.9 }, vig: { value: 0.35 }, hurt: { value: 0 }, desat: { value: 0 }, glitch: { value: 0 }, ca: { value: 0 }, time: { value: 0 }, sat: { value: 1.12 }, useB: { value: 1 } },
+      uniforms: { tS: { value: null }, b0: { value: null }, b1: { value: null }, b2: { value: null }, str: { value: 0.8 }, vig: { value: 0.35 }, hurt: { value: 0 }, desat: { value: 0 }, glitch: { value: 0 }, ca: { value: 0 }, time: { value: 0 }, sat: { value: 1.12 }, useB: { value: 1 } },
       vertexShader: QUAD_VS,
       fragmentShader: `uniform sampler2D tS,b0,b1,b2;uniform float str,vig,hurt,desat,glitch,ca,time,sat,useB;varying vec2 vUv;
       float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
@@ -119,7 +119,7 @@ function makeSky() {
       if(fx==2.){vec3 bh=normalize(vec3(.3,.42,-1.));float dd=acos(clamp(dot(d,bh),-1.,1.));float ang=atan(dot(d,vec3(0,1,0))-bh.y,dot(d,vec3(1,0,0))-bh.x);float ring=exp(-pow((dd-.24)*22.,2.))*(.7+.3*sin(ang*6.+time*1.5));float disk=exp(-pow((d.y-bh.y-(d.x-bh.x)*.25)*40.,2.))*smoothstep(.6,.2,dd)*smoothstep(.15,.22,dd);c+=vec3(1.,.55,1.4)*ring*1.4+vec3(1.,.6,.3)*disk*1.2;c=mix(c,vec3(0.),smoothstep(.2,.17,dd));}
       if(fx==3.){float ln=step(.94,h3(vec3(floor(y*50.),floor(time*6.),0.)));c+=vec3(0.,1.,.55)*ln*.25;c+=vec3(0.,.6,.4)*step(.985,h3(vec3(floor(d.xz*40.),floor(time*3.))))*.6;c+=vec3(0.,.15,.1)*step(.5,fract(y*180.+time));}
       if(fx==4.){float f=fbm(vec2(atan(d.x,d.z)*4.,y*6.)+time*.15);c+=vec3(1.,.5,.1)*pow(f,3.)*1.2*smoothstep(-.1,.4,y);}
-      if(fx==5.){float f=fbm(d.xz/(max(y,.05))*1.2+vec2(time*.02,0.));c=mix(c,vec3(1.,.97,.9),smoothstep(.45,.75,f)*smoothstep(0.,.15,y)*.85);}
+      if(fx==5.){float f=fbm(d.xz/(max(y,.05))*1.2+vec2(time*.02,0.));c=mix(c,vec3(1.,.9,.75),smoothstep(.45,.75,f)*smoothstep(0.,.15,y)*.55);}
       if(fx==6.){float f=fbm(vec2(atan(d.x,d.z)*5.,y*9.)+time*.1);float crack=smoothstep(.02,0.,abs(f-.5))*smoothstep(0.,.3,y);c+=vec3(1.,.2,1.)*crack*2.+vec3(0.,1.,1.)*smoothstep(.015,0.,abs(f-.42))*smoothstep(0.,.3,y);}
       gl_FragColor=vec4(c,1.);}`
   });

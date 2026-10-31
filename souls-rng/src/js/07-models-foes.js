@@ -107,10 +107,13 @@ function buildEnemy(type, skin, elite) {
     else if (hat === 'witch') { mesh(GC(0.38, 0.38, 0.03, 14), ownMat(0x1a0a2a), 0, hy - 0.04, 0, H); mesh(GK(0.2, 0.5, 10), ownMat(0x1a0a2a), 0, hy + 0.2, -0.04, H, -0.2); }
   }
   if (elite) { root.scale.setScalar(1.3); const ring = mesh(GT(0.9, 0.04, 6, 32), ownGlow(0xffaa00), 0, 0.08, 0, root, Math.PI / 2); pt.extra.push(t => ring.rotation.z = t * 2); mats.forEach(m => { if (m.emissive) { m.emissive.set(0x3a2000); m.userData.baseE = 0x3a2000; } }); }
-  root.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  root.traverse(o => { if (o.isMesh) o.castShadow = false; });
+  if (!T.fly) { const bl = new THREE.Mesh(GP(1, 1), blobShadowMat()); bl.rotation.x = -Math.PI / 2; bl.position.y = 0.04; const r = T.r * 3.2; bl.scale.set(r, r, 1); bl.renderOrder = 1; root.add(bl); }
   return { group: root, parts: pt, mats, h: headY + 0.5 };
 }
 
+let _blobMat = null;
+function blobShadowMat() { return _blobMat || (_blobMat = new THREE.MeshBasicMaterial({ map: GLOW_TEX, color: 0x000000, transparent: true, opacity: 0.6, depthWrite: false })); }
 function animateEnemy(e, dt, t) {
   const p = e.model.parts, sp = e.moving;
   e.walk = (e.walk || 0) + dt * (3 + e.spd * 1.2) * sp;

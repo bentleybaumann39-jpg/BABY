@@ -284,7 +284,7 @@ function renderSettings() {
   $('sSens').oninput = e => { s.sens = +e.target.value; $('vSens').textContent = s.sens.toFixed(2); saveSoon(); };
   $('sFov').oninput = e => { s.fov = +e.target.value; $('vFov').textContent = s.fov; saveSoon(); applySettings(); };
   $('sVol').oninput = e => { s.vol = +e.target.value; $('vVol').textContent = Math.round(s.vol * 100) + '%'; saveSoon(); applySettings(); };
-  $('sQ').onchange = e => { s.quality = e.target.value; saveSoon(); applySettings(); };
+  $('sQ').onchange = e => { s.quality = e.target.value; s.autoQ = false; saveSoon(); applySettings(); };
   $('sReset').onclick = () => { if (confirm('Erase ALL progress, characters and coins? This cannot be undone.')) { localStorage.removeItem(SAVE_KEY); ['souls_c', 'souls_inv'].forEach(k => localStorage.removeItem(k)); location.reload(); } };
 }
 function applySettings() {

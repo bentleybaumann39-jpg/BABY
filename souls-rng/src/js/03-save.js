@@ -9,7 +9,7 @@ function defaultSave() {
     bpXp: 0, bpClaimed: [], inv: {}, newest: {}, eq: 'warrior|', disc: {},
     stats: { rolls: 0, bosses: 0, kills: 0, trades: 0, best: 0, rarest: 2, deaths: 0, time: 0, realms: 0 },
     fcode: genCode(), friends: [], reqs: [], outreqs: [], redeemed: [],
-    set: { sens: 1, inv: false, fov: 75, quality: 'high', vol: 0.7, music: true, shake: true, nums: true, fps: false }
+    set: { sens: 1, inv: false, fov: 75, quality: 'high', autoQ: true, vol: 0.7, music: true, shake: true, nums: true, fps: false }
   };
 }
 let S = defaultSave();
