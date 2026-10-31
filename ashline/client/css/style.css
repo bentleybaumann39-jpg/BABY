@@ -32,7 +32,8 @@ h1, h2, h3, h4 { margin: 0; font-weight: 700; letter-spacing: 0.08em; text-trans
 
 /* menu */
 #menu { background: linear-gradient(90deg, rgba(8, 7, 6, 0.86) 0%, rgba(8, 7, 6, 0.55) 42%, rgba(8, 7, 6, 0) 70%); overflow-y: auto; }
-.menu-head { display: flex; align-items: center; gap: 36px; padding: 22px 40px; border-bottom: 1px solid var(--line); background: rgba(8, 7, 6, 0.82); position: sticky; top: 0; z-index: 2; }
+.menu-head { display: flex; align-items: center; gap: 36px; padding: 22px 40px; border-bottom: 1px solid var(--line); background: rgba(8, 7, 6, 0.82); }
+@media (min-height: 700px) and (min-width: 901px) { .menu-head { position: sticky; top: 0; z-index: 2; } }
 #menu-tabs button { background: none; border: none; border-bottom: 2px solid transparent; font-size: 19px; padding: 6px 14px; }
 #menu-tabs button.on { border-bottom-color: var(--ember); color: #fff; }
 #profile-chip { margin-left: auto; min-width: 240px; }
