@@ -46,10 +46,10 @@ function buildGun(id) {
 function buildCharacter(C, mut) {
   const P = new THREE.Color(C.col[0]), Sc = new THREE.Color(C.col[1]), Gc = new THREE.Color(C.col[2]);
   let mo = { r: 0.42, m: 0.3 };
-  if (mut === 'golden') { P.lerp(new THREE.Color(0xffd700), 0.75); Sc.lerp(new THREE.Color(0xb8860b), 0.6); mo = { r: 0.18, m: 1 }; }
+  if (mut === 'golden') { P.lerp(new THREE.Color(0xffd700), 0.9); Sc.lerp(new THREE.Color(0xb8860b), 0.7); mo = { r: 0.22, m: 0.85 }; }
   if (mut === 'void') { P.lerp(new THREE.Color(0x10001a), 0.75); Sc.lerp(new THREE.Color(0x30005a), 0.6); Gc.set(0xc07cff); }
   if (mut === 'shiny') { mo = { r: 0.15, m: 0.65 }; }
-  const mp = ownMat(P, { ...mo, e: P, ei: mut === 'void' ? 0.15 : 0.07 });
+  const mp = ownMat(P, { ...mo, e: P, ei: mut === 'void' ? 0.15 : mut === 'golden' ? 0.22 : 0.07 });
   const ms = ownMat(Sc, { r: 0.55, m: mo.m * 0.6 });
   const mg = ownGlow(Gc);
   const mdk = ownMat(0x16161f, { r: 0.4, m: 0.6 });

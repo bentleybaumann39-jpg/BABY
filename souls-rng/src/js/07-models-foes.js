@@ -316,7 +316,7 @@ function buildBoss(def) {
       break;
     }
     case 'behemoth': {
-      const sun = mesh(GS(3.2, 28, 20), M(0xffaa00, { e: 0xff6a00, ei: 1.1, r: 0.6 }), 0, 6, 0, body); const spr = glowSprite(0xffaa00, 16, 0.85); spr.position.y = 6; body.add(spr);
+      const sun = mesh(GS(3.2, 28, 20), M(0xffaa00, { e: 0xff5a00, ei: 0.55, r: 0.6 }), 0, 6, 0, body); const spr = glowSprite(0xffaa00, 14, 0.45); spr.position.y = 6; body.add(spr);
       const cor = []; for (let i = 0; i < 18; i++) { const a = i / 18 * TAU; const c = mesh(GK(0.5, 2.6, 6), ownAdd(i % 2 ? 0xffee00 : 0xff5a00, 0.8), Math.cos(a) * 3.5, 6 + Math.sin(a) * 3.5, 0, body, 0, 0, a - Math.PI / 2); cor.push(c); }
       const dk = M(0x2a0a00); mesh(GS(0.5), dk, -1.1, 6.8, 2.9, body); mesh(GS(0.5), dk, 1.1, 6.8, 2.9, body); eyes(body, Gl(0xffffff), 6.85, 3.25, 1.1, 0.2); mesh(GB(2.4, 0.4, 0.3), dk, 0, 5.0, 3.0, body);
       for (const s of [-1, 1]) { const a = grp(body, s * 3.0, 5.5, 0); for (let i = 0; i < 5; i++) mesh(GS(0.7 - i * 0.07, 10, 8), M(0xff6a00, { e: 0xff3a00, ei: 0.9 }), s * i * 0.7, -i * 0.5, 0.3, a); B.parts['arm' + s] = a; }
