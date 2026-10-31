@@ -177,6 +177,7 @@ class App {
   }
 
   endMatchView() {
+    this.resultsShown = false;
     if (this.match) { this.match.dispose(); this.match = null; }
     this.input.enabled = false;
     this.input.unlock();
@@ -228,7 +229,7 @@ class App {
       this.veg.userData.wind.value = this.renderer.time;
       this.water.userData.update(this.renderer.time);
       this.structures.children.forEach(o => { if (o.userData.blink) o.visible = Math.sin(this.renderer.time * 3) > 0; });
-      this.renderer.render(dt, !!this.match);
+      if (!this.resultsShown) this.renderer.render(dt, !!this.match);
     } catch (e) { console.error(e); }
     requestAnimationFrame((tt) => this.loop(tt));
   }

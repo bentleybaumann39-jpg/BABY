@@ -113,7 +113,7 @@ try {
     await shot(page, 'e2e-08-results');
     const xp = await A(page, () => window.__ashline.profile.xp);
     ok(xp > 0, `results shown, XP saved to the practice profile (${xp})`);
-    await page.click('#results-continue');
+    await page.$eval('#results-continue', b => { b.scrollIntoView(); b.click(); });
     await waitFor(page, () => !window.__ashline.match && document.getElementById('menu').classList.contains('show'), 20000);
     ok(true, 'back to the lobby');
     await page.click('#menu-tabs button[data-tab="locker"]'); await page.waitForTimeout(1200);

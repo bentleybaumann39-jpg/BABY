@@ -210,9 +210,10 @@ th { color: var(--dim); text-transform: uppercase; font-size: 12px; letter-spaci
 .legend .cur { background: #ff783c; } .legend .nxt { background: #fff; } .legend .term { background: #5ae696; height: 8px; width: 8px; }
 
 /* results / pause */
-#results { background: rgba(6, 5, 4, 0.95); display: none; align-items: center; justify-content: center; overflow-y: auto; z-index: 25; }
+#results { background: rgba(6, 5, 4, 0.95); display: none; align-items: flex-start; justify-content: center; overflow-y: auto; z-index: 25; }
 #results.show, #pause.show { display: flex; }
-.res-inner { text-align: center; width: min(760px, 92vw); }
+.res-inner { text-align: center; width: min(760px, 92vw); margin: auto; padding: 28px 0; }
+@media (max-height: 640px) { #res-place { font-size: 48px !important; } #res-sub { margin: 2px 0 8px; } .card b { font-size: 18px; } .card { padding: 4px 8px; } #res-xp { margin: 8px auto 4px; } .xprow { padding: 1px 0; font-size: 13px; } .xprow.total { font-size: 15px; } }
 #res-place { font-size: 92px; letter-spacing: 0.1em; } #res-place.win { font-size: 58px; color: var(--ember2); }
 #res-sub { color: var(--dim); font-size: 18px; margin: 6px 0 20px; }
 #res-xp { margin: 18px auto 10px; width: 420px; text-align: left; min-height: 30px; }
