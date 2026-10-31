@@ -108,7 +108,8 @@ const scenario = async (name, fn) => {
     await waitFor(page, () => window.__ashline.match.predMag < 22, 60000).catch(() => {});
     await shot(page, 'e2e-05-firing');
     await A(page, () => { window.__ashline.input.mouse.b = 0; });
-    const fired = await A(page, () => 30 - window.__ashline.match.predMag);
+    await page.waitForTimeout(1500);
+    const fired = await A(page, () => { const m = window.__ashline.match; return 90 - m.predMag - (m.inv ? m.inv.ammo['556'] : 60); });
     ok(fired >= 5, `held fire shoots automatically (${fired} rounds)`);
     let hits = 0;
     for (let i = 0; i < 40 && !(await A(page, () => window.__ashline.match.kills > 0)); i++) {
