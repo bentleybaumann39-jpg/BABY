@@ -44,18 +44,35 @@ const shot = (page, n) => page.screenshot({ path: join(SHOTS, n + '.png'), timeo
 const A = (page, f, arg) => page.evaluate(f, arg);
 const cmd = (page, c) => A(page, (c) => window.__ashline.match.cmd(c), c);
 const waitFor = (page, f, ms = 60000, arg) => page.waitForFunction(f, arg, { timeout: ms, polling: 250 });
+// User-style click: the element must be the topmost thing at its centre (catches overlays covering
+// buttons), then a real mouse click is sent to those coordinates.
+async function click(page, sel) {
+  await page.waitForSelector(sel, { state: 'visible', timeout: 30000 });
+  const hit = await page.$eval(sel, (el) => {
+    const r0 = el.getBoundingClientRect();
+    if (r0.top < 0 || r0.bottom > innerHeight) el.scrollIntoView({ block: 'center' });
+    const r = el.getBoundingClientRect();
+    const x = r.x + r.width / 2, y = r.y + r.height / 2;
+    const top = document.elementFromPoint(x, y);
+    return { x, y, ok: !!top && (top === el || el.contains(top)), top: top ? (top.id || top.className || top.tagName) : 'nothing' };
+  });
+  if (!hit.ok) ok(false, `${sel} is covered by ${hit.top}`);
+  await page.mouse.click(hit.x, hit.y);
+  return hit.ok;
+}
 const forceLock = (page) => A(page, () => { const a = window.__ashline; a.input.forced = true; a.input.locked = true; });
 
-try {
+const scenario = async (name, fn) => { if (!run(name)) return; try { await fn(); } catch (e) { ok(false, `${name}: exception ${e.message.split('\n')[0]}`); } };
+{
   // ------------------------------------------------------------------ practice
-  if (run('practice')) {
+  await scenario('practice', async () => {
     const { page, errors } = await open(`${BASE}/?debug`);
     await shot(page, 'e2e-01-menu');
     ok(await page.isVisible('#menu'), 'menu shows after loading');
-    await page.click('#btn-practice');
+    await click(page, '#btn-practice');
     await waitFor(page, () => window.__ashline.profile);
     ok(await page.textContent('#btn-play') === 'DEPLOY (PRACTICE)', 'practice lobby ready');
-    await page.click('#btn-play');
+    await click(page, '#btn-play');
     await waitFor(page, () => window.__ashline.match && window.__ashline.match.status.mode === 4, 90000);
     ok(true, 'practice match starts in the plane');
     await A(page, () => { window.__ashline.match.yaw = 0.5; });
@@ -113,29 +130,29 @@ try {
     await shot(page, 'e2e-08-results');
     const xp = await A(page, () => window.__ashline.profile.xp);
     ok(xp > 0, `results shown, XP saved to the practice profile (${xp})`);
-    await page.$eval('#results-continue', b => { b.scrollIntoView(); b.click(); });
+    await click(page, '#results-continue');
     await waitFor(page, () => !window.__ashline.match && document.getElementById('menu').classList.contains('show'), 20000);
     ok(true, 'back to the lobby');
-    await page.click('#menu-tabs button[data-tab="locker"]'); await page.waitForTimeout(1200);
+    await click(page, '#menu-tabs button[data-tab="locker"]'); await page.waitForTimeout(1200);
     await shot(page, 'e2e-09-locker');
     ok(errors.length === 0, `no page errors in practice (${errors.slice(0, 3).join(' | ')})`);
     await page.close();
-  }
+  });
 
   // ------------------------------------------------------------------ online
-  if (run('online')) {
+  await scenario('online', async () => {
     const a = await open(`${BASE}/?debug`, { name: 'Alpha' });
     const b = await open(`${BASE}/?debug`, { name: 'Bravo' });
-    for (const p of [a, b]) { await p.page.click('#btn-online'); await waitFor(p.page, () => window.__ashline.profile && window.__ashline.conn && window.__ashline.conn.kind === 'ws'); }
+    for (const p of [a, b]) { await click(p.page, '#btn-online'); await waitFor(p.page, () => window.__ashline.profile && window.__ashline.conn && window.__ashline.conn.kind === 'ws'); }
     ok(true, 'two browsers connected to the server');
     const code = (await a.page.textContent('#party-code')).trim();
-    await b.page.fill('#join-code', code); await b.page.click('#btn-join');
+    await b.page.fill('#join-code', code); await click(b.page, '#btn-join');
     await waitFor(a.page, () => document.querySelectorAll('#party-members .member:not(.open)').length === 2, 20000);
     ok(true, `Bravo joined Alpha's party ${code}`);
-    await a.page.click('#mode-buttons button[data-mode="duo"]').catch(() => {});
+    await click(a.page, '#mode-buttons button[data-mode="duo"]');
     await a.page.waitForTimeout(400);
     await shot(a.page, 'e2e-10-party');
-    await a.page.click('#btn-play');
+    await click(a.page, '#btn-play');
     await Promise.all([a, b].map(p => waitFor(p.page, () => window.__ashline.match, 60000)));
     const sq = await Promise.all([a, b].map(p => A(p.page, () => window.__ashline.match.squad)));
     ok(sq[0] === sq[1], 'both players are in the same squad');
@@ -152,17 +169,17 @@ try {
     ok(true, 'both players get results');
     ok(a.errors.length + b.errors.length === 0, `no page errors online (${[...a.errors, ...b.errors].slice(0, 3).join(' | ')})`);
     await a.page.close(); await b.page.close();
-  }
+  });
 
   // ------------------------------------------------------------------ standalone
-  if (run('standalone')) {
+  await scenario('standalone', async () => {
     const file = join(ROOT, 'ASHLINE.html');
     if (!existsSync(file)) { ok(false, 'ASHLINE.html exists (run npm run build)'); }
     else {
       const s = await open('file://' + file + '?debug', { block: true });
-      await s.page.click('#btn-practice');
+      await click(s.page, '#btn-practice');
       await waitFor(s.page, () => window.__ashline.profile);
-      await s.page.click('#btn-play');
+      await click(s.page, '#btn-play');
       await waitFor(s.page, () => window.__ashline.match && window.__ashline.match.alive > 0, 90000);
       ok(true, 'standalone file plays a practice match offline');
       await s.page.waitForTimeout(1500);
@@ -170,10 +187,7 @@ try {
       ok(s.errors.length === 0, `no page errors in the standalone file (${s.errors.slice(0, 3).join(' | ')})`);
       await s.page.close();
     }
-  }
-} catch (e) {
-  fails++;
-  console.log('FAIL  exception:', e.message.split('\n')[0]);
+  });
 }
 await browser.close();
 await srv.close();

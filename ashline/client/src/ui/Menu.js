@@ -41,7 +41,7 @@ export class Menu {
     this.app.menuCamera(tab);
   }
 
-  open() { $('menu').classList.add('show'); this.show(this.tab); this.renderProfile(); this.renderConn(); }
+  open() { $('menu').classList.add('show'); $('menu').scrollTop = 0; this.show(this.tab); this.renderProfile(); this.renderConn(); }
   close() { $('menu').classList.remove('show'); }
 
   renderConn() {
