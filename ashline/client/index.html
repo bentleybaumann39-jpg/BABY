@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ASHLINE</title>
+  <meta name="description" content="ASHLINE: an online battle royale shooter. Drop into the Kessler Valley, loot, fight and outlast the closing ash.">
+  <link rel="stylesheet" href="/client/css/style.css">
+  <script type="importmap">{ "imports": { "three": "/vendor/three.module.js" } }</script>
+</head>
+<body>
+  <canvas id="view" tabindex="0"></canvas>
+
+  <div id="loading" class="screen show">
+    <div class="load-inner">
+      <h1 class="logo">ASHLINE</h1>
+      <div class="load-bar"><div id="load-fill"></div></div>
+      <div id="load-text">starting…</div>
+    </div>
+  </div>
+
+  <!-- Menu -->
+  <div id="menu" class="screen">
+    <header class="menu-head">
+      <h1 class="logo small">ASHLINE</h1>
+      <nav id="menu-tabs">
+        <button data-tab="play" class="on">Play</button>
+        <button data-tab="locker">Locker</button>
+        <button data-tab="stats">Stats</button>
+        <button data-tab="settings">Settings</button>
+      </nav>
+      <div id="profile-chip" style="display:none">
+        <div class="pc-top"><span class="lvl">Lv <b id="pc-level">1</b></span><b id="pc-name"></b><em id="pc-title"></em></div>
+        <div class="xpbar"><i id="pc-xp"></i></div>
+        <small id="pc-xptext"></small>
+      </div>
+    </header>
+
+    <section id="tab-play" class="menu-tab show">
+      <div class="panel" id="conn-panel">
+        <h3>Deploy</h3>
+        <label class="field"><span>Callsign</span><input id="name-input" maxlength="16" placeholder="Your name"></label>
+        <label class="field"><span>Server</span><input id="server-url" placeholder="host:8090 (blank = this page's server)"></label>
+        <div class="btnrow">
+          <button id="btn-online" class="primary">Play online</button>
+          <button id="btn-practice">Practice vs bots</button>
+          <button id="btn-disconnect" class="ghost">Disconnect</button>
+        </div>
+        <div id="conn-status" class="dim">Not connected</div>
+        <div id="conn-error" class="error" style="display:none"></div>
+      </div>
+      <div class="panel" id="party-panel" style="display:none">
+        <h3>Squad</h3>
+        <div id="party-code-row" class="code-row">Party code <b id="party-code">-----</b> <small>share it with friends</small></div>
+        <div id="party-members"></div>
+        <div id="join-row" class="btnrow"><input id="join-code" maxlength="5" placeholder="CODE"><button id="btn-join">Join party</button><button id="btn-leave-party" class="ghost">Leave</button></div>
+        <div id="mode-buttons" class="seg"><button data-mode="solo">Solo</button><button data-mode="duo">Duo</button><button data-mode="trio">Trio</button></div>
+        <button id="btn-fill" class="ghost">Fill squad: ON</button>
+        <button id="btn-play" class="deploy">DEPLOY</button>
+        <div id="queue-info" class="dim"></div>
+      </div>
+      <div class="panel help">
+        <h3>Field manual</h3>
+        <ul>
+          <li><b>WASD</b> move · <b>Shift</b> sprint · <b>C / Ctrl</b> crouch · <b>Space</b> jump, leave the plane, open the chute</li>
+          <li><b>LMB</b> fire · <b>RMB</b> aim · <b>R</b> reload · <b>B</b> fire mode · <b>1-3</b> weapons · <b>4 / G</b> grenades</li>
+          <li><b>E</b> pick up / hold to revive or hack · <b>Tab</b> inventory · <b>M</b> map · <b>Z / MMB</b> ping</li>
+          <li><b>5</b> bandage · <b>6</b> field kit · <b>7</b> stim · <b>H</b> best heal · <b>X</b> cancel action</li>
+        </ul>
+        <p>Thirty drop in. The ash closes in seven fronts. Intel terminals reveal where it goes next — and who is near. Last squad standing wins.</p>
+      </div>
+    </section>
+
+    <section id="tab-locker" class="menu-tab">
+      <div class="panel wide">
+        <h3>Locker</h3>
+        <div id="locker-kinds" class="seg"></div>
+        <div id="locker-grid"></div>
+        <p id="locker-note" class="dim"></p>
+      </div>
+    </section>
+
+    <section id="tab-stats" class="menu-tab">
+      <div class="panel wide">
+        <h3>Service record</h3>
+        <div id="stats-grid" class="cards"></div>
+        <h4>Recent matches</h4>
+        <div id="history"></div>
+      </div>
+    </section>
+
+    <section id="tab-settings" class="menu-tab">
+      <div class="panel"><h3>Settings</h3><div id="settings-form" class="settings"></div></div>
+    </section>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div id="compass"><div id="compass-strip"></div><div id="compass-mark"></div><div id="compass-deg">0</div></div>
+    <div id="topright">
+      <canvas id="minimap" width="210" height="210"></canvas>
+      <div class="counters"><span><i>ALIVE</i> <b id="alive">0</b></span><span><i>KILLS</i> <b id="kills">0</b></span></div>
+      <div id="zone-timer"></div>
+      <div id="zone-dist"></div>
+      <div id="killfeed"></div>
+    </div>
+    <div id="notify"></div>
+    <div id="toasts"></div>
+    <div id="banner"></div>
+    <div id="crosshair"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><i class="dot"></i></div>
+    <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+    <div id="dmgdirs"></div>
+    <div id="prompt" style="display:none"><div id="prompt-ring"></div><span id="prompt-text"></span></div>
+    <div id="tags"></div>
+    <div id="bottomleft">
+      <div id="squad"></div>
+      <div id="me">
+        <div class="gear"><span id="helmet-ico" class="ico">H</span><span id="vest-ico" class="ico">V</span><span id="pack-ico" class="ico">B</span></div>
+        <div class="hpbar"><div id="hp-fill"></div></div>
+        <div class="boostbar"><div id="boost-fill"></div></div>
+      </div>
+    </div>
+    <div id="weapon">
+      <div id="w-slots"><span><b>1</b><em></em></span><span><b>2</b><em></em></span><span><b>3</b><em></em></span><span><b>4</b><em></em></span></div>
+      <div class="wmain"><div id="w-name">Unarmed</div><div class="ammo"><b id="w-mag">–</b><span>/</span><em id="w-res">–</em></div><div id="w-mode"></div></div>
+      <div class="heals"><span><b>5</b> Bandage <em id="h-band">0</em></span><span><b>6</b> Kit <em id="h-kit">0</em></span><span><b>7</b> Stim <em id="h-stim">0</em></span></div>
+    </div>
+    <div id="scope"></div>
+    <div id="fps"></div>
+    <div id="death"><h2>ELIMINATED</h2><p id="spectating"></p><button id="btn-leave-death">Leave match</button></div>
+    <div id="inventory">
+      <div class="inv-col"><h3>Ground</h3><div id="inv-ground"></div></div>
+      <div class="inv-col"><h3>Equipment</h3><div id="inv-equip"></div></div>
+      <div class="inv-col"><h3>Backpack</h3><div id="inv-bag"></div></div>
+      <button id="inv-close">Close [Tab]</button>
+    </div>
+    <div id="bigmap"><canvas id="bigmap-canvas"></canvas><div class="legend"><i class="cur"></i> ash front <i class="nxt"></i> next front <i class="term"></i> intel terminal · [M] close</div></div>
+  </div>
+
+  <div id="results" class="screen">
+    <div class="res-inner">
+      <h1 id="res-place">#1</h1>
+      <p id="res-sub"></p>
+      <div id="res-stats" class="cards"></div>
+      <div id="res-xp"></div>
+      <div id="res-level"></div>
+      <div class="xpbar big"><i id="res-levelbar"></i></div>
+      <div id="res-unlocks"></div>
+      <button id="results-continue" class="primary">Back to lobby</button>
+    </div>
+  </div>
+
+  <div id="pause" class="screen">
+    <div class="pause-inner">
+      <h2>PAUSED</h2>
+      <p class="dim">The match keeps running.</p>
+      <button id="pause-resume" class="primary">Resume</button>
+      <button id="pause-settings">Settings</button>
+      <div id="pause-settings-panel" class="settings"></div>
+      <button id="pause-leave" class="ghost">Leave match</button>
+    </div>
+  </div>
+
+  <script type="module" src="/client/src/main.js"></script>
+</body>
+</html>
