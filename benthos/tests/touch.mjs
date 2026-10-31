@@ -43,10 +43,11 @@ await tick(20);
 await expect('tapping BEGIN DESCENT starts on the deck', () => B.mode === 'play' && B.act === 'deck');
 await shot('t02-deck');
 // walk with the stick: thumb down at (70,196), drag right
-const x0 = await ev(() => B.player.x);
+// pushing right walks her to the camera's right in 3D (screen right in the classic view)
+const p0 = await ev(() => [B.player.x, B.player.y]);
 const a = await css(70, 196), b = await css(100, 196);
 await touch('touchStart', [a]); await tick(2); await touch('touchMove', [b]); await tick(60);
-await expect('the stick walks her across the deck', x => B.player.x > x + 0.5, x0);
+await expect('the stick walks her across the deck', p0 => { const dx = B.player.x - p0[0], dy = B.player.y - p0[1]; if (!B.view3d) return dx > 0.5; const y = B.G3.cam.yaw; return dx * -Math.sin(y) + dy * Math.cos(y) > 0.5; }, p0);
 await shot('t03-stick');
 await touch('touchEnd', []); await tick(5);
 await expect('lifting the thumb releases the stick', () => !B.I.touch.stick && B.I.move().x === 0);
@@ -70,9 +71,11 @@ const u = await css(469, 100);
 await touch('touchStart', [u]); await tick(60); await touch('touchEnd', []); await tick(2);
 await expect('the upper half blows it', tr => B.player.trim > tr - 0.1, trim0);
 // two fingers: stick and aim at once
-const s1 = await css(70, 196), s2 = await css(80, 196), aim = await css(300, 60);
-await touch('touchStart', [s1]); await touch('touchMove', [s2]); await touch('touchStart', [s2, aim]); await tick(30);
-await expect('two fingers: one thrusts, one aims up', () => B.player.thrust > 0.2 && B.player.aimY < -0.3);
+const s1 = await css(70, 196), s2 = await css(80, 196), aim = await css(300, 60), aim2 = await css(360, 60);
+const yaw0 = await ev(() => B.view3d ? B.G3.cam.yaw : 0);
+await touch('touchStart', [s1]); await touch('touchMove', [s2]); await touch('touchStart', [s2, aim]); await tick(10); await touch('touchMove', [s2, aim2]); await tick(30);
+// classic: the second finger aims at a point (up the screen); 3D: dragging it turns the camera
+await expect('two fingers: one thrusts, one aims or looks', y0 => B.player.thrust > 0.2 && (B.view3d ? Math.abs(B.G3.cam.yaw - y0) > 0.2 : B.player.aimY < -0.3), yaw0);
 await touch('touchEnd', []); await tick(5);
 await tap(22, 104);
 await tick(3);

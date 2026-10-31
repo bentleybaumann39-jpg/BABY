@@ -94,6 +94,7 @@ window.B = window.B || {};
     aimPad: { x: 0, y: 0 }, usingPad: false, anyHit: false, wheel: 0,
     // touch: a floating stick on the left, buttons on the right (layout from B.touchLayout in hud.js)
     touchMode: false, touch: { stick: null, mx: 0, my: 0, held: {}, ptrs: new Map(), refs: {} },
+    look: { dx: 0, dy: 0 },   // camera look deltas for the 3D view (pixels of mouse or thumb travel)
     down(a) { return !!(I.state[a] || I.padNow[a]); },
     pressed(a) { return !!(I.hit[a] || (I.padNow[a] && !I.padPrev[a])); },
     released(a) { return !!(I.up[a] || (!I.padNow[a] && I.padPrev[a])); },
@@ -154,10 +155,15 @@ window.B = window.B || {};
       I.mouse.x = (e.clientX - r.left - o.x) / o.w * B.W;
       I.mouse.y = (e.clientY - r.top - o.y) / o.h * B.H;
     };
-    canvas.addEventListener('mousemove', e => { toInternal(e); I.mouse.moved = 1; I.usingPad = false; I.mouse.inside = true; });
+    canvas.addEventListener('mousemove', e => {
+      toInternal(e); I.mouse.moved = 1; I.usingPad = false; I.mouse.inside = true;
+      if (document.pointerLockElement === canvas) { I.look.dx += e.movementX || 0; I.look.dy += e.movementY || 0; }
+    });
     canvas.addEventListener('mousedown', e => {
       toInternal(e); I.anyHit = true; I.usingPad = false;
       if (e.button === 0) { I.mouse.b0 = true; I.hit.pick = true; I.state.pick = true; I.hit.click = true; }
+      // in the 3D view a click in play captures the mouse for looking around (Esc lets it go)
+      if (B.view3d && B.mode === 'play' && !document.pointerLockElement && !(B.Hud && B.Hud.capture())) { try { const pr = canvas.requestPointerLock(); if (pr && pr.catch) pr.catch(() => {}); } catch (er) { /* not allowed here */ } }
       if (e.button === 2) { I.mouse.b2 = true; I.hit.listen = true; I.state.listen = true; }
       if (B.onGesture) B.onGesture();
     });
@@ -193,7 +199,7 @@ window.B = window.B || {};
         const b = hitBtn(lay, x, y);
         if (b) { t.kind = 'btn'; t.btn = b; setActs(t, b.split ? (y < b.y + b.h / 2 ? b.acts : b.acts2) : b.acts); T.held[b.id] = true; I.buzz(8); }
         else if (x < B.W / 2 && !T.stick) { t.kind = 'stick'; T.stick = { id: e.pointerId, x0: x, y0: y, x, y }; T.mx = T.my = 0; }
-        else { t.kind = 'aim'; I.mouse.inside = true; }
+        else { t.kind = 'aim'; I.mouse.inside = !B.view3d; }
       } else {
         I.mouse.moved = 1; I.hit.click = true;
         if (B.mode === 'scene') { I.hit.confirm = true; }
@@ -211,7 +217,7 @@ window.B = window.B || {};
         const l = Math.hypot(dx, dy) || 1; T.mx = dx / l * n; T.my = dy / l * n;
         setActs(t, Math.hypot(dx, dy) > R * 1.25 ? ['boost'] : []);
       } else if (t.kind === 'btn' && t.btn.split) setActs(t, t.y < t.btn.y + t.btn.h / 2 ? t.btn.acts : t.btn.acts2);
-      else if (t.kind === 'aim') I.mouse.inside = true;
+      else if (t.kind === 'aim') { if (B.view3d) { I.look.dx += (t.x - (t.lx === undefined ? t.x0 : t.lx)) * 2.2; I.look.dy += (t.y - (t.ly === undefined ? t.y0 : t.ly)) * 2.2; t.lx = t.x; t.ly = t.y; } else I.mouse.inside = true; }
       else if (t.kind === 'click') I.mouse.moved = 1;
     }, { passive: false });
     const end = e => {
@@ -234,7 +240,7 @@ window.B = window.B || {};
     del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } },
   };
   B.store = store;
-  const SET_DEF = { master: 0.8, music: 0.7, crt: true, photo: false, honest: false, steady: false, captions: true, rumble: true, shake: true, markers: true, difficulty: 1, quality: 2, qualityChecked: false };
+  const SET_DEF = { master: 0.8, music: 0.7, crt: true, photo: false, honest: false, steady: false, captions: true, rumble: true, shake: true, markers: true, difficulty: 1, quality: 2, qualityChecked: false, view: '3d' };
   B.settings = Object.assign({}, SET_DEF, store.get('benthos.settings', {}));
   for (const k in B.settings) if (!(k in SET_DEF) || typeof B.settings[k] !== typeof SET_DEF[k]) B.settings[k] = SET_DEF[k];
   B.saveSettings = () => store.set('benthos.settings', B.settings);

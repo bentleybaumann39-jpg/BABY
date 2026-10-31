@@ -30,8 +30,14 @@ await page.evaluate(() => {
   // steer toward a world point: screen-relative thrust plus trim for depth
   function steer(x, y, z) {
     const P = B.player, dx = x - P.x, dy = y - P.y, d = Math.hypot(dx, dy);
-    set('right', dx > 0.4 && Math.abs(dx) > d * 0.35); set('left', dx < -0.4 && Math.abs(dx) > d * 0.35);
-    set('down', dy > 0.4 && Math.abs(dy) > d * 0.35); set('up', dy < -0.4 && Math.abs(dy) > d * 0.35);
+    if (B.view3d) {
+      // a 3D player looks where they're going and pushes forward
+      if (d > 0.4) B.G3.cam.yaw = Math.atan2(dy, dx);
+      set('up', d > 0.4); set('down', false); set('left', false); set('right', false);
+    } else {
+      set('right', dx > 0.4 && Math.abs(dx) > d * 0.35); set('left', dx < -0.4 && Math.abs(dx) > d * 0.35);
+      set('down', dy > 0.4 && Math.abs(dy) > d * 0.35); set('up', dy < -0.4 && Math.abs(dy) > d * 0.35);
+    }
     if (B.act !== 'deck') { const dz = z - P.z; set('sink', dz > 1.2); set('rise', dz < -1.2); }
     return Math.hypot(dx, dy, B.act === 'deck' ? 0 : (z - P.z));
   }
@@ -69,7 +75,7 @@ await page.evaluate(() => {
     }
     const aim = tgt ? { x: tgt.x, y: tgt.y, z: tgt.z - 0.3 } : ob && ob.x !== undefined ? { x: ob.x, y: ob.y, z: ob.z - 0.5 } : null;
     if (ob && /DROP YOUR WEIGHTS/.test(ob.text)) { release(); set('rise', true); return; }
-    if (P.tangled || P.grabbed) { const f = (bot.t * 4 + (bot.k = (bot.k || 0) + 1)) & 1; set('left', !!f); set('right', !f); set('up', false); set('down', false); }
+    if (P.tangled || P.grabbed) { const f = (bot.t * 4 + (bot.k = (bot.k || 0) + 1)) & 1; if (B.view3d) { set('up', !!f); set('down', !f); } else { set('left', !!f); set('right', !f); set('up', false); set('down', false); } }
     else if (P.inCage) release();
     else if (bot.detour > 0) { bot.detour--; steer(P.x + bot.dvx * 5, P.y + bot.dvy * 5, aim ? aim.z : P.z); }
     else if (aim) steer(aim.x, aim.y, aim.z);

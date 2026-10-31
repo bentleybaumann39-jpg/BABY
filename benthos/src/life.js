@@ -79,6 +79,17 @@
   function farLights(sys) {
     const Pp = pl(); if (!Pp || B.act === 'deck') return;
     const z = Pp.z, dens = z < 250 ? 0 : z < 400 ? (z - 250) / 150 : B.act === 'act3' ? 0.35 : 1;
+    if (B.view3d) {
+      // in 3D they hang on a far shell round the diver, blinking in their bursts
+      if (dens <= 0) return;
+      for (const f of FAR) {
+        const t = (B.time + f.ph) % f.per; if (!(t < f.n * 0.35 && (t % 0.35) < 0.16)) continue;
+        const a = f.x * Math.PI * 2, el = (f.y - 0.5) * 1.6, r = 95;
+        const c = f.kind === 0 ? [0.05, 0.25, 0.55] : f.kind === 1 ? [0.1, 0.4, 0.3] : f.kind === 2 ? [0.25, 0.3, 0.6] : [0.06, 0.15, 0.4];
+        R.point(Pp.x + Math.cos(a) * Math.cos(el) * r, Pp.y + Math.sin(a) * Math.cos(el) * r, Pp.z + Math.sin(el) * r, 1, c[0] * 2.2, c[1] * 2.2, c[2] * 2.2, 3);
+      }
+      return;
+    }
     const ox = R.cam.ox, oy = R.cam.oy; if (farOx === null) { farOx = ox; farOy = oy; }
     const dx = (ox - farOx) * 0.12, dy = (oy - farOy) * 0.12; farOx = ox; farOy = oy;
     if (dens <= 0) return;
@@ -288,8 +299,9 @@
   }
   function benthosScan(sys, Pp) {
     const map = B.map; if (!map || map.topside) return;
-    const zCut = R.cam.zCut, zMax = zCut + 40, keep = new Set();
-    const i0 = Math.floor((Pp.x - 26) / CELL), i1 = Math.floor((Pp.x + 26) / CELL), j0 = Math.floor((Pp.y - 14) / CELL), j1 = Math.floor((Pp.y + 30) / CELL);
+    // the classic view sees floor below the cut plane in a window round the diver; the 3D view sees all round
+    const v3 = B.view3d, zCut = v3 ? Pp.z - 30 : R.cam.zCut, zMax = v3 ? Pp.z + 45 : zCut + 40, keep = new Set();
+    const i0 = Math.floor((Pp.x - (v3 ? 32 : 26)) / CELL), i1 = Math.floor((Pp.x + (v3 ? 32 : 26)) / CELL), j0 = Math.floor((Pp.y - (v3 ? 32 : 14)) / CELL), j1 = Math.floor((Pp.y + (v3 ? 32 : 30)) / CELL);
     for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
       const key = i * 4096 + j, hv = B.hash2(i, j, 501);
       const dens = (B.act === 'act3' ? 0.5 : Pp.z < 160 ? 0.32 : 0.62) * [0.45, 0.65, 1][B.settings.quality | 0]; if (hv > dens) continue;

@@ -90,7 +90,10 @@
     gauge: 'HOLD THE O2 CLUSTER: READ THE CHEST GAUGE. IT ALWAYS TELLS THE TRUTH. THE WORLD KEEPS MOVING WHILE YOU LOOK.',
     scrub: 'TAP THE SCRUB BAR: SWAP THE CANISTER BEFORE THE AIR TURNS. CO2 MAKES THE HUD LIE.',
   };
-  Hd.tip = function (k) { if (tipShown[k]) return; tipShown[k] = true; tip = { t: (I.touchMode && TTIPS[k]) || TIPS[k], until: B.time + 10 }; };
+  // and for the 3D view, where the camera turns instead of the pointer aiming
+  const TIPS3 = { move: 'WASD SWIM, RELATIVE TO THE CAMERA · CLICK, THEN THE MOUSE LOOKS AND AIMS THE LAMP (ESC LETS GO) · WITHOUT IT, A/D TURN · SHIFT BOOST · LET GO TO COAST: SILENT' };
+  const TTIPS3 = { move: 'LEFT THUMB SWIMS · DRAG ON THE RIGHT TO LOOK AND AIM THE LAMP · PUSH PAST THE RING TO BOOST · LET GO TO COAST: COASTING IS SILENT' };
+  Hd.tip = function (k) { if (tipShown[k]) return; tipShown[k] = true; tip = { t: (B.view3d && (I.touchMode ? TTIPS3[k] : TIPS3[k])) || (I.touchMode && TTIPS[k]) || TIPS[k], until: B.time + 10 }; };
   Hd.key = (k, t) => I.touchMode ? '' : I.usingPad ? '[' + k + '] ' : '[' + t + '] ';
   let docBack = null;
   Hd.openDoc = function (d, onClose) { doc = d; docScroll = 0; docBack = onClose || null; A.sfx('beep'); if (B.Story.noteDoc) B.Story.noteDoc(d); };
@@ -290,6 +293,15 @@
     // expanding rings
     for (const p of P.pings) {
       const age = B.time - p.t0, r = age * 50; if (r > p.r) continue;
+      if (B.view3d) {
+        // in 3D the ring goes out flat through the water at the depth it was sent from
+        const a = 1 - r / p.r, n = Math.min(240, 24 + r * 6), a0 = p.narrow ? Math.atan2(p.ay, p.ax) : 0, span = p.narrow ? 0.5 : Math.PI;
+        for (let k = 0; k < n; k++) {
+          const ang = a0 - span + (k / n) * span * 2, q = R.proj(p.x + Math.cos(ang) * r, p.y + Math.sin(ang) * r, p.z);
+          if (q && B.BAYER[((q[1] | 0) & 3) * 4 + ((q[0] | 0) & 3)] + 0.5 < 0.35 + a * 0.6) R.pset(q[0], q[1], COL.s0);
+        }
+        continue;
+      }
       const cx = R.sx(p.x), cy = R.sy(p.y, p.z), a = 1 - r / p.r;
       if (p.narrow) { const a0 = Math.atan2(p.ay * B.PY, p.ax * B.PX); for (let k = -10; k <= 10; k++) { const ang = a0 + k * 0.05; R.pset(cx + Math.cos(ang) * r * B.PX, cy + Math.sin(ang) * r * B.PY, COL.s0); } }
       else R.ellipse(cx, cy, r * B.PX, r * B.PY, COL.s0, 0.35 + a * 0.6);
@@ -298,29 +310,34 @@
     const hold = P.ptsHold || 3;
     for (const q of P.pts) {
       const age = B.time - q[3]; if (age < 0 || age > hold) continue;
-      const fade = 1 - age / hold, x = Math.round(R.sx(q[0])), y = Math.round(R.sy(q[1], q[2]));
+      const pp = R.proj(q[0], q[1], q[2]); if (!pp) continue;
+      const fade = 1 - age / hold, x = Math.round(pp[0]), y = Math.round(pp[1]);
       if (B.BAYER[(y & 3) * 4 + (x & 3)] + 0.5 < fade * q[4]) R.pset(x, y, fade > 0.5 ? COL.s0 : COL.b10);
     }
     // the echo trail: a shimmer along the path the ringing hull has travelled
-    for (const n of P.trail) { const age = B.time - n.t; if (age > 10) continue; if (((B.frame >> 2) + Math.round(n.t * 4)) % 3) continue; R.pset(R.sx(n.x), R.sy(n.y, n.z), n.muffled ? COL.b6 : COL.b10); }
+    for (const n of P.trail) { const age = B.time - n.t; if (age > 10) continue; if (((B.frame >> 2) + Math.round(n.t * 4)) % 3) continue; const pp = R.proj(n.x, n.y, n.z); if (pp) R.pset(pp[0], pp[1], n.muffled ? COL.b6 : COL.b10); }
+  };
+  // Screen angle of a horizontal world direction: top-down in the classic view, relative to the camera in 3D
+  // (straight ahead is up the screen).
+  Hd.bearing = function (dx, dy) {
+    if (!B.view3d) return Math.atan2(dy * B.PY, dx * B.PX);
+    const b = Math.atan2(dy, dx) - B.G3.cam.yaw; return Math.atan2(-Math.cos(b), Math.sin(b));
   };
   function listenArcs() {
     const P = B.player; if (!P.listening) return;
-    const cx = R.sx(P.x), cy = R.sy(P.y, P.z);
     const rx = R.W / 2 - 8, ry = R.H / 2 - 8;
     for (const e of B.E.list) {
       if (!e.alive || !['sleeper', 'reliquary', 'procession', 'grain', 'double', 'ghost', 'squid', 'cage'].includes(e.type)) continue;
       let ex = e.x, ey = e.y; if (e.type === 'procession') { ex = e.px[0]; ey = e.py[0]; }
       const d = Math.hypot(ex - P.x, ey - P.y, (e.type === 'procession' ? 0 : e.z - P.z)); if (d > 80) continue;
       const loud = e.type === 'sleeper' ? 1 : e.type === 'grain' ? 0.6 : e.type === 'double' || e.type === 'ghost' ? 0.7 : 0.4;
-      const ang = Math.atan2((ey - P.y) * B.PY, (ex - P.x) * B.PX), span = 0.12 + loud * 0.18, prox = 1 - d / 80;
+      const ang = Hd.bearing(ex - P.x, ey - P.y), span = 0.12 + loud * 0.18, prox = 1 - d / 80;
       const trem = e.type === 'sleeper' ? Math.sin(B.time * 4) > 0 : e.type === 'grain' ? Math.random() > 0.3 : true;
       if (!trem) continue;
       const th = 1 + Math.round(loud * 2);
       for (let a = -span; a <= span; a += 0.01) for (let t = 0; t < th; t++) R.pset(R.W / 2 + Math.cos(ang + a) * (rx - t), R.H / 2 + Math.sin(ang + a) * (ry - t), prox > 0.6 ? COL.s0 : prox > 0.3 ? COL.b10 : COL.b6);
     }
     Hd.center(R.H - 60, 'LISTENING', COL.b10);
-    void cx; void cy;
   }
   function gaugeView() {
     const P = B.player; const W = R.W, Hh = R.H;
@@ -442,6 +459,11 @@
     if (doc) drawDoc();
     if (craft) drawCraft();
     if (I.touchMode) drawTouch();
+    // 3D view with a mouse that isn't captured yet: say how to look around
+    if (B.view3d && B.mode === 'play' && !I.touchMode && !I.usingPad && !document.pointerLockElement && !Hd.capture() && B.player && ((B.frame >> 6) & 3) !== 0) {
+      const t = 'CLICK TO LOOK AROUND WITH THE MOUSE · A/D TURN', w = Hd.tw(t);
+      R.shadeRect((R.W - w) / 2 - 3, R.H - 12, w + 6, 10, COL.k, 0.6); Hd.text(Math.round((R.W - w) / 2), R.H - 11, t, amber(1));
+    }
     if (bootS) drawBoot();
     if (menuS) drawMenu();
   };
@@ -470,7 +492,7 @@
     const fade = B.act === 'deck' ? 1 : M.clamp((8 - age) / 2, 0, 1);
     if (fade < 1 && B.BAYER[(B.frame & 3) * 4 + ((B.frame >> 2) & 3)] + 0.5 > fade) return;
     const dx = ob.x - P.x, dy = ob.y - P.y, dz = ob.z - P.z, hd = Math.hypot(dx, dy);
-    const psx = R.sx(P.x), psy = R.sy(P.y, P.z) - 8, col = amber(3);
+    const pp = R.proj(P.x, P.y, P.z - 0.8), psx = pp ? pp[0] : R.W / 2, psy = pp ? pp[1] - (B.view3d ? 0 : 8) : R.H / 2, col = amber(3);
     // the deep lies: in the Settling the bearing wanders
     const jit = act3 ? (B.hash2(Math.floor(B.time * 2), 1, 7) - 0.5) * 0.5 : 0;
     const depthTxt = Math.abs(dz) < 3 ? '' : (dz > 0 ? '▼' : '▲') + Math.round(Math.abs(dz)) + 'M';
@@ -480,10 +502,9 @@
       chevron(psx, y, 0, dz > 0 ? 1 : -1, col); Hd.text(Math.round(psx - Hd.tw(depthTxt) / 2), y + (dz > 0 ? 6 : -12), depthTxt, col);
       return;
     }
-    const ax = dx * B.PX, ay = dy * B.PY, l = Math.hypot(ax, ay), ca = Math.cos(jit), sa = Math.sin(jit);
-    const ux = (ax / l) * ca - (ay / l) * sa, uy = (ax / l) * sa + (ay / l) * ca;
-    const tsx = R.sx(ob.x), tsy = R.sy(ob.y, ob.z) - 6;
-    const onScreen = tsx > ix + 20 && tsx < R.W - ix - 20 && tsy > iy + 24 && tsy < R.H - iy - 30 && Math.abs(dz) < 25;
+    const ba = Hd.bearing(dx, dy) + jit, ux = Math.cos(ba), uy = Math.sin(ba);
+    const tp = R.proj(ob.x, ob.y, ob.z), tsx = tp ? tp[0] : -999, tsy = tp ? tp[1] - 6 : -999;
+    const onScreen = !!tp && tsx > ix + 20 && tsx < R.W - ix - 20 && tsy > iy + 24 && tsy < R.H - iy - 30 && Math.abs(dz) < 25;
     let mx, my;
     if (onScreen) { mx = tsx; my = tsy - 8 + Math.round(Math.sin(B.time * 4) * 2); chevron(mx, my, 0, 1, col); }
     else {

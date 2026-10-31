@@ -102,6 +102,7 @@
         Object.assign({ label: 'HONEST HUD (NO CO2 LIES)', keep: true }, tog('honest')), Object.assign({ label: 'STEADY TRIM ASSIST', keep: true }, tog('steady')),
         Object.assign({ label: 'OBJECTIVE AND BEACON', keep: true }, tog('markers')),
         Object.assign({ label: 'SCREEN SHAKE', keep: true }, tog('shake')), Object.assign({ label: I.touchMode ? 'VIBRATION' : 'RUMBLE', keep: true }, tog('rumble')),
+        { label: 'VIEW', keep: true, adj: () => { B.settings.view = B.settings.view === 'classic' ? '3d' : 'classic'; B.saveSettings(); B.G3.enable(B.settings.view !== 'classic'); B.snapCamera = true; }, value: () => (B.view3d ? '3D' : B.G3.ok ? 'CLASSIC' : 'CLASSIC (NO WEBGL2)') },
         { label: 'QUALITY', keep: true, adj: d => { B.settings.quality = (B.settings.quality + (d || 1) + 3) % 3; B.saveSettings(); if (B.state && B.mode !== 'title') B.playRes(B.state.ng); else B.playRes(false); }, value: () => QNAME[B.settings.quality | 0] },
         { label: 'FULLSCREEN', keep: true, fn: toggleFullscreen, value: () => (document.fullscreenElement ? 'ON' : 'OFF') },
         { label: 'BACK', fn: back },
@@ -116,14 +117,14 @@
   }
   function controlsMenu(back) {
     if (I.touchMode) {
-      const T = ['LEFT THUMB: THRUST · PAST THE RING: BOOST', 'HOLD ON THE RIGHT: AIM THE LAMP AND PICK', 'RIGHT EDGE: TOP = BLOW (RISE) · BOTTOM = FLOOD (SINK)',
+      const T = [B.view3d ? 'LEFT THUMB: SWIM (CAMERA-RELATIVE) · PAST THE RING: BOOST' : 'LEFT THUMB: THRUST · PAST THE RING: BOOST', B.view3d ? 'DRAG ON THE RIGHT: LOOK AROUND, AIM THE LAMP' : 'HOLD ON THE RIGHT: AIM THE LAMP AND PICK', 'RIGHT EDGE: TOP = BLOW (RISE) · BOTTOM = FLOOD (SINK)',
         'USE: INTERACT (HOLD TO ABSORB)', 'PING: TAP WIDE · HOLD+RELEASE NARROW', 'LAMP: TAP W/R/OFF · HOLD: FLARE', 'PICK: FIRE / HOLD REEL / TAP RELEASE',
         'CLMP: TAP CLAMP · HOLD BRACE · EAR: HOLD LISTEN', 'BRTH: HOLD BREATH · TAP A TANK CELL TO USE IT', 'HOLD THE O2 CLUSTER: CHEST GAUGE',
         'TAP SCRUB: SWAP CANISTER · TAP DEPTH: CHART', 'II: PAUSE'];
       Hd.menu({ title: 'TOUCH CONTROLS', cancel: true, onCancel: back, items: T.map(l => ({ label: l, disabled: true })).concat([{ label: 'BACK', fn: back }]) });
       return;
     }
-    const L = ['WASD THRUST (SCREEN-RELATIVE) · MOUSE AIM LAMP', 'SHIFT BOOST · LET GO TO COAST (SILENT)', 'C FLOOD: SINK · SPACE BLOW: RISE (HISS)',
+    const L = [B.view3d ? 'WASD SWIM (CAMERA) · CLICK: MOUSE LOOKS · ESC: LET GO' : 'WASD THRUST (SCREEN-RELATIVE) · MOUSE AIM LAMP', ...(B.view3d ? ['WITHOUT THE MOUSE: A/D TURN THE CAMERA'] : []), 'SHIFT BOOST · LET GO TO COAST (SILENT)', 'C FLOOD: SINK · SPACE BLOW: RISE (HISS)',
       'R PING (HOLD+RELEASE: NARROW) · RMB HOLD: LISTEN', 'LMB PICK: FIRE / HOLD REEL / RELEASE', 'F LAMP W/R/OFF · HOLD F: FLARE',
       'E INTERACT (HOLD TO ABSORB) · Q CLAMP · HOLD Q BRACE', '1-5 BIOMASS · G GRAFT · X POWERHEAD', 'V HOLD BREATH · H CHEST GAUGE · T SWAP SCRUBBER',
       'TAB FABRICATOR (AT A CAIRN) · M CHART · Z WIPE VISOR', 'GAMEPAD: LS THRUST · RS AIM · RT BOOST · LT LISTEN', 'LB RISE · RB SINK · A USE · B CLAMP · X PING · Y LAMP',
@@ -222,7 +223,64 @@
   }
 
   // ------------------------------------------------------------------ rendering
+  // The 3D view: a chase camera and the GPU renderer (gl3d.js) in place of the column march; everything after
+  // the world (sonar marks, HUD, menus, CRT) draws on the same buffer as in the classic view.
+  function renderWorld3D(dt) {
+    const P = B.player, sc = B.scene, G = B.G3;
+    const topside = B.act === 'deck' || (sc && sc.topside), title = B.mode === 'title';
+    shakeAmt *= Math.pow(0.02, dt);
+    const sh = shakeAmt > 0.5 ? [(Math.random() - 0.5) * shakeAmt * 0.012, (Math.random() - 0.5) * shakeAmt * 0.012] : null;
+    // look input gathered since the last frame (mouse, thumb)
+    if (I.look.dx || I.look.dy) { G.look(I.look.dx * 0.0028, I.look.dy * 0.0028); I.look.dx = I.look.dy = 0; }
+    G.updateCamera(dt, { title, shake: sh });
+    B.snapCamera = false;
+    const eyeZ = title ? G.cam.tz : sc && sc.cam ? sc.cam.z : P.z;
+    const env = R.env;
+    env.topside = topside; env.fog = !topside; env.fogMul = eyeZ < 200 ? 0.45 + eyeZ / 800 : 0.6;
+    env.eye = title ? { x: G.cam.x, y: G.cam.y, z: G.cam.z } : sc && sc.cam ? { x: sc.cam.x, y: sc.cam.y, z: sc.cam.z } : { x: P.x, y: P.y, z: P.z - 0.8 };
+    env.caustic = eyeZ < 150 ? 1 : 0; env.time = B.time;
+    env.topR = 0.95; env.topG = 0.86; env.topB = 0.8; env.sunScale = 1;
+    if (topside && B.act === 'deck' && !B.settings.photo) {
+      if ((lightT -= dt) <= 0) { lightT = M.rnd(14, 32); lightAt = B.time; A.sfxAt('thunder', M.rnd(1.2, 3.5)); }
+      const lt = B.time - lightAt, f = lt < 0.08 ? 1 : lt > 0.16 && lt < 0.24 ? 0.7 : lt < 0.6 ? Math.max(0, 0.25 - lt * 0.4) : 0;
+      if (f > 0) { env.topR += f * 2.2; env.topG += f * 2.3; env.topB += f * 2.6; }
+    }
+    if (title) env.lamp.on = false;
+    R.begin();
+    const extra = [];
+    if (P && !title && !(sc && sc.hollow)) extra.push({ x: P.x, y: P.y, z: P.z, draw: () => B.Player.draw(), alive: true });
+    if (sc && sc.hollow) extra.push({ x: P.x, y: P.y, z: P.z, alive: true, draw() { R.model(P.x, P.y, P.z, B.MD.diver({ yaw: Math.atan2(sc.cam.y - P.y, sc.cam.x - P.x), t: 0, kick: 0, lamp: 'off', hollow: true, growth: 1, fill: 1, tankCol: [0.1, 0.9, 0.6], plain: [] }), { scale: 1, minLight: 0.4 }); } });
+    const saved = E.list; E.list = saved.concat(extra); E.draw(); E.list = saved;
+    if (B.ghostFrame && B.mode === 'play') { const g = B.ghostFrame; R.model(g.x, g.y, g.z, B.MD.diver({ yaw: B.MD.quant8(g.yaw), t: B.time, kick: 0.5, lamp: 'off' }), { lut: 1 }); B.ghostFrame = null; }
+    // lights too deep to reach: a bright point far out along their bearing, to steer by
+    if (P && !title) for (const L of S.distantLights()) {
+      const dx = L.x - G.cam.x, dy = L.y - G.cam.y, dz = L.z - G.cam.z, d = Math.hypot(dx, dy, dz);
+      if (d < 120) continue;
+      const fl = 0.8 + 0.2 * Math.sin(B.time * 3 + L.x), k = 120 / d;
+      R.point(G.cam.x + dx * k, G.cam.y + dy * k, G.cam.z + dz * k, 2, L.c[0] * fl, L.c[1] * fl, L.c[2] * fl, 3);
+    }
+    // the lamp's cone, shortened where it meets rock
+    let beam = null;
+    if (P && env.lamp.on && !title && !(sc && sc.cam)) {
+      const L = env.lamp, turb = (B.Z.inLayer(P.z) ? 0.26 : 0.11) + (E.inSilt(P.x, P.y, P.z) ? 0.25 : 0) + (eyeZ > 200 && eyeZ < 1000 ? 0.03 : 0);
+      const range = Math.sqrt(L.r2), hit = B.World.rayRock(B.map, L.x, L.y, L.z, L.dx, L.dy, L.dz, range), frac = hit ? Math.max(0.15, hit.t / range) : 1;
+      beam = { len: range * 0.9 * frac, k: turb * 1.3, col: L.mode === 'red' ? [0.5, 0.04, 0.02] : [0.3, 0.42, 0.5] };
+    }
+    let lut = sc && sc.lut ? sc.lut : title ? 'ben2' : B.zoneFor(B.act, eyeZ);
+    if (P && B.mode === 'play' && !topside) { if (P.listening) lut = 'listen'; else if (env.lamp.on && P.lampMode === 'red') lut = 'red'; }
+    R.spread = B.zoneDither[lut] || 0.1;
+    R.mono = lut === 'eye';
+    R.lens = null;
+    if (P && B.mode === 'play' && !topside && P.relics.shards > 0 && I.down('lens')) { const pp = R.proj(P.x + P.aimX * 3, P.y + P.aimY * 3, P.z - 0.5); R.lens = { x: pp ? pp[0] : R.W / 2, y: pp ? pp[1] : R.H / 2, r: 34 }; }
+    B.lensOn = R.lens;
+    G.render({ lut: B.lut(lut), fid: P ? P.fidelity : 16, spread: R.spread, mono: R.mono, lens: R.lens, beam, snow: !title || true, dt, diverScale: P ? P.res : 1 });
+    if (R.lens) R.ellipse(R.lens.x, R.lens.y, R.lens.r + 1, R.lens.r + 1, 0xffeee6c4);
+    R.flushOverlays();
+    if (B.mode === 'play' && P && !topside) Hd.drawSonar();
+    if (sc && sc.dimWorld) R.shadeRect(0, 0, R.W, R.H, 0xff000000, 0.5);
+  }
   function renderWorld(dt) {
+    if (B.view3d) return renderWorld3D(dt);
     const P = B.player, sc = B.scene;
     const topside = B.act === 'deck' || (sc && sc.topside);
     let tx, ty, tz;
@@ -369,6 +427,8 @@
     const cv = document.getElementById('game');
     R.initOutput(cv);
     B.W = 0; R.W = 0; B.setRes(480, 270);
+    // the 3D view if this browser can draw it, unless the player chose the classic one
+    if (B.G3.init()) B.G3.enable(B.settings.view !== 'classic');
     B.bindMouse(cv);
     addEventListener('resize', () => R.resize());
     B.onGesture = function () {

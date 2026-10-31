@@ -191,13 +191,12 @@
       update(dt) { this.age += dt; if (this.age > 80 / 12) this.alive = false; },
       draw() {
         const r = this.age * 12, k = 1 - this.age / (80 / 12);
-        const cx = R.sx(this.x), cy = R.sy(this.y, this.z), n = Math.min(160, 20 + r * 4);
+        const n = Math.min(160, 20 + r * 4);
         for (let i = 0; i < n; i++) {
           const a = i / n * Math.PI * 2 + this.id;
           if (((i + (this.age * 30 | 0)) % 3) === 0) R.point(this.x + Math.cos(a) * r, this.y + Math.sin(a) * r, this.z + Math.sin(a * 3) * 1.5, 1, 0.3 * k + 0.1, 0.9 * k, 1.4 * k, 2);
         }
         R.addLight(this.x, this.y, this.z, 0.3, 0.8, 1.2, Math.min(30, r + 6), 0.8 * k);
-        void cx; void cy;
       },
     });
   };

@@ -238,10 +238,12 @@
     if (B.act === 'deck') { walk(dt); recordFrame(); return; }
     const lock = P.lockT > 0 || B.Story.locked || B.Hud.capture(); if (P.lockT > 0) P.lockT -= dt;
     // ----- input
-    const mv = lock ? { x: 0, y: 0 } : I.move();
+    let mv = lock ? { x: 0, y: 0 } : I.move();
+    if (B.view3d) mv = B.G3.moveToWorld(mv);
     const mag = Math.hypot(mv.x, mv.y);
     // aim: mouse relative to the diver on screen, or the right stick
-    if (I.usingPad && Math.hypot(I.aimPad.x, I.aimPad.y) > 0.3) { const l = Math.hypot(I.aimPad.x, I.aimPad.y); P.aimX = I.aimPad.x / l; P.aimY = I.aimPad.y / l; }
+    if (B.view3d) { const c = B.G3.cam; P.aimX = Math.cos(c.yaw); P.aimY = Math.sin(c.yaw); }
+    else if (I.usingPad && Math.hypot(I.aimPad.x, I.aimPad.y) > 0.3) { const l = Math.hypot(I.aimPad.x, I.aimPad.y); P.aimX = I.aimPad.x / l; P.aimY = I.aimPad.y / l; }
     else if (I.mouse.inside) {
       const psx = R.sx(P.x), psy = R.sy(P.y, P.z) - 8;
       const dx = (I.mouse.x - psx) / B.PX, dy = (I.mouse.y - psy) / B.PY;
@@ -360,7 +362,9 @@
   }
 
   function walk(dt) {
-    const lock = B.Story.locked || B.Hud.capture(), mv = lock ? { x: 0, y: 0 } : I.move();
+    const lock = B.Story.locked || B.Hud.capture();
+    let mv = lock ? { x: 0, y: 0 } : I.move();
+    if (B.view3d) mv = B.G3.moveToWorld(mv);
     const sp = 2.2, nx = P.x + mv.x * sp * dt, ny = P.y + mv.y * sp * dt;
     const ok = (x, y) => { const h = H(x, y); return h > -3.4 && h < -2.6; };
     if (ok(nx, P.y)) P.x = nx; if (ok(P.x, ny)) P.y = ny;
@@ -378,6 +382,8 @@
     // things at your own depth can be found
     const alt = H(P.x + P.aimX * 6, P.y + P.aimY * 6) - P.z, want = alt < 6 ? 0.72 : alt > 30 ? 0.3 : 0.72 - (alt - 6) / 24 * 0.42;
     P.lampTilt = P.lampTilt === undefined ? want : M.approach(P.lampTilt, want, dt * 0.6);
+    // in the 3D view the lamp points where you look
+    if (B.view3d) P.lampTilt = M.clamp(B.G3.cam.pitch * 0.9 + 0.1, -0.5, 1.15);
     const tilt = P.lampTilt, ct = Math.cos(tilt);
     L.x = P.x + Math.cos(P.yaw) * 0.25; L.y = P.y + Math.sin(P.yaw) * 0.25; L.z = P.z - 0.95;
     L.dx = P.aimX * ct; L.dy = P.aimY * ct; L.dz = Math.sin(tilt);
@@ -469,7 +475,8 @@
       if (P.anchor) { P.anchor = null; A.sfx('click'); }
       else if (P.powered && !P.braced) {
         const range = P.breached ? 18 : 12;
-        let hit = B.World.rayRock(B.map, P.x, P.y, P.z - 0.3, P.aimX * 0.94, P.aimY * 0.94, 0.34, range);
+        const az = B.view3d ? Math.sin(P.lampTilt || 0.34) : 0.34, ah = Math.sqrt(Math.max(0, 1 - az * az));
+        let hit = B.World.rayRock(B.map, P.x, P.y, P.z - 0.3, P.aimX * ah, P.aimY * ah, az, range);
         let ent = null;
         for (const e of E.list) {
           if (!e.alive || !e.anchor) continue;
@@ -558,7 +565,7 @@
     const yaw = flip ? Math.PI - MD.quant8(P.yaw) : MD.quant8(P.yaw);
     const top = P.cells[P.cells.length - 1];
     // through the Lossless Shard her helmet is empty
-    const L = B.lensOn, hollow = !!(L && Math.hypot(L.x - R.sx(P.x), L.y - R.sy(P.y, P.z) + 6) < L.r);
+    const L = B.lensOn, lp = L && R.proj(P.x, P.y, P.z - 0.5), hollow = !!(lp && Math.hypot(L.x - lp[0], L.y - lp[1]) < L.r);
     const prims = MD.diver({
       yaw, pitch: P.thrust * 0.25 * (P.boost ? 1.4 : 1), t: B.time, kick: P.kick, lamp: R.env.lamp.on ? P.lampMode : 'off',
       fill: P.cells.length / P.cap, tankCol: top ? STRAIN[top].col : null, growth: P.growth, hollow,

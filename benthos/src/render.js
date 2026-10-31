@@ -66,6 +66,8 @@
   let pending = [];
   R.addLight = function (x, y, z, r, g, b, range, i) { if (pending.length < 40) pending.push({ x, y, z, r, g, b, range, r2: range * range, i: i === undefined ? 1 : i }); };
 
+  // the 3D view takes this frame's lights the same way R.begin does
+  R._swapLights = function () { env.lights = pending; pending = []; };
   R.setCamera = function (x, y, z, zCut, maxView) {
     const sx = x * B.PX, sy = y * B.PY + z * B.PZ;
     cam.x = x; cam.y = y; cam.z = z; cam.ox = Math.floor(sx); cam.oy = Math.floor(sy);
@@ -74,6 +76,8 @@
   // World -> screen (compressed projection).
   R.sx = x => x * B.PX - cam.ox + W / 2;
   R.sy = (y, z) => y * B.PY + z * B.PZ - cam.oy + H / 2 + B.OFF;
+  // World point -> buffer pixel in either view: [x, y], or null if it is behind the 3D camera.
+  R.proj = (x, y, z) => (B.view3d ? B.G3.project(x, y, z) : [R.sx(x), R.sy(y, z)]);
 
   R.begin = function () {
     FR.fill(0); FG.fill(0); FB.fill(0); ZB.fill(1e9); LID.fill(0); EM.fill(0); MD.fill(0); SEC.fill(0);
@@ -129,11 +133,11 @@
         }
       }
     }
-    const nl = colCount[col];
+    const all = B.view3d, nl = all ? E.lights.length : colCount[col];
     if (nl) {
       const LS = E.lights, base = col * MAXCL;
       for (let q = 0; q < nl; q++) {
-        const l = LS[colLights[base + q]];
+        const l = all ? LS[q] : LS[colLights[base + q]];
         const dx = x - l.x, dy = y - l.y, dz = z - l.z, d2 = dx * dx + dy * dy + dz * dz;
         if (d2 >= l.r2) continue;
         const d = Math.sqrt(d2) + 0.001;
@@ -233,6 +237,8 @@
       TEXA.push(al); TEXX.push(tx); TEXY.push(ty);
     }
   })();
+
+  R._tex = { TEXA, TEXX, TEXY, CAU };
 
   // ------------------------------------------------------------------ terrain
   const ALB = B.MAT_ALB;
@@ -520,6 +526,7 @@
   const DIVER_LIN = B.DIVER.map(B.linHex);
   let diverMap = B.diverMap(16);
   R.setFidelity = f => { diverMap = B.diverMap(f); };
+  R._diverColor = di => DIVER_LIN[diverMap[di]];
   function composite(res, ox, oy, oz, o) {
     const { x0, y0, gwid, ghei, scale } = res;
     const lut = o.lut || 0, alpha = o.alpha === undefined ? 1 : o.alpha, door = !!o.door, dead = !!o.dead;

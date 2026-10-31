@@ -6,6 +6,16 @@ You are Mara Ekdahl, the last pilot certified on Halvard Marine's HV-series hard
 
 The full design is in [DESIGN.md](DESIGN.md). The game is a compressed, playable version of that whole arc. It runs 30–45 minutes from the ship's deck to the bottom of the trench, with three endings and a New Game+.
 
+## The 3D view
+
+The game now runs in 3D by default: a third-person camera over Mara's shoulder, with the seabed, creatures and machines as real geometry. It still renders at the low internal resolution through the same depth palettes and dither, so it looks like the rest of the game. The HUD, menus and CRT effect sit on top unchanged.
+
+* **Mouse:** click to capture the mouse, then it looks around and aims the lamp. Esc lets it go. Without it, A/D turn the camera.
+* **Movement:** WASD swims relative to the camera. Space and C still blow and flood the tank to rise and sink.
+* **Touch:** the left thumb swims; drag anywhere else on the right side to look.
+* **Gamepad:** the right stick looks.
+* **Settings:** VIEW switches between 3D and the classic sectioned view. Browsers without WebGL2 get the classic view.
+
 ## Play
 
 **Easiest:** double-click `Benthos.html`. It is one self-contained file with no server and no install.
@@ -134,7 +144,8 @@ DESIGN.md         the concept document
 src/core.js       namespace, math, noise, input, persistence
 src/palette.js    Halvard-48 palette, zone palettes, 32^3 LUTs, Fidelity merges
 src/world.js      heightfield maps: deck, Act I-III, the void
-src/render.js     terrain march, lighting, primitive models, quantise, CRT present
+src/render.js     terrain march, lighting, primitive models, quantise, CRT present (classic view)
+src/gl3d.js       the 3D view: WebGL2 terrain meshes, instanced primitives, lamp cone, palette pass, chase camera
 src/models.js     every model as a list of 3D primitives
 src/audio.js      procedural audio engine, the Ostinato, the waltz
 src/entities.js   entity list, noise events, items, props, cairns, the cage, effects

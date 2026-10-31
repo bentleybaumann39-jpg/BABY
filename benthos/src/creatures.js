@@ -394,7 +394,7 @@
           const lamp = Math.max(E.inLamp(bx, by, bz, 6), E.inLamp((bx + ex) / 2, (by + ey) / 2, (bz + ez) / 2, 6));
           const al = revealed ? 0 : lamp > 0 ? 0.9 : 0.22;
           if (al > 0) R.line(bx, by, bz, ex, ey, ez, 0.35, 0.45, 0.5, true, al);
-          if (revealed) R.overlay(() => { const x1 = R.sx(bx), y1 = R.sy(by, bz), x2 = R.sx(ex), y2 = R.sy(ey, ez), st = Math.ceil(Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1))); for (let s = 0; s <= st; s += 2) R.pset(x1 + (x2 - x1) * s / st, y1 + (y2 - y1) * s / st, B.SONAR); });
+          if (revealed) R.overlay(() => { const a1 = R.proj(bx, by, bz), a2 = R.proj(ex, ey, ez); if (!a1 || !a2) return; const x1 = a1[0], y1 = a1[1], x2 = a2[0], y2 = a2[1], st = Math.ceil(Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1))); for (let s = 0; s <= st; s += 2) R.pset(x1 + (x2 - x1) * s / st, y1 + (y2 - y1) * s / st, B.SONAR); });
         }
         // the pneumatophore
         if (this.pz[0] > z0 && this.pz[0] < z1) R.model(this.px[0], this.py[0], this.pz[0] - 1, [P.e(0, 0, 0, [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [0.9, 0.9, 1.3], c('#f2b8cb'), { m: 1, e: [0.15, 0.06, 0.09] })], {});
@@ -476,7 +476,7 @@
           if (L > 0.02) R.point(x, y, z, 1, 0.9, 0.82, 0.78, false);
           else if (!deep) {
             // hiding in the dither: draw in the dark tone, snapped one pixel off the Bayer grid (the seam is the tell)
-            const sx = Math.round(R.sx(x)), sy = Math.round(R.sy(y, z));
+            const pp = R.proj(x, y, z), sx = pp ? Math.round(pp[0]) : 0, sy = pp ? Math.round(pp[1]) : 1;
             if (((sx + sy + 1) & 1) === 0) R.point(x, y, z, 1, water[0] * 6 + 0.002, water[1] * 6 + 0.004, water[2] * 6 + 0.012, 1);
           }
         }
@@ -575,7 +575,7 @@
       },
       draw() {
         const st = B.Player.state(), L = B.lensOn;
-        if (L && Math.hypot(L.x - R.sx(this.x), L.y - R.sy(this.y, this.z)) < L.r) return; // the lens sees no copy
+        const lp = L && R.proj(this.x, this.y, this.z); if (lp && Math.hypot(L.x - lp[0], L.y - lp[1]) < L.r) return; // the lens sees no copy
         R.model(this.x, this.y, this.z, MD.diver({ yaw: MD.quant8(this.yaw), t: B.time, kick: this.kick, lamp: this.lamp, fill: 0.5, tankCol: [0.35, 0.05, 0.4] }), { scale: st.res, lut: 1, flip: st.flipped && Math.cos(this.yaw) < -0.3 });
         if (this.lamp === 'white') R.addLight(this.x + Math.cos(this.yaw) * 2, this.y + Math.sin(this.yaw) * 2, this.z + 1, 1, 0.9, 0.8, 8, 0.8);
       },
