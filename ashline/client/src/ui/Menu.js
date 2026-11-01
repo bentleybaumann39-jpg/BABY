@@ -21,6 +21,8 @@ export class Menu {
     $('btn-leave-party').onclick = () => app.conn && app.conn.send({ t: 'party.leave' });
     $('btn-fill').onclick = () => app.conn && this.party && app.conn.send({ t: 'party.fill', fill: !this.party.fill });
     document.querySelectorAll('#mode-buttons button').forEach(b => b.onclick = () => app.conn && app.conn.send({ t: 'party.mode', mode: b.dataset.mode }));
+    document.querySelectorAll('#diff-buttons button').forEach(b => b.onclick = () => app.conn && app.conn.send({ t: 'party.diff', d: b.dataset.d }));
+    $('btn-quick').onclick = () => app.conn && this.party && app.conn.send({ t: 'party.quick', quick: !this.party.quick });
     $('btn-play').onclick = () => { if (!app.conn) return; app.audio.init(); app.conn.send({ t: this.party && this.party.queued ? 'unqueue' : 'queue' }); };
     $('results-continue').onclick = () => app.leaveMatch();
     $('pause-resume').onclick = () => { this.hidePause(); app.input.lock(); };
@@ -75,6 +77,10 @@ export class Menu {
     $('party-members').innerHTML = party.members.map(m => `<div class="member ${m.id === party.leader ? 'leader' : ''}"><b>${esc(m.name)}</b><span>Lv ${m.level}</span>${m.inMatch ? '<em>in match</em>' : ''}</div>`).join('') +
       Array.from({ length: Math.max(0, MODES[party.mode].squad - party.members.length) }, () => `<div class="member open"><span>${party.fill ? 'Open slot — filled by players or bots' : 'Open slot — filled by a bot'}</span></div>`).join('');
     document.querySelectorAll('#mode-buttons button').forEach(b => { b.classList.toggle('on', b.dataset.mode === party.mode); b.disabled = !lead || party.queued; });
+    document.querySelectorAll('#diff-buttons button').forEach(b => { b.classList.toggle('on', b.dataset.d === (party.difficulty || 'normal')); b.disabled = !lead || party.queued; });
+    $('diff-buttons').style.display = this.app.conn && this.app.conn.kind === 'local' ? '' : 'none';
+    $('btn-quick').textContent = `Match length: ${party.quick ? 'Quick (~5 min)' : 'Full (~12 min)'}`;
+    $('btn-quick').disabled = !lead || party.queued;
     $('btn-fill').textContent = `Fill squad: ${party.fill ? 'ON' : 'OFF'}`;
     $('btn-fill').disabled = !lead || party.queued || (this.app.conn && this.app.conn.kind === 'local');
     const play = $('btn-play');

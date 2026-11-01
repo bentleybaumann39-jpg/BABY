@@ -5,6 +5,7 @@ import { levelInfo, sanitizeCosmetics, applyMatch } from '../shared/progression.
 import { buildMatch } from '../shared/sim/Setup.js';
 import { MatchHost } from '../shared/net/MatchHost.js';
 
+const qkey = (party) => party.mode + (party.quick ? ':quick' : '');
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const cleanName = (n) => String(n || '').replace(/[^\p{L}\p{N} _\-.]/gu, '').trim().slice(0, 16) || 'Survivor';
 
@@ -15,7 +16,7 @@ export class Lobby {
     this.sessions = new Map();      // id -> session
     this.byToken = new Map();       // token -> session
     this.parties = new Map();       // code -> party
-    this.queues = { solo: null, duo: null, trio: null };
+    this.queues = {};   // key: mode or mode+':quick'
     this.matches = new Set();
     this.nextId = 1;
     this.matchSeed = (Date.now() & 0xffffff) | 1;
@@ -53,6 +54,7 @@ export class Lobby {
       case 'party.leave': this.leaveParty(s); this.createParty(s); break;
       case 'party.mode': this.setMode(s, m.mode); break;
       case 'party.fill': if (s.party && s.party.leader === s.id) { s.party.fill = !!m.fill; this.pushParty(s.party); } break;
+      case 'party.quick': if (s.party && s.party.leader === s.id && !s.party.queued) { s.party.quick = !!m.quick; this.pushParty(s.party); } break;
       case 'queue': this.enqueue(s); break;
       case 'unqueue': this.dequeue(s.party); break;
       case 'cmd': if (s.match) s.match.host.command(s.id, m.c); break;
@@ -109,7 +111,7 @@ export class Lobby {
   createParty(s) {
     let code;
     do { code = Array.from(randomBytes(5), b => CODE_CHARS[b % CODE_CHARS.length]).join(''); } while (this.parties.has(code));
-    const party = { code, leader: s.id, mode: 'solo', fill: true, members: [s], queued: false };
+    const party = { code, leader: s.id, mode: 'solo', fill: true, quick: false, members: [s], queued: false };
     this.parties.set(code, party);
     s.party = party;
     this.pushParty(party);
@@ -149,9 +151,9 @@ export class Lobby {
 
   pushParty(party) {
     if (!party) return;
-    const q = this.queues[party.mode];
+    const q = this.queues[qkey(party)];
     const view = {
-      code: party.code, leader: party.leader, mode: party.mode, fill: party.fill, queued: party.queued,
+      code: party.code, leader: party.leader, mode: party.mode, fill: party.fill, quick: !!party.quick, queued: party.queued,
       countdown: party.queued && q ? Math.max(0, Math.ceil((q.startAt - Date.now()) / 1000)) : 0,
       queueHumans: party.queued && q ? q.parties.reduce((n, p) => n + p.members.length, 0) : 0,
       members: party.members.map(m => ({ id: m.id, name: m.profile.name, level: levelInfo(m.profile.xp).level, cos: m.profile.cos, inMatch: !!(m.match && !m.match.done) })),
@@ -164,9 +166,9 @@ export class Lobby {
     const party = s.party;
     if (!party || party.leader !== s.id || party.queued) return;
     if (party.members.some(m => m.match && !m.match.done)) return this.send(s, { t: 'err', m: 'Wait for everyone to finish their match.' });
-    let q = this.queues[party.mode];
+    let q = this.queues[qkey(party)];
     if (!q) {
-      q = this.queues[party.mode] = { mode: party.mode, parties: [], startAt: Date.now() + this.opts.countdown * 1000 };
+      q = this.queues[qkey(party)] = { key: qkey(party), mode: party.mode, quick: !!party.quick, parties: [], startAt: Date.now() + this.opts.countdown * 1000 };
       q.timer = setInterval(() => this.tickQueue(q), 250);
     }
     q.parties.push(party);
@@ -178,11 +180,11 @@ export class Lobby {
 
   dequeue(party) {
     if (!party || !party.queued) return;
-    const q = this.queues[party.mode];
+    const q = this.queues[qkey(party)];
     party.queued = false;
     if (q) {
       q.parties = q.parties.filter(p => p !== party);
-      if (!q.parties.length) { clearInterval(q.timer); this.queues[party.mode] = null; }
+      if (!q.parties.length) { clearInterval(q.timer); delete this.queues[q.key]; }
       else for (const p of q.parties) this.pushParty(p);
     }
     this.pushParty(party);
@@ -191,7 +193,7 @@ export class Lobby {
   tickQueue(q) {
     if (Date.now() < q.startAt) { if ((Date.now() / 250 | 0) % 4 === 0) for (const p of q.parties) this.pushParty(p); return; }
     clearInterval(q.timer);
-    this.queues[q.mode] = null;
+    delete this.queues[q.key];
     const size = MODES[q.mode].squad;
     // Build squads: whole parties first; parties with Fill on are merged to fill squads.
     const groups = [];
@@ -208,13 +210,13 @@ export class Lobby {
       groups.push(g);
     }
     for (const p of q.parties) p.queued = false;
-    this.startMatch(q.mode, groups);
+    this.startMatch(q.mode, groups, q.quick);
   }
 
-  startMatch(mode, groups) {
+  startMatch(mode, groups, quick = false) {
     const seed = (this.matchSeed = (this.matchSeed * 1103515245 + 12345) >>> 0) || 1;
     const sim = buildMatch({
-      seed, mode, total: this.opts.players, timeScale: this.opts.timeScale,
+      seed, mode, total: this.opts.players, timeScale: this.opts.timeScale * (quick ? 0.42 : 1),
       groups: groups.map(g => g.map(s => ({ id: s.id, name: s.profile.name, cos: s.profile.cos }))),
     });
     sim.start();

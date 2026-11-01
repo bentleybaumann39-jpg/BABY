@@ -101,7 +101,7 @@ const ARMOR_TIER = { 1: [[1, 8], [2, 2], [3, 0.2]], 2: [[1, 5], [2, 4], [3, 0.8]
 
 export function rollLoot(rng, tier) {
   const out = [];
-  const kind = rng.weighted([['weapon', 30], ['ammo', 18], ['helmet', 8], ['vest', 8], ['pack', 6], ['heal', 16], ['throw', 7], ['att', 9], ['none', 18 - tier * 4]]);
+  const kind = rng.weighted([['weapon', 30], ['ammo', 18], ['helmet', 8], ['vest', 8], ['pack', 6], ['heal', 16], ['throw', 10], ['att', 9], ['none', 18 - tier * 4]]);
   switch (kind) {
     case 'weapon': {
       const id = rng.weighted(WEAPON_WEIGHTS[tier]);

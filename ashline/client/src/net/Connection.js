@@ -27,6 +27,8 @@ export class WsTransport {
 }
 
 const PROFILE_KEY = 'ashline.practiceProfile';
+export const DIFFICULTY = { easy: [0.08, 0.4], normal: [0.25, 0.72], hard: [0.6, 1.0] };
+export const QUICK_TIMESCALE = 0.42;
 export function loadLocalProfile() {
   try { const p = JSON.parse(localStorage.getItem(PROFILE_KEY)); if (p && typeof p.xp === 'number') return { ...newProfile(), ...p, stats: { ...newProfile().stats, ...(p.stats || {}) } }; } catch {}
   return newProfile();
@@ -37,7 +39,7 @@ export class LocalServer {
   constructor() {
     this.kind = 'local'; this.handlers = []; this.closeHandlers = []; this.open = true;
     this.profile = loadLocalProfile();
-    this.party = { code: 'LOCAL', leader: 1, mode: 'solo', fill: true, queued: false, countdown: 0, members: [] };
+    this.party = { code: 'LOCAL', leader: 1, mode: 'solo', fill: true, queued: false, countdown: 0, members: [], difficulty: 'normal', quick: false };
     this.host = null; this.timer = null;
     this.debug = typeof window !== 'undefined' && /[?&]debug/.test(location.search);
   }
@@ -65,6 +67,8 @@ export class LocalServer {
       case 'profile': this.emit({ t: 'profile', profile: this.view() }); break;
       case 'party.mode': if (MODES[m.mode]) { this.party.mode = m.mode; this.pushParty(); } break;
       case 'party.fill': this.party.fill = !!m.fill; this.pushParty(); break;
+      case 'party.diff': if (DIFFICULTY[m.d]) { this.party.difficulty = m.d; this.pushParty(); } break;
+      case 'party.quick': this.party.quick = !!m.quick; this.pushParty(); break;
       case 'queue': this.startMatch(); break;
       case 'unqueue': break;
       case 'cmd': if (this.host) this.host.command(1, m.c); break;
@@ -75,7 +79,7 @@ export class LocalServer {
   startMatch() {
     if (this.host) return;
     const seed = (Date.now() & 0x7fffffff) | 1;
-    const sim = buildMatch({ seed, mode: this.party.mode, groups: [[{ id: 1, name: this.profile.name, cos: this.profile.cos }]], total: 30, skill: [0.2, 0.75] });
+    const sim = buildMatch({ seed, mode: this.party.mode, groups: [[{ id: 1, name: this.profile.name, cos: this.profile.cos }]], total: 30, skill: DIFFICULTY[this.party.difficulty], timeScale: this.party.quick ? QUICK_TIMESCALE : 1 });
     sim.start();
     const host = this.host = new MatchHost(sim, { test: this.debug });
     host.attach(1, { send: (o) => this.emit(o), sendBin: (b) => this.emit(b) });

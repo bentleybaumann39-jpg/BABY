@@ -476,7 +476,7 @@ export class Sim {
     p.inv.thr[kind]--; p.invDirty = true;
     const d = viewDir(p.yaw, p.pitch + 0.12);
     const eh = eyeHeight(p.m);
-    const sp = 17;
+    const sp = 20;
     const pr = { id: this.nextProj++, k: kind, owner: p.id, x: p.m.x + d[0] * 0.5, y: p.m.y + eh, z: p.m.z + d[2] * 0.5,
       vx: d[0] * sp + p.m.vx * 0.5, vy: d[1] * sp + 1.5, vz: d[2] * sp + p.m.vz * 0.5, fuse: kind === 'frag' ? 3.6 : 2.2, rest: false };
     this.proj.set(pr.id, pr);
@@ -568,7 +568,7 @@ export class Sim {
         else this.kill(v, a, src, zone === 'head');
       }
     }
-    if (a) a.stats.dmg += dealt;
+    if (a) { a.stats.dmg += dealt; if (a.brain) a.brain.lastHitTarget = this.tick; }
     if (src !== 'zone' && src !== 'bleed') {
       const hit = { e: 'hit', to: [v.id], v: v.id, d: Math.round(dmg), z: zone, b: broke, src };
       if (a) { hit.to.push(a.id); hit.a = a.id; hit.ax = r2(a.m.x); hit.az = r2(a.m.z); }

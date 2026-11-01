@@ -2,7 +2,7 @@
 // bound by the same rules: they only see what line of sight, sound and damage tell them.
 import { DT, TICK_RATE, MODE, BTN, PLANE, MAP_HALF } from '../constants.js';
 import { Rng, clamp, wrapAngle } from '../rng.js';
-import { eyeHeight, bodyHeight } from '../physics/Movement.js';
+import { eyeHeight, bodyHeight, viewDir } from '../physics/Movement.js';
 import { WEAPONS, WEAPON_SCORE, HEALS, ATTACH, canAttach, magSize, ARMOR } from './Items.js';
 import { ACT, invWeight } from './Sim.js';
 
@@ -36,6 +36,7 @@ class BotBrain {
     this.useHold = false;
     this.seq = 0;
     this.jumpCD = 0;
+    this.cover = null; this.coverCD = 0; this.nadeCD = 0; this.throwPlan = null; this.lastHitTarget = -99;
   }
 
   think() {
@@ -124,6 +125,33 @@ class BotBrain {
       this.setGoal(m ? { x: m.m.x, z: m.m.z } : this.zonePoint(), 'crawl');
       return;
     }
+    if (this.coverCD > 0) this.coverCD -= 0.2;
+    if (this.nadeCD > 0) this.nadeCD -= 0.2;
+    if (armed && this.target && !(outside && zone.dmg >= 5)) {
+      const w0 = sim.activeWeapon(p);
+      const reloading = p.act && p.act.k === ACT.reload;
+      const dT = this.lastSeen ? Math.hypot(this.lastSeen.x - p.m.x, this.lastSeen.z - p.m.z) : 99;
+      const hurtNow = now - p.lastHurt < TICK_RATE * 1.2;
+      const needCover = (p.hp < 55 || reloading || (w0 && w0.mag === 0) || (hurtNow && dT > 35 && this.skill > 0.35)) && dT > 8;
+      // enemy just ducked behind cover nearby: cook a frag at the spot
+      const unseen = now - this.seenAt > TICK_RATE * 0.8 && now - this.seenAt < TICK_RATE * 5;
+      if (unseen && !this.throwPlan && this.nadeCD <= 0 && p.inv.thr.frag > 0 && dT > 7 && dT < 30 && !p.act && this.rng.chance(0.35 + this.skill * 0.6)) {
+        this.throwPlan = { x: this.lastSeen.x, z: this.lastSeen.z, since: now };
+        p.inv.thrSel = 'frag'; sim.switchSlot(p, 3);
+        this.nadeCD = 8;
+      }
+      if (this.throwPlan) { this.state = 'throw'; return; }
+      if (needCover && !this.cover && this.coverCD <= 0) {
+        const c = this.findCover();
+        if (c) { this.cover = { ...c, until: now + TICK_RATE * this.rng.range(2.5, 4.5) }; this.setGoal(c, 'cover'); }
+        this.coverCD = 3;
+      }
+      if (this.cover) {
+        if (now > this.cover.until || !this.target.alive) this.cover = null;
+        else { this.state = 'cover'; return; }
+      }
+    }
+    if (this.throwPlan) { this.state = 'throw'; return; }
     if (fighting && !(outside && zone.dmg >= 5)) { this.state = 'fight'; return; }
     if (zoneUrgent) { this.state = 'zone'; if (this.goalKind !== 'zone' || !this.goal) this.setGoal(this.zonePoint(), 'zone'); return; }
     if (mate && (!this.target || now - this.seenAt > TICK_RATE * 2.5 || Math.hypot(mate.m.x - p.m.x, mate.m.z - p.m.z) < 12)) { this.state = 'revive'; this.setGoal({ x: mate.m.x, z: mate.m.z }, 'revive'); this.reviveId = mate.id; return; }
@@ -209,7 +237,25 @@ class BotBrain {
     let moveTo = null, sprint = false;
     const fighting = this.state === 'fight' && this.target && this.target.alive;
 
-    if (fighting) {
+    if (this.state === 'throw' && this.throwPlan) {
+      const tp = this.throwPlan;
+      const dx = tp.x - p.m.x, dz = tp.z - p.m.z;
+      wantYaw = Math.atan2(-dx, -dz);
+      wantPitch = this.throwPitch(Math.hypot(dx, dz), this.sim.world.heightAt(tp.x, tp.z) - (p.m.y + eyeHeight(p.m)));
+      const aimed = Math.abs(wrapAngle(wantYaw - p.yaw)) < 0.06 && Math.abs(wantPitch - p.pitch) < 0.05;
+      if (p.inv.slot === 3 && !p.act && aimed) { inp.buttons |= BTN.FIRE; this.throwPlan = null; this.thinkT = 8; this.afterThrow = sim.tick + 10; }
+      else if (sim.tick - tp.since > TICK_RATE * 3 || p.inv.thr.frag <= 0) { this.throwPlan = null; this.pickWeapon(30, true); }
+    } else if (this.state === 'cover' && this.cover) {
+      moveTo = this.goal ? this.steer() : null;
+      if (!moveTo || this.reached(this.cover, 1.2)) {
+        moveTo = null;
+        inp.buttons |= BTN.CROUCH;
+        const w = sim.activeWeapon(p);
+        if (w && w.mag < magSize(w) && p.inv.ammo[WEAPONS[w.id].ammo] > 0 && !p.act) sim.startReload(p);
+        else if (p.hp < 60 && !p.act) this.doHeal();
+        if (this.lastSeen) wantYaw = Math.atan2(-(this.lastSeen.x - p.m.x), -(this.lastSeen.z - p.m.z));
+      } else sprint = true;
+    } else if (fighting) {
       const t = this.target;
       const th = t.m.y + bodyHeight(t.m) * (t.m.mode === MODE.KNOCKED ? 0.4 : 0.72);
       const dx = t.m.x - p.m.x, dz = t.m.z - p.m.z, dy = th - (p.m.y + eyeHeight(p.m));
@@ -225,8 +271,10 @@ class BotBrain {
       const pref = !def ? 5 : def.cls === 'shotgun' ? 6 : def.cls === 'smg' ? 14 : def.cls === 'pistol' ? 12 : def.cls === 'sniper' || def.cls === 'dmr' ? 70 : 30;
       this.strafeT -= DT;
       if (this.strafeT <= 0) { this.strafe = this.rng.chance(0.5) ? 1 : -1; this.strafeT = this.rng.range(0.5, 1.6); if (d > 40 && this.rng.chance(0.35 * this.skill)) this.crouchT = this.rng.range(1, 2.5); }
-      inp.mx = this.strafe * (d > 90 ? 0.4 : 1);
-      inp.mz = !def ? -1 : d > pref * 1.5 ? 0.8 : d < pref * 0.6 ? -0.6 : 0;
+      // push a knocked or wounded enemy; otherwise keep preferred range and strafe
+      const push = def && (t.m.mode === MODE.KNOCKED || (sim.tick - this.lastHitTarget < TICK_RATE * 3 && p.hp > 70 && this.skill > 0.4));
+      inp.mx = this.strafe * (d > 90 ? 0.4 : push ? 0.5 : 1);
+      inp.mz = !def ? -1 : push ? (d > 4 ? 1 : 0) : d > pref * 1.5 ? 0.8 : d < pref * 0.6 ? -0.6 : 0;
       if (this.crouchT > 0) { this.crouchT -= DT; inp.buttons |= BTN.CROUCH; inp.mx *= 0.5; }
       if (!w) { this.pickWeapon(d); }
       // fire control
@@ -296,6 +344,42 @@ class BotBrain {
     }
     if (this.stuckT > 1 && this.jumpCD <= 0) { inp.buttons |= BTN.JUMP; this.jumpCD = 1; }
     this.jumpCD -= DT;
+  }
+
+  // Nearby walkable spot whose chest height is hidden from the last known enemy position.
+  findCover() {
+    const p = this.p, sim = this.sim, w = sim.world, nav = this.nav;
+    const e = this.target && this.target.alive ? this.target.m : null;
+    if (!e) return null;
+    const ex = e.x, ey = e.y + 1.5, ez = e.z;
+    let best = null, bd = 1e9;
+    for (let ring = 3; ring <= 15; ring += 3) {
+      for (let k = 0; k < 12; k++) {
+        const a = (k / 12) * Math.PI * 2 + ring;
+        const x = p.m.x + Math.cos(a) * ring, z = p.m.z + Math.sin(a) * ring;
+        if (nav && nav.blockedAt(x, z)) continue;
+        const y = w.heightAt(x, z);
+        if (Math.hypot(x - ex, z - ez) < Math.hypot(p.m.x - ex, p.m.z - ez) - 4) continue; // don't run at them
+        if (w.los(ex, ey, ez, x, y + 1.15, z)) continue;
+        const d = ring + Math.hypot(x - ex, z - ez) * 0.02;
+        if (d < bd) { bd = d; best = { x, z }; }
+      }
+      if (best) break;
+    }
+    return best;
+  }
+
+  // Pitch that lands a frag `d` metres away (same launch model as Sim.throwNade).
+  throwPitch(d, dy) {
+    let best = 0.3, be = 1e9;
+    for (let pt = -0.35; pt <= 1.0; pt += 0.025) {
+      const v = viewDir(0, pt + 0.12);
+      let x = 0, y = 0, vx = -v[2] * 20, vy = v[1] * 20 + 1.5;
+      for (let i = 0; i < 120; i++) { vy -= 17 * 0.75 * DT; x += vx * DT; y += vy * DT; if (y < dy && vy < 0) break; }
+      const e = Math.abs(x - d);
+      if (e < be) { be = e; best = pt; }
+    }
+    return best;
   }
 
   doHeal() {
@@ -416,7 +500,7 @@ class BotBrain {
       case 'helmet': case 'vest': { const cur = inv[it.k]; return !cur ? 4 : it.tier > cur.tier ? 2 + it.tier : 0; }
       case 'pack': return it.tier > inv.pack ? 2 : 0;
       case 'heal': return inv.heal[it.id] < (it.id === 'bandage' ? 8 : 3) ? 1.6 : 0;
-      case 'throw': return inv.thr[it.id] < 2 ? 0.6 : 0;
+      case 'throw': return it.id === 'frag' ? (inv.thr.frag < 3 ? 2.2 : 0) : (inv.thr.smoke < 1 ? 0.5 : 0);
       case 'att': return inv.w.some(w => w && canAttach(w.id, it.id) && !w.att[ATTACH[it.id].type]) ? 1.2 : 0;
     }
     return 0;
