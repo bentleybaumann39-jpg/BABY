@@ -68,9 +68,12 @@ npm run build
 | Key | Action |
 |---|---|
 | WASD · Shift · C/Ctrl · Space | Move · sprint · crouch · jump. In the air, Space leaves the plane or opens the chute. |
+| Shift + C · Space at a wall | **Slide** while sprinting · **vault** onto or over anything up to chest height |
+| F | Drive a buggy or ride as its passenger; press F again to get out. While driving: W/S throttle, A/D steer, Space handbrake, Shift boost |
 | Mouse · LMB · RMB | Look · fire · aim down sights (scopes zoom) |
 | R · B | Reload · switch fire mode (auto/semi) |
 | 1 2 3 · 4 / G · wheel | Primary weapons, sidearm · grenades (G swaps frag/smoke) · cycle weapons |
+| ← → ↑ ↓ | Look around without the mouse (handy when mouse capture is blocked) |
 | E | Pick up the item you look at. Hold E to revive a downed teammate or hack an intel terminal. |
 | 5 6 7 · H · X | Bandage · field kit · stim · best heal · cancel action |
 | Tab · M · Z / MMB | Inventory (ground items, attachments, drop) · map · ping |
@@ -94,6 +97,9 @@ npm run build
   | Longreach | bolt-action sniper |
   | Breacher | pump shotgun |
   | Mattock | LMG |
+  | Tern | 3-round burst bullpup rifle |
+  | Wasp | machine pistol (sidearm) |
+  | Magistrate | heavy revolver (sidearm) |
 
   They have recoil, bloom, damage that falls off with range, and head, torso and limb damage zones.
 - **Attachments:** red dot, 2×/4×/8× scopes, extended mag, suppressor, grip.
@@ -102,6 +108,13 @@ npm run build
   - Backpacks that set how much you can carry.
   - Bandages, field kits and stims.
   - Frag and smoke grenades.
+- **Buggies:** 16 of them sit on the roads.
+  - The driver steers; the passenger can shoot from the seat.
+  - They crash, roll over hills and run people over.
+  - Enough bullets make them explode.
+- **Supply drops:** when the 2nd, 4th and 6th ash fronts are marked, a crate parachutes into the next safe zone.
+  - It carries a scoped long gun, level-3 gear and medkits.
+  - It is marked on the map and with red smoke.
 - **The ash:** seven closing fronts. Damage outside rises from 1 to 12 HP per second, and the screen chokes brown.
 - **Squads (duo/trio):**
   - Teammates are knocked down instead of dying, crawl, and can be revived by holding E.
@@ -110,7 +123,8 @@ npm run build
   - Teammates share pings, markers and name tags.
   - After death you spectate.
 - **Intel terminals:** hack one in 8 seconds to reveal the front *after* the next and pulse nearby enemy squads onto your map. The hack is loud.
-- **Bots:** they drop, loot, fight, heal, revive, flee the ash and investigate gunfire. They follow the same rules as players: line of sight, hearing, no wallhacks.
+- **Bots:** they drop, loot, fight, heal, revive, flee the ash and investigate gunfire. They also take cover when hurt or reloading, throw frags at enemies who duck out of sight, and push wounded or downed targets. They follow the same rules as players: line of sight, hearing, no wallhacks. Practice mode offers Easy, Normal or Hard bots.
+- **Match length:** Full (about 12 minutes) or Quick (about 5 minutes), online and in practice.
 - **Progression:**
   - XP for survival, kills, assists, revives, hacks, damage and placement.
   - 50 levels that unlock camo, helmet covers, weapon finishes and titles. Equip them in the **Locker**; other players see them.
@@ -143,10 +157,12 @@ tests/    protocol, sim, net (real server + WebSocket clients), e2e (headless Ch
 | Command | What it checks |
 |---|---|
 | `node tests/protocol.test.mjs` | Wire format and progression maths |
+| `node tests/movement.test.mjs` | Sliding and vaulting |
+| `node tests/vehicle.test.mjs` | Buggies (drive, steer, brake, run-over, destruction) and supply drops |
 | `node tests/sim.test.mjs` | Full 30-bot matches in solo, duo and trio |
 | `node tests/net.test.mjs` | A real server with 3 WebSocket clients |
 | `node tests/e2e.mjs` | Headless Chromium plays the game; screenshots go to `tests/shots/` |
-| `npm test` | Runs the first three |
+| `npm test` | Runs everything except the browser test |
 
 **`sim.test.mjs`** checks that:
 - each match ends with exactly one winner
@@ -166,5 +182,5 @@ tests/    protocol, sim, net (real server + WebSocket clients), e2e (headless Ch
 
 - Weapons are hitscan, so there is no bullet drop.
 - Doorways are open; there are no door objects.
-- There is no prone, no vehicles and no voice chat.
+- There is no prone and no voice chat.
 - Anti-cheat is limited to server authority: the server validates movement, fire rate, ammo and hits.

@@ -150,6 +150,16 @@ export class Renderer {
     this.skyU.time.value = this.time;
     this.sky.position.copy(this.camera.position);
     this.post.u.time.value = this.time;
+    // sun position on screen for the god-ray pass
+    const cam = this.camera;
+    const sp = this._sp || (this._sp = new THREE.Vector3());
+    sp.copy(SUN_DIR).multiplyScalar(1000).add(cam.position).project(cam);
+    const fwd = this._fw || (this._fw = new THREE.Vector3());
+    cam.getWorldDirection(fwd);
+    const facing = fwd.dot(SUN_DIR);
+    this.post.sun.uv.set(sp.x * 0.5 + 0.5, sp.y * 0.5 + 0.5);
+    const onScreen = Math.max(0, 1 - Math.max(0, Math.abs(sp.x) - 1) * 1.5) * Math.max(0, 1 - Math.max(0, Math.abs(sp.y) - 1) * 1.5);
+    this.post.sun.strength = facing > 0 ? Math.min(1, facing * 2.5) * onScreen * (1 - this.post.u.ash.value) : 0;
     this.r.setRenderTarget(null);
     this.post.render(this.scene, this.camera, overlay ? { scene: this.vmScene, camera: this.vmCamera } : null);
   }

@@ -162,6 +162,14 @@ export function buildWeapon(id, finish = 'parkerized', att = null) {
     }
   }
   if (mag) mag.name = 'mag';
+  // small machined details on long guns: top rail, ejection port, charging handle, trigger guard
+  if (['kr5', 'halberd', 'sable', 'mattock', 'tern', 'vespa'].includes(id)) {
+    const railLen = id === 'vespa' ? 0.18 : 0.3;
+    if (!att || !att.optic) for (let k = 0; k < (railLen / 0.025 | 0); k++) part(g, box(0.034, 0.008, 0.012), M.steel, 0, railY - 0.002, railZ0 + 0.06 - k * 0.025);
+    part(g, box(0.004, 0.022, 0.06), M.polymer, 0.028, 0.045, id === 'tern' ? 0.12 : -0.02);
+    part(g, box(0.03, 0.012, 0.02), M.steel, 0.0, railY - 0.01, id === 'tern' ? 0.28 : 0.1);
+    part(g, box(0.008, 0.01, 0.07), M.steel, 0, -0.012, id === 'tern' ? -0.15 : 0.04);
+  }
   // attachments
   let sightY = railY + 0.012, sightZ = railZ0;
   if (att && att.optic) {

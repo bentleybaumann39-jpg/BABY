@@ -42,7 +42,7 @@ function camoMat(id) {
 }
 
 const geo = {};
-function cap(r, l) { const k = `cap${r},${l}`; return geo[k] || (geo[k] = new THREE.CapsuleGeometry(r, l, 4, 8)); }
+function cap(r, l) { const k = `cap${r},${l}`; return geo[k] || (geo[k] = new THREE.CapsuleGeometry(r, l, 6, 12)); }
 function bx(w, h, d) { const k = `bx${w},${h},${d}`; return geo[k] || (geo[k] = new THREE.BoxGeometry(w, h, d)); }
 
 export class Character {
@@ -61,10 +61,19 @@ export class Character {
     this.vest = new THREE.Mesh(bx(0.38, 0.4, 0.27), S.vest[1]); this.vest.position.set(0, 0.32, 0); this.spine.add(this.vest);
     this.pouches = new THREE.Mesh(bx(0.3, 0.1, 0.06), S.vest[1]); this.pouches.position.set(0, 0.2, -0.16); this.spine.add(this.pouches);
     this.pack = new THREE.Mesh(bx(0.32, 0.4, 0.18), S.pack); this.pack.position.set(0, 0.36, 0.22); this.spine.add(this.pack);
+    const ant = new THREE.Mesh(geo.ant || (geo.ant = new THREE.CylinderGeometry(0.006, 0.008, 0.55, 4)), S.boot); ant.position.set(0.12, 0.42, 0.02); this.pack.add(ant);
+    const roll = new THREE.Mesh(geo.roll || (geo.roll = new THREE.CylinderGeometry(0.07, 0.07, 0.34, 8)), S.pack); roll.rotation.z = Math.PI / 2; roll.position.set(0, 0.24, 0.0); this.pack.add(roll);
+    for (let i = -1; i <= 1; i++) { const m = new THREE.Mesh(bx(0.075, 0.12, 0.05), S.vest[2]); m.position.set(i * 0.09, 0.23, -0.16); this.spine.add(m); m.userData.pouch = true; }
+    const strapG = bx(0.05, 0.42, 0.3);
+    for (const sx of [-1, 1]) { const st = new THREE.Mesh(strapG, S.boot); st.position.set(sx * 0.13, 0.42, 0.0); this.spine.add(st); }
+    const belt = new THREE.Mesh(bx(0.35, 0.07, 0.23), S.boot); belt.position.set(0, 0.06, 0); this.hips.add(belt);
+    const holster = new THREE.Mesh(bx(0.06, 0.16, 0.1), S.boot); holster.position.set(0.19, -0.05, 0.02); this.hips.add(holster);
     this.neck = new THREE.Group(); this.neck.position.y = 0.6; this.spine.add(this.neck);
     const head = new THREE.Mesh(geo.head || (geo.head = new THREE.SphereGeometry(0.115, 14, 10)), S.skin); head.scale.set(0.9, 1.1, 1); head.position.y = 0.12; this.neck.add(head);
     const balaclava = new THREE.Mesh(geo.bala || (geo.bala = new THREE.SphereGeometry(0.118, 12, 8, 0, Math.PI * 2, Math.PI * 0.55, Math.PI * 0.45)), camo); balaclava.position.y = 0.12; this.neck.add(balaclava);
-    this.helmet = new THREE.Mesh(geo.helm || (geo.helm = new THREE.SphereGeometry(0.145, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.55)), S.helmet[1]); this.helmet.position.set(0, 0.15, 0.01); this.neck.add(this.helmet);
+    this.helmet = new THREE.Mesh(geo.helm || (geo.helm = new THREE.SphereGeometry(0.145, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.55)), S.helmet[1]); this.helmet.position.set(0, 0.15, 0.01); this.neck.add(this.helmet);
+    const gog = new THREE.Mesh(bx(0.17, 0.045, 0.05), new THREE.MeshStandardMaterial({ color: 0x0b0c0d, roughness: 0.15, metalness: 0.6 })); gog.position.set(0, 0.035, -0.115); gog.rotation.x = -0.35; this.helmet.add(gog);
+    const strap = new THREE.Mesh(bx(0.3, 0.02, 0.02), S.boot); strap.position.set(0, -0.06, 0.0); this.helmet.add(strap);
     const cover = S.covers[cos.helmet];
     this.cover = cover ? new THREE.Mesh(geo.helm, cover) : null;
     if (this.cover) { this.cover.scale.setScalar(1.04); this.helmet.add(this.cover); }
@@ -84,6 +93,7 @@ export class Character {
       const kn = new THREE.Group(); kn.position.y = -0.44; hip.add(kn);
       const sh = new THREE.Mesh(cap(0.065, 0.3), camo); sh.position.y = -0.2; kn.add(sh);
       const boot = new THREE.Mesh(bx(0.1, 0.1, 0.24), S.boot); boot.position.set(0, -0.42, -0.05); kn.add(boot);
+      const pad = new THREE.Mesh(bx(0.12, 0.13, 0.05), S.boot); pad.position.set(0, -0.05, -0.07); kn.add(pad);
       return { hip, kn };
     };
     this.legR = leg(1); this.legL = leg(-1);

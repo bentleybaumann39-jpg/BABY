@@ -314,14 +314,32 @@ export function buildVegetation(map, tex, quality) {
 
   // pine: trunk + stacked displaced cones
   const pineTrunk = new THREE.CylinderGeometry(0.09, 0.26, 9.5, 7); pineTrunk.translate(0, 4.75, 0);
+  // dark inner core for volume + drooping needle-branch cards in whorls
   const cones = [];
-  for (let k = 0; k < 5; k++) {
-    const r = 2.3 - k * 0.38, hh = 3.2 - k * 0.3;
-    const c = displace(new THREE.ConeGeometry(r, hh, 9, 3), 0.18, 11 + k);
-    c.translate(0, 3.2 + k * 1.45 + hh / 2, 0);
-    cones.push([c, [0.11, 0.15 + k * 0.006, 0.09, 10]]);
+  const core = displace(new THREE.ConeGeometry(1.1, 8.2, 7, 3), 0.15, 11);
+  core.translate(0, 3.0 + 4.1, 0);
+  cones.push([core, [0.07, 0.09, 0.06, 10]]);
+  const pineCore = mergeGeos(cones);
+  const branches = [];
+  const whorls = 9;
+  for (let k = 0; k < whorls; k++) {
+    const h = 2.6 + k * 0.82, len = 2.5 * (1 - k / (whorls + 1.5)) + 0.35;
+    const n = 6 - Math.floor(k / 4);
+    for (let j = 0; j < n; j++) {
+      const pl = new THREE.PlaneGeometry(len, 0.95 + len * 0.18, 2, 1);
+      pl.translate(len / 2, 0, 0);
+      pl.rotateX(Math.PI / 2 * 0.82);                       // lie mostly flat
+      pl.rotateZ(-0.38 - k * 0.012);                       // droop outward
+      pl.rotateY(j / n * Math.PI * 2 + k * 0.7);
+      pl.translate(0, h, 0);
+      branches.push([pl, [0.82 + 0.04 * (k % 3), 0.95, 0.8]]);
+    }
   }
-  const pineLeaves = mergeGeos(cones);
+  const tip = new THREE.PlaneGeometry(0.9, 1.6); tip.translate(0, 0.8, 0); tip.translate(0, 2.6 + whorls * 0.82 - 0.2, 0);
+  const tip2 = tip.clone(); tip2.rotateY(Math.PI / 2);
+  branches.push([tip, [0.9, 1, 0.85]], [tip2, [0.9, 1, 0.85]]);
+  const pineLeaves = mergeGeos(branches);
+  const needleMat = windMaterial(new THREE.MeshStandardMaterial({ map: needleTexture(), alphaTest: 0.45, side: THREE.DoubleSide, vertexColors: true, roughness: 0.95 }), 0.01, wind);
   // birch: white trunk + blobby canopy
   const birchTrunk = new THREE.CylinderGeometry(0.08, 0.17, 8, 7); birchTrunk.translate(0, 4, 0);
   const blobs = [];
@@ -363,7 +381,8 @@ export function buildVegetation(map, tex, quality) {
   };
   const sh = quality.treeShadows;
   inst(pineTrunk, barkMat, byType[0], false, sh);
-  inst(pineLeaves, leafMat, byType[0], true, sh);
+  inst(pineCore, leafMat, byType[0], true, false);
+  inst(pineLeaves, needleMat, byType[0], true, sh);
   inst(birchTrunk, birchBark, byType[1], false, sh);
   inst(birchLeaves, birchLeafMat, byType[1], true, sh);
   inst(deadGeo, deadMat, byType[2], false, sh);
@@ -485,5 +504,33 @@ function leafTexture() {
   for (let i = 0; i < 9; i++) { g.beginPath(); g.moveTo(128, 250); g.quadraticCurveTo(128 + (Math.random() - 0.5) * 80, 180, 128 + (Math.random() - 0.5) * 200, 40 + Math.random() * 100); g.stroke(); }
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function needleTexture() {
+  const W = 256, H = 128;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, W, H);
+  // central twig with dense needle tufts along it, tapering to the tip
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 0; i < 700; i++) {
+      const t = Math.random();
+      const x = 6 + t * (W - 14);
+      const spread = (1 - t * 0.75) * (H * 0.42);
+      const y = H / 2 + (Math.random() - 0.5) * 2 * spread * Math.random();
+      const len = 7 + Math.random() * 9 * (1 - t * 0.5);
+      const a = (y < H / 2 ? -1 : 1) * (0.5 + Math.random() * 0.7) + (Math.random() - 0.5) * 0.4;
+      const tone = Math.random();
+      g.strokeStyle = pass === 0 ? `rgb(${18 + tone * 14},${30 + tone * 20},${18 + tone * 10})` : `rgb(${40 + tone * 30},${62 + tone * 34},${32 + tone * 16})`;
+      g.lineWidth = 1.4;
+      g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len); g.stroke();
+    }
+  }
+  g.strokeStyle = 'rgb(52,40,30)'; g.lineWidth = 3;
+  g.beginPath(); g.moveTo(0, H / 2); g.lineTo(W - 10, H / 2); g.stroke();
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
   return t;
 }

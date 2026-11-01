@@ -25,12 +25,38 @@ void main() {
   gl_FragColor = vec4( s, 1.0 );
 }`;
 
+const SHAFT_MASK_FRAG = /* glsl */`
+uniform sampler2D tSrc; uniform vec2 sunUV; uniform float aspect; varying vec2 vUv;
+void main() {
+  vec3 c = texture2D( tSrc, vUv ).rgb;
+  float l = dot( c, vec3( 0.2126, 0.7152, 0.0722 ) );
+  vec2 d = ( vUv - sunUV ) * vec2( aspect, 1.0 );
+  float near = smoothstep( 0.75, 0.0, length( d ) );
+  gl_FragColor = vec4( c * smoothstep( 0.75, 1.7, l ) * near, 1.0 );
+}`;
+
+const SHAFT_FRAG = /* glsl */`
+uniform sampler2D tSrc; uniform vec2 sunUV; varying vec2 vUv;
+void main() {
+  vec2 delta = ( vUv - sunUV ) / 52.0 * 0.95;
+  vec2 uv = vUv;
+  float w = 1.0;
+  vec3 acc = vec3( 0.0 );
+  for ( int i = 0; i < 52; i++ ) {
+    uv -= delta;
+    acc += texture2D( tSrc, uv ).rgb * w;
+    w *= 0.965;
+  }
+  gl_FragColor = vec4( acc / 22.0, 1.0 );
+}`;
+
 const FINAL_FRAG = /* glsl */`
 uniform sampler2D tScene; uniform sampler2D tBloom; uniform sampler2D tOverlay;
 uniform vec2 res; uniform float time; uniform float exposure; uniform float grain; uniform float vignette;
 uniform float chroma; uniform float sat; uniform float bloomStr; uniform float fade; uniform vec3 fadeColor;
 uniform float brightness; uniform float distort; uniform vec3 tint; uniform float pulse; uniform float useBloom;
 uniform float overlayOn; uniform float shake; uniform float redden; uniform float scan; uniform float ash; uniform float dmg; uniform float grade;
+uniform sampler2D tShafts; uniform float shaftStr;
 varying vec2 vUv;
 
 vec3 aces( vec3 x ) { const float a = 2.51, b = 0.03, c = 2.43, d = 0.59, e = 0.14; return clamp( ( x * ( a * x + b ) ) / ( x * ( c * x + d ) + e ), 0.0, 1.0 ); }
@@ -49,7 +75,7 @@ void main() {
   col.r = texture2D( tScene, uv + off ).r;
   col.g = texture2D( tScene, uv ).g;
   col.b = texture2D( tScene, uv - off ).b;
-  if ( useBloom > 0.5 ) col += texture2D( tBloom, uv ).rgb * bloomStr;
+  if ( useBloom > 0.5 ) { col += texture2D( tBloom, uv ).rgb * bloomStr; col += texture2D( tShafts, uv ).rgb * shaftStr * vec3( 1.0, 0.86, 0.66 ); }
   col *= exposure;
   col = aces( col );
   float l = dot( col, vec3( 0.2126, 0.7152, 0.0722 ) );
@@ -101,10 +127,13 @@ export class PostFX {
         fade: { value: 0 }, fadeColor: { value: new THREE.Color(0, 0, 0) }, brightness: { value: 1.0 },
         distort: { value: 0.0 }, tint: { value: new THREE.Color(1.0, 1.0, 1.0) }, pulse: { value: 0 },
         useBloom: { value: 1 }, overlayOn: { value: 0 }, shake: { value: 0 }, redden: { value: 0 }, scan: { value: 0 },
-        ash: { value: 0 }, dmg: { value: 0 }, grade: { value: 1 },
+        ash: { value: 0 }, dmg: { value: 0 }, grade: { value: 1 }, tShafts: { value: null }, shaftStr: { value: 0 },
       },
     });
     this.u = this.finalMat.uniforms;
+    this.maskMat = new THREE.ShaderMaterial({ vertexShader: FS_VERT, fragmentShader: SHAFT_MASK_FRAG, uniforms: { tSrc: { value: null }, sunUV: { value: new THREE.Vector2(0.5, 0.5) }, aspect: { value: 1 } }, depthTest: false, depthWrite: false });
+    this.shaftMat = new THREE.ShaderMaterial({ vertexShader: FS_VERT, fragmentShader: SHAFT_FRAG, uniforms: { tSrc: { value: null }, sunUV: { value: new THREE.Vector2(0.5, 0.5) } }, depthTest: false, depthWrite: false });
+    this.sun = { uv: new THREE.Vector2(0.5, 0.5), strength: 0 };
     this.rt = null;
     this.resize(1, 1);
   }
@@ -121,12 +150,14 @@ export class PostFX {
     const bw = Math.max(2, W >> 2), bh = Math.max(2, H >> 2);
     this.bA = new THREE.WebGLRenderTarget(bw, bh, { type: THREE.HalfFloatType, depthBuffer: false });
     this.bB = new THREE.WebGLRenderTarget(bw, bh, { type: THREE.HalfFloatType, depthBuffer: false });
+    this.sA = new THREE.WebGLRenderTarget(bw, bh, { type: THREE.HalfFloatType, depthBuffer: false });
+    this.sB = new THREE.WebGLRenderTarget(bw, bh, { type: THREE.HalfFloatType, depthBuffer: false });
     this.u.res.value.set(W, H);
     this.bw = bw; this.bh = bh;
   }
 
   dispose() {
-    for (const t of [this.rt, this.bA, this.bB]) if (t) t.dispose();
+    for (const t of [this.rt, this.bA, this.bB, this.sA, this.sB]) if (t) t.dispose();
   }
 
   pass(mat, target) {
@@ -159,7 +190,19 @@ export class PostFX {
         this.pass(this.blurMat, this.bA);
       }
       this.u.tBloom.value = this.bA.texture;
-    }
+      // god rays: mask bright sky around the sun, then radial blur toward it
+      if (this.sun.strength > 0.01) {
+        this.maskMat.uniforms.tSrc.value = this.rt.texture;
+        this.maskMat.uniforms.sunUV.value.copy(this.sun.uv);
+        this.maskMat.uniforms.aspect.value = this.bw / this.bh;
+        this.pass(this.maskMat, this.sA);
+        this.shaftMat.uniforms.tSrc.value = this.sA.texture;
+        this.shaftMat.uniforms.sunUV.value.copy(this.sun.uv);
+        this.pass(this.shaftMat, this.sB);
+        this.u.tShafts.value = this.sB.texture;
+      }
+      this.u.shaftStr.value = this.sun.strength * 0.55;
+    } else this.u.shaftStr.value = 0;
     this.u.tScene.value = this.rt.texture;
     this.u.brightness.value = this.settings.brightness;
     this.pass(this.finalMat, null);
