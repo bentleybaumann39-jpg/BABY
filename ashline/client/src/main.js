@@ -57,6 +57,7 @@ class App {
     this.menu = new Menu(this);
     this.setupPreview();
     this.input.onLock = (locked) => { if (!locked && this.match && !this.hud.inventoryOpen && !this.hud.mapOpen && !this.leaving && !this.resultsShown) this.menu.showPause(); };
+    this.input.onFallback = () => { if (this.match) this.hud.notify('Mouse capture is not available here: move the mouse (or use the arrow keys) to look. Esc pauses.', 6); };
     window.addEventListener('pointerdown', () => this.audio.init(), { once: true });
     window.addEventListener('keydown', () => this.audio.init(), { once: true });
     // Compile shaders once with the menu view.
@@ -126,7 +127,8 @@ class App {
     c.on((m) => this.onMessage(m));
     c.onClose(() => { if (this.conn === c) { this.menu.setError('Disconnected from server'); this.endMatchView(); this.conn = null; this.profile = null; this.menu.renderConn(); this.menu.renderProfile(); } });
     const name = this.settings.name || '';
-    const token = c.kind === 'ws' ? localStorage.getItem('ashline.token') : null;
+    let token = null;
+    try { token = c.kind === 'ws' ? localStorage.getItem('ashline.token') : null; } catch {}
     c.send({ t: 'hello', v: PROTOCOL_VERSION, token, name, cos: this.offlineCos() });
     this.menu.renderConn();
     clearInterval(this.pingTimer);
@@ -151,7 +153,7 @@ class App {
     switch (m.t) {
       case 'welcome':
         this.myId = m.id; this.profile = m.profile; this.testMode = m.test;
-        if (this.conn.kind === 'ws') localStorage.setItem('ashline.token', m.token);
+        if (this.conn.kind === 'ws') try { localStorage.setItem('ashline.token', m.token); } catch {}
         this.saveOfflineCos(m.profile.cos);
         this.menu.renderProfile(); this.menu.renderConn(); this.refreshPreview();
         if (this.menu.tab !== 'play') this.menu.show(this.menu.tab);

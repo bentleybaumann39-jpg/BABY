@@ -295,6 +295,13 @@ export class MatchView {
       this.pitch -= input.mouse.dy * k * (S.invertY ? -1 : 1);
       this.pitch = clamp(this.pitch, -1.5, 1.5);
     }
+    if (!blocking) {
+      const turn = 2.2 * dt * (this.adsT > 0.5 ? 0.45 : 1);
+      if (input.down('ArrowLeft')) this.yaw += turn; if (input.down('ArrowRight')) this.yaw -= turn;
+      if (input.down('ArrowUp')) this.pitch = clamp(this.pitch + turn * 0.7, -1.5, 1.5);
+      if (input.down('ArrowDown')) this.pitch = clamp(this.pitch - turn * 0.7, -1.5, 1.5);
+    }
+    if (input.fallback && input.hit('Escape') && !ui.inventoryOpen && !ui.mapOpen) { if (ui.menuOpen) app.menu.hidePause(); else app.menu.showPause(); }
     this.handleKeys(input, blocking);
     // fixed-step input + prediction
     this.acc += Math.min(dt, 0.25);

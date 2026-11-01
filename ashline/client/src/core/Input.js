@@ -9,6 +9,7 @@ export class Input {
     this.locked = false;
     this.enabled = false;
     this.forced = false;          // automated tests: behave as if the pointer is locked
+    this.fallback = false;        // pointer lock refused (e.g. sandboxed frame): look with the free cursor
     this.onKey = null;            // (code, down) for UI hooks
     window.addEventListener('keydown', (e) => {
       if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
@@ -28,13 +29,26 @@ export class Input {
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('mousemove', (e) => { if (this.locked) { this.mouse.dx += e.movementX; this.mouse.dy += e.movementY; } });
     window.addEventListener('wheel', (e) => { if (this.locked) this.mouse.wheel += Math.sign(e.deltaY); }, { passive: true });
+    document.addEventListener('pointerlockerror', () => this.useFallback());
     document.addEventListener('pointerlockchange', () => {
-      this.locked = this.forced || document.pointerLockElement === canvas;
+      this.locked = this.forced || this.fallback || document.pointerLockElement === canvas;
       if (!this.locked) { this.mouse.b = 0; }
       if (this.onLock) this.onLock(this.locked);
     });
   }
-  lock() { if (this.forced) { this.locked = true; return; } if (this.canvas.requestPointerLock) { const p = this.canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } }
+  lock() {
+    if (this.forced || this.fallback) { this.locked = true; return; }
+    try {
+      if (!this.canvas.requestPointerLock) { this.useFallback(); return; }
+      const p = this.canvas.requestPointerLock();
+      if (p && p.catch) p.catch(() => this.useFallback());
+    } catch { this.useFallback(); }
+  }
+  useFallback() {
+    if (this.fallback) return;
+    this.fallback = true; this.locked = true;
+    if (this.onFallback) this.onFallback();
+  }
   unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
   down(code) { return this.keys.has(code); }
   hit(code) { return this.pressed.has(code); }
