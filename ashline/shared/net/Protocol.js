@@ -70,7 +70,7 @@ const angU16 = a => Math.round((((a % TAU) + TAU) % TAU) / TAU * 65535);
 const u16Ang = u => u / 65535 * TAU;
 
 export function encodeSnapshot(s) {
-  const w = new Writer(256 + s.players.length * 28 + s.proj.length * 15);
+  const w = new Writer(256 + s.players.length * 28 + s.proj.length * 15 + (s.veh ? s.veh.length * 30 : 0));
   w.u8(MSG.SNAP);
   w.u32(s.tick); w.u32(s.ack);
   if (s.self) {
@@ -94,6 +94,9 @@ export function encodeSnapshot(s) {
   }
   w.u8(s.proj.length);
   for (const p of s.proj) { w.u16(p.id); w.u8(p.k); w.f32(p.x); w.f32(p.y); w.f32(p.z); }
+  const veh = s.veh || [];
+  w.u8(veh.length);
+  for (const v of veh) { w.u16(v.id); w.f32(v.x); w.f32(v.y); w.f32(v.z); w.u16(angU16(v.yaw)); w.i16(Math.round(clamp(v.pitch, -1.5, 1.5) * 10000)); w.i16(Math.round(clamp(v.roll, -1.5, 1.5) * 10000)); w.i16(Math.round(clamp(v.speed, -300, 300) * 100)); w.u8(v.hp); w.u16(v.d < 0 ? 0xffff : v.d); w.u16(v.s < 0 ? 0xffff : v.s); }
   return w.done();
 }
 
@@ -120,6 +123,9 @@ export function decodeSnapshot(buf) {
   const np = r.u8();
   s.proj = new Array(np);
   for (let i = 0; i < np; i++) s.proj[i] = { id: r.u16(), k: r.u8(), x: r.f32(), y: r.f32(), z: r.f32() };
+  const nv = r.u8();
+  s.veh = new Array(nv);
+  for (let i = 0; i < nv; i++) { const v = { id: r.u16(), x: r.f32(), y: r.f32(), z: r.f32(), yaw: u16Ang(r.u16()), pitch: r.i16() / 10000, roll: r.i16() / 10000, speed: r.i16() / 100, hp: r.u8() }; const d = r.u16(), ss = r.u16(); v.d = d === 0xffff ? -1 : d; v.s = ss === 0xffff ? -1 : ss; s.veh[i] = v; }
   return s;
 }
 

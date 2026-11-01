@@ -9,7 +9,8 @@ import { hash3, clamp, wrapAngle } from '../../../shared/rng.js';
 import { MAT_SURFACE } from '../../../shared/map/Buildings.js';
 import { Character } from '../entity/Character.js';
 import { Viewmodel } from '../entity/Viewmodel.js';
-import { ItemField, AshWall, buildPlane, buildTerminal } from '../render/Dynamic.js';
+import { ItemField, AshWall, buildPlane, buildTerminal, buildBuggy, buildSupplyCrate } from '../render/Dynamic.js';
+import { ENTER_RANGE, BUGGY } from '../../../shared/sim/Vehicles.js';
 
 const D2R = Math.PI / 180;
 const ACT = { none: 0, reload: 1, heal: 2, equip: 3, revive: 4, hack: 5, revived: 6 };
@@ -29,6 +30,9 @@ export class MatchView {
     this.fx = app.effects;
     for (const c of init.crates) this.fx.crate(c);
     for (const s of init.smokes) this.fx.smoke(s.id, s.x, s.y, s.z, s.left);
+    this.vehicles = new Map();
+    this.drops = new Map();
+    for (const d of init.airdrops || []) this.addDrop(d);
     this.terminals = init.terminals.map(t => { const m = buildTerminal(); m.position.set(t.x, t.y, t.z); renderer.scene.add(m); return { ...t, m }; });
     this.ash = new AshWall(renderer.scene);
     this.plane = buildPlane(); renderer.scene.add(this.plane);
@@ -74,6 +78,8 @@ export class MatchView {
   dispose() {
     const s = this.R.scene;
     s.remove(this.items.group, this.ash.mesh, this.plane);
+    for (const v of this.vehicles.values()) s.remove(v.mesh);
+    for (const d of this.drops.values()) s.remove(d.mesh);
     for (const t of this.terminals) s.remove(t.m);
     for (const r of this.remotes.values()) r.char.dispose();
     if (this.selfCharObj) this.selfCharObj.dispose();
@@ -127,6 +133,16 @@ export class MatchView {
     }
     for (const [id, r] of this.remotes) if (!seen.has(id) && now - r.last > 400 && !(r.deadAt && now - r.deadAt < 9000)) { r.char.dispose(); this.remotes.delete(id); }
     this.fx.setNades(s.proj);
+    const vseen = new Set();
+    for (const v of s.veh || []) {
+      vseen.add(v.id);
+      let e = this.vehicles.get(v.id);
+      if (!e) { e = { id: v.id, buf: [], mesh: buildBuggy(this.app.tex, v.id), cur: null, last: now }; this.R.scene.add(e.mesh); this.vehicles.set(v.id, e); }
+      e.buf.push({ tick: s.tick, ...v });
+      if (e.buf.length > 40) e.buf.splice(0, e.buf.length - 40);
+      e.last = now;
+    }
+    for (const [id, e] of this.vehicles) if (!vseen.has(id) && now - e.last > 500) { this.R.scene.remove(e.mesh); this.vehicles.delete(id); }
     if (!s.self) return;
     const m = s.self;
     const wasAlive = this.status.alive;
@@ -251,6 +267,12 @@ export class MatchView {
       case 'got': if (e.to === me) { A.play('pickup', 0.6); this.hud.toast(`+ ${itemName(e.it)}`); } break;
       case 'heal': if (e.p === me) A.play('bandage', 0.6); break;
       case 'dry': if (e.p === me) A.play('dry', 0.8); break;
+      case 'enter': { if (e.p === me) { this.myVehicle = e.v; this.mySeat = e.seat; const ve = this.vehicles.get(e.v); if (ve && ve.cur) this.yaw = ve.cur.yaw; this.hud.notify(e.seat === 0 ? 'Driving: W/S throttle, A/D steer, Space handbrake, Shift boost, F to exit' : 'Riding shotgun: you can shoot from the seat. F to exit', 4); } const ve = this.vehicles.get(e.v); if (ve && ve.cur) A.at('door', ve.cur.x, ve.cur.y + 1, ve.cur.z, { max: 40 }); break; }
+      case 'exit': if (e.p === me) { this.myVehicle = 0; } break;
+      case 'crash': { const ve = this.vehicles.get(e.v); if (ve && ve.cur) { A.at('crash', ve.cur.x, ve.cur.y + 0.8, ve.cur.z, { gain: Math.min(1.5, e.s / 12), max: 150 }); if (this.myVehicle === e.v) this.trauma = Math.min(1, this.trauma + e.s / 25); } break; }
+      case 'vboom': { this.fx.explosion(e.x, e.y + 0.6, e.z); this.fx.smoke(-e.v, e.x, e.y, e.z, 14, [0.12, 0.11, 0.1]); A.at('boom', e.x, e.y, e.z, { gain: 1.8, ref: 12, max: 1200, delay: true, verb: 0.5 }); const d = Math.hypot(e.x - this.camPos.x, e.z - this.camPos.z); this.trauma = Math.min(1, this.trauma + Math.max(0, 1 - d / 35)); break; }
+      case 'airdrop': this.addDrop({ id: e.id, x: e.x, z: e.z, g: e.g, y0: e.y0, t0: e.t0, sp: e.sp, landed: false }); this.hud.notify('Supply drop incoming: rare loot, marked on your map', 5); A.play('horn', 0.25); break;
+      case 'droplanded': { const d = this.drops.get(e.id); if (d) { d.landed = true; this.fx.smoke(10000 + e.id, e.x, e.y, e.z, 90, [0.85, 0.18, 0.12]); } break; }
       case 'phase': if (e.phase === 'live') this.hud.notify('The ash front has formed. Watch the map.', 4); break;
     }
   }
@@ -344,6 +366,7 @@ export class MatchView {
     if (input.hit('KeyX')) this.cmd({ c: 'cancel' });
     if (input.hit('KeyE') && this.lookTarget) this.cmd({ c: 'pickup', id: this.lookTarget.id });
     if (input.hit('KeyZ') || input.btnHit(1)) this.ping();
+    if (input.hit('KeyF')) { if (this.pred.mode === MODE.VEHICLE) this.cmd({ c: 'exit' }); else { const v = this.nearVehicle(); if (v) this.cmd({ c: 'enter', id: v.id }); } }
   }
 
   switchSlot(s) {
@@ -437,7 +460,8 @@ export class MatchView {
     f.cd -= DT; f.bloom = Math.max(0, f.bloom - DT * 3.5);
     if (this.localAct && performance.now() > this.localAct.until) this.localAct = null;
     const busy = this.localAct || st.act === ACT.reload || st.act === ACT.equip || st.act === ACT.revive || st.act === ACT.hack;
-    if (this.pred.mode !== MODE.GROUND || !this.inv || !st.alive) { if (f.cd < 0) f.cd = 0; return; }
+    const passenger = this.pred.mode === MODE.VEHICLE && this.mySeat === 1;
+    if ((this.pred.mode !== MODE.GROUND && !passenger) || !this.inv || !st.alive) { if (f.cd < 0) f.cd = 0; return; }
     if (st.slot === 3) {
       if ((pressed & BTN.FIRE) && !busy && this.inv.thr.frag + this.inv.thr.smoke > 0) { this.vm.throwAnim(); this.app.audio.play('throw', 0.6); f.cd = 0.8; }
       if (f.cd < 0) f.cd = 0;
@@ -549,6 +573,10 @@ export class MatchView {
       const visible = (s.mode !== MODE.DEAD || r.deadAt) && s.mode !== MODE.PLANE && s.mode !== MODE.WAITING && !(this.dead && this.status.spec === r.id && this.specFirst);
       ch.root.visible = visible;
       if (!visible) continue;
+      if (s.mode === MODE.VEHICLE) {
+        const ve = this.vehicleOf(r.id);
+        if (ve && ve.cur) { const seat = BUGGY.seats[ve.cur.d === r.id ? 0 : 1], vy = ve.cur.yaw, sy = Math.sin(vy), cy = Math.cos(vy); s = { ...s, yaw: vy, x: ve.cur.x + cy * seat.x + sy * seat.z, z: ve.cur.z - sy * seat.x + cy * seat.z, y: ve.cur.y + seat.y, vpitch: ve.cur.pitch, vroll: ve.cur.roll, driver: ve.cur.d === r.id }; }
+      }
       ch.setGear(s.gear);
       ch.setWeapon(s.weapon);
       const d = Math.hypot(s.x - cam.x, s.z - cam.z);
@@ -594,6 +622,23 @@ export class MatchView {
       cam.lookAt(x, y + (mode === MODE.CHUTE ? 2.5 : 0.8), z);
       this.R.followShadow(x, this.world.heightAt(x, z), z);
       this.selfChar(x, y, z, mode, dt);
+    } else if (mode === MODE.VEHICLE && this.mySeat === 0) {
+      const ve = this.vehicles.get(this.myVehicle);
+      const c = ve && ve.cur ? ve.cur : { x, y, z, yaw: this.yaw };
+      const back = viewDir(this.yaw, Math.min(this.pitch, 0.4) * 0.7 - 0.22);
+      const want = new THREE.Vector3(c.x - back[0] * 7.5, c.y + 2.6 - back[1] * 7.5, c.z - back[2] * 7.5);
+      want.y = Math.max(want.y, this.world.heightAt(want.x, want.z) + 0.6);
+      cam.position.lerp(want, Math.min(1, dt * 10));
+      cam.lookAt(c.x, c.y + 1.4, c.z);
+      this.R.followShadow(c.x, c.y, c.z);
+      this.selfChar(x, y, z, mode, dt);
+    } else if (mode === MODE.VEHICLE) {
+      fp = true;
+      const sb = this.sample(this.selfBuf, renderTick) || p;
+      cam.position.set(sb.x, sb.y + eyeHeight({ mode: MODE.VEHICLE }), sb.z);
+      cam.rotation.set(this.pitch + sy, this.yaw + sx, 0);
+      this.R.followShadow(sb.x, sb.y, sb.z);
+      if (this.selfCharObj) this.selfCharObj.root.visible = false;
     } else if (mode === MODE.DEAD) {
       const t = this.status.spec >= 0 ? this.remotes.get(this.status.spec) : null;
       if (t && t.cur) {
@@ -657,11 +702,74 @@ export class MatchView {
     }
   }
 
+  nearVehicle() {
+    const p = this.pred;
+    if (p.mode !== MODE.GROUND) return null;
+    let best = null, bd = ENTER_RANGE;
+    for (const v of this.vehicles.values()) {
+      if (!v.cur || (v.cur.d >= 0 && v.cur.s >= 0)) continue;
+      const d = Math.hypot(v.cur.x - p.x, v.cur.z - p.z);
+      if (d < bd && Math.abs(v.cur.y - p.y) < 2.5) { bd = d; best = v; }
+    }
+    return best;
+  }
+
+  vehicleOf(pid) { for (const v of this.vehicles.values()) if (v.cur && (v.cur.d === pid || v.cur.s === pid)) return v; return null; }
+
+  updateVehicles(dt) {
+    const renderTick = this.clock - INTERP_TICKS;
+    let near = null, nd = 1e9;
+    for (const v of this.vehicles.values()) {
+      const s = this.sample(v.buf, renderTick);
+      if (!s) continue;
+      const prev = v.cur;
+      v.cur = s;
+      const m = v.mesh;
+      m.position.set(s.x, s.y, s.z);
+      m.rotation.order = 'YXZ';
+      m.rotation.set(s.pitch, s.yaw, s.roll);
+      const steer = prev ? wrapAngle(s.yaw - prev.yaw) / Math.max(dt, 1e-3) : 0;
+      for (const w of m.userData.wheels) { w.spin.rotation.x -= s.speed * dt / 0.44; if (w.front) w.hub.rotation.y += (clamp(steer * 0.5, -0.5, 0.5) - w.hub.rotation.y) * Math.min(1, dt * 8); }
+      const d = Math.hypot(s.x - this.camPos.x, s.z - this.camPos.z) + (this.myVehicle === v.id ? -1000 : 0);
+      if ((s.d >= 0 || Math.abs(s.speed) > 1) && d < nd) { nd = d; near = s; }
+    }
+    // one engine voice for the nearest running buggy
+    const A = this.app.audio;
+    if (near) {
+      const dist = Math.max(0, nd + (this.myVehicle ? 1000 : 0));
+      A.loop('engine', Math.max(0, 1 - dist / 140) * (this.myVehicle ? 0.65 : 0.9), 0.7 + Math.min(1.4, Math.abs(near.speed) / 18));
+    } else A.loop('engine', 0);
+  }
+
+  addDrop(d) {
+    if (this.drops.has(d.id)) return;
+    const mesh = buildSupplyCrate();
+    mesh.position.set(d.x, d.g, d.z);
+    this.R.scene.add(mesh);
+    this.drops.set(d.id, { ...d, mesh });
+    if (d.landed) this.fx.smoke(10000 + d.id, d.x, d.g, d.z, 60, [0.85, 0.18, 0.12]);
+  }
+
+  updateDrops(dt) {
+    for (const d of this.drops.values()) {
+      const y = Math.max(d.g, d.y0 - (this.clock - d.t0) * DT * d.sp);
+      d.mesh.position.y = y;
+      const down = y <= d.g + 0.01;
+      d.mesh.userData.chute.visible = !down;
+      d.mesh.userData.chute.rotation.y += dt * 0.4;
+      d.mesh.userData.beacon.intensity = down ? 3 + Math.sin(this.R.time * 6) * 2 : 0;
+      d.mesh.rotation.z = down ? 0 : Math.sin(this.R.time * 0.8 + d.id) * 0.08;
+    }
+  }
+
   selfChar(x, y, z, mode, dt) {
     if (!this.selfCharObj) { this.selfCharObj = new Character(this.app.tex, this.myCos); this.R.scene.add(this.selfCharObj.root); }
     const c = this.selfCharObj;
     c.root.visible = true;
-    c.update({ x, y, z, yaw: this.yaw, pitch: this.pitch, mode, flags: 0 }, dt, 5);
+    const ve = mode === MODE.VEHICLE ? this.vehicles.get(this.myVehicle) : null;
+    const yaw = ve && ve.cur ? ve.cur.yaw : this.yaw;
+    if (ve && ve.cur) { const seat = BUGGY.seats[this.mySeat || 0], sy = Math.sin(yaw), cy = Math.cos(yaw); x = ve.cur.x + cy * seat.x + sy * seat.z; z = ve.cur.z - sy * seat.x + cy * seat.z; y = ve.cur.y + seat.y; }
+    c.update({ x, y, z, yaw, pitch: this.pitch, mode, flags: 0, vpitch: ve && ve.cur ? ve.cur.pitch : 0, vroll: ve && ve.cur ? ve.cur.roll : 0 }, dt, 5);
   }
 
   updateWorld(dt) {
@@ -697,6 +805,8 @@ export class MatchView {
     A.loop('freefall', p.mode === MODE.FREEFALL ? 0.9 : p.mode === MODE.CHUTE ? 0.25 : 0);
     A.loop('ash', Math.min(1, ashAmt * 1.2) * 0.9);
     A.loop('heart', this.status.alive && (this.status.hp < 30 || p.mode === MODE.KNOCKED) ? 0.7 : 0);
+    this.updateVehicles(dt);
+    this.updateDrops(dt);
     for (const tm of this.terminals) if (tm.hacked < 0 || tm.hacked === undefined) tm.m.userData.light.intensity = 0.6 + Math.sin(t * 4) * 0.3;
     R.scene.traverse; // noop (keep tree-shaking honest)
   }
@@ -710,6 +820,8 @@ export class MatchView {
     if (st.act === ACT.heal) return { text: 'Healing…', p: st.actP };
     if (st.act === ACT.reload || (this.localAct && this.localAct.k === 'reload')) return { text: 'Reloading', p: st.act === ACT.reload ? st.actP : null };
     if (this.lookTarget) return { text: `[E] ${itemName(this.lookTarget.it)}`, key: true };
+    const nv = this.nearVehicle();
+    if (nv) return { text: nv.cur.d < 0 ? '[F] Drive buggy' : '[F] Ride as passenger' };
     for (const r of this.remotes.values()) if (r.cur && this.isMate(r.id) && r.cur.mode === MODE.KNOCKED && Math.hypot(r.cur.x - p.x, r.cur.z - p.z) < REVIVE_RANGE) return { text: `Hold [E] to revive ${this.name(r.id)}` };
     for (const t of this.terminals) if ((t.hacked === undefined || t.hacked < 0) && Math.hypot(t.x - p.x, t.z - p.z) < 1.9) return { text: 'Hold [E] to hack the intel terminal' };
     return null;

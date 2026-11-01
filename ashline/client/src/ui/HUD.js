@@ -233,6 +233,10 @@ export class HUD {
       const px = Math.max(4, Math.tan(sp * Math.PI / 360) * (window.innerHeight / 2) / Math.tan(this.app.renderer.camera.fov * Math.PI / 360));
       ch.style.setProperty('--gap', px + 'px');
     }
+    // vehicle
+    const vh = mv.pred.mode === MODE.VEHICLE ? mv.vehicles.get(mv.myVehicle) : null;
+    $('vehicle-hud').classList.toggle('show', !!(vh && vh.cur));
+    if (vh && vh.cur) { $('veh-speed').textContent = Math.round(Math.abs(vh.cur.speed) * 3.6); $('veh-hp').style.width = (vh.cur.hp / 2.55) + '%'; }
     // scope
     $('scope').classList.toggle('show', !!mv.scoped);
     // prompt
@@ -307,6 +311,9 @@ export class HUD {
       g.strokeStyle = 'rgba(255,255,255,0.5)'; g.setLineDash([10, 6]); g.beginPath(); g.moveTo(a1, b1); g.lineTo(a2, b2); g.stroke(); g.setLineDash([]);
       const [px, pz] = P(mv.planePos.x, mv.planePos.z); g.fillStyle = '#fff'; g.beginPath(); g.arc(px, pz, big ? 5 : 3.5, 0, 7); g.fill();
     }
+    // supply drops and buggies
+    for (const d of mv.drops.values()) { const [a, b] = P(d.x, d.z); g.fillStyle = d.landed ? '#4aa3ff' : 'rgba(74,163,255,0.6)'; g.fillRect(a - 4, b - 4, 8, 8); g.strokeStyle = '#000'; g.lineWidth = 1; g.strokeRect(a - 4, b - 4, 8, 8); }
+    if (!big || true) for (const v of mv.vehicles.values()) { if (!v.cur) continue; const [a, b] = P(v.cur.x, v.cur.z); g.save(); g.translate(a, b); g.rotate(-v.cur.yaw); g.fillStyle = 'rgba(220,220,210,0.85)'; g.fillRect(-2.5, -4, 5, 8); g.restore(); }
     // terminals
     for (const t of mv.terminals) { const [a, b] = P(t.x, t.z); g.fillStyle = (t.hacked === undefined || t.hacked < 0) ? 'rgba(90,230,150,0.95)' : 'rgba(120,120,120,0.8)'; g.fillRect(a - 3, b - 3, 6, 6); }
     // pings

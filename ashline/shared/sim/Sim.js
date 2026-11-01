@@ -9,6 +9,7 @@ import { createMoveState, stepMove, bodyHeight, eyeHeight, viewDir } from '../ph
 import { WEAPONS, WEAPON_IDS, AMMO, ATTACH, ARMOR, PACK_CAP, HEALS, THROWS, rollLoot, magSize, canAttach } from './Items.js';
 import { Zone } from './Zone.js';
 import { MAT_SURFACE } from '../map/Buildings.js';
+import { spawnVehicles, enterVehicle, exitVehicle, driveInput, stepVehicles, damageVehicle, rayVehicles, vehicleWire, scheduleAirdrop, stepAirdrops } from './Vehicles.js';
 
 const HIST = LAG_COMP_TICKS + 3;
 const D2R = Math.PI / 180;
@@ -60,6 +61,9 @@ export class Sim {
     this.winner = -1;
     this.endTick = -1;
     this.spawnLoot();
+    this.vehicles = new Map();
+    this.airdrops = [];
+    spawnVehicles(this);
     this._ray = { kind: null, box: -1, nx: 0, ny: 0, nz: 0 };
   }
 
@@ -157,6 +161,8 @@ export class Sim {
     const knocked = p.m.mode === MODE.KNOCKED;
     switch (c.c) {
       case 'pickup': if (!knocked) this.tryPickup(p, c.id | 0); break;
+      case 'enter': if (!knocked) enterVehicle(this, p, c.id | 0); break;
+      case 'exit': if (p.vehicle) exitVehicle(this, p); break;
       case 'slot': if (!knocked) this.switchSlot(p, c.s | 0); break;
       case 'use': if (!knocked) this.startHeal(p, c.id); break;
       case 'thr': if (THROWS[c.id]) { p.inv.thrSel = c.id; p.invDirty = true; } break;
@@ -184,12 +190,14 @@ export class Sim {
           let n = p.inputs.length > 3 ? 2 : p.inputs.length > 0 ? 1 : 0;
           if (n === 0) {
             p.idle++;
-            if (p.idle > 6) this.processInput(p, { ...p.lastInput, buttons: p.lastInput.buttons & (BTN.CROUCH), mx: 0, mz: 0, seq: p.lastSeq });
+            if (p.idle > 6) this.processInput(p, { ...p.lastInput, buttons: p.lastInput.buttons & (BTN.CROUCH), mx: 0, mz: 0, seq: p.lastSeq, idle: true });
           }
           while (n-- > 0) { p.idle = 0; this.processInput(p, p.inputs.shift()); }
         }
         this.updateStatus(p);
       }
+      stepVehicles(this);
+      stepAirdrops(this);
       this.updateProjectiles();
       this.updateZone();
       this.checkEnd();
@@ -245,6 +253,12 @@ export class Sim {
       if ((pressed & BTN.JUMP) && this.plane && this.plane.t > 1.2) this.leavePlane(p);
       return;
     }
+    if (p.m.mode === MODE.VEHICLE) {
+      p.m.pb = b;
+      if (p.seat === 0) { if (!inp.idle) driveInput(this, p, inp); }
+      else { if ((pressed & BTN.RELOAD)) this.startReload(p); this.handleFire(p, inp, b, pressed); this.updateAct(p); }
+      return;
+    }
     const wasMode = p.m.mode;
     const w = this.activeWeapon(p);
     const mods = { speedMul: (p.boost >= 60 ? 1.05 : 1) * (w && WEAPONS[w.id].slowMul ? WEAPONS[w.id].slowMul : 1), noSprint: false, slow: 0 };
@@ -277,7 +291,7 @@ export class Sim {
     const f = p.fire;
     f.cd -= DT;
     f.bloom = Math.max(0, f.bloom - DT * 3.5);
-    if (p.m.mode !== MODE.GROUND) { if (f.cd < 0) f.cd = 0; return; }
+    if (p.m.mode !== MODE.GROUND && !(p.m.mode === MODE.VEHICLE && p.seat === 1)) { if (f.cd < 0) f.cd = 0; return; }
     if (p.inv.slot === 3) {
       if ((pressed & BTN.FIRE) && !p.act) this.throwNade(p);
       if (f.cd < 0) f.cd = 0;
@@ -345,8 +359,14 @@ export class Sim {
         const r = hitTest(ox, oy, oz, d[0], d[1], d[2], t, best);
         if (r && r.t < best) { best = r.t; victim = t.p; zone = r.zone; }
       }
+      const vh = rayVehicles(this, ox, oy, oz, d[0], d[1], d[2], best);
+      let hitVeh = null;
+      if (vh && vh.v.id !== p.vehicle && vh.t < best) { best = vh.t; victim = null; hitVeh = vh.v; }
       const ex = ox + d[0] * Math.min(best, maxR), ey = oy + d[1] * Math.min(best, maxR), ez = oz + d[2] * Math.min(best, maxR);
-      if (victim) {
+      if (hitVeh) {
+        damageVehicle(this, hitVeh, def.dmg * 0.55, p);
+        hits.push([r2(ex), r2(ey), r2(ez), 1, 'metal']);
+      } else if (victim) {
         const dist = best;
         const fall = dist <= def.r0 ? 1 : dist >= def.r1 ? def.minMul : 1 - (1 - def.minMul) * (dist - def.r0) / (def.r1 - def.r0);
         const mul = zone === 'head' ? def.head : zone === 'limb' ? def.limb : 1;
@@ -585,6 +605,7 @@ export class Sim {
   }
 
   knock(v, a, src) {
+    if (v.vehicle) exitVehicle(this, v, true);
     v.m.mode = MODE.KNOCKED; v.m.crouch = false;
     v.knocks++; v.bleed = 100; v.knockedBy = a ? a.id : null; v.act = null;
     if (a) a.stats.knocks++;
@@ -596,6 +617,7 @@ export class Sim {
 
   kill(v, a, src, head = false) {
     if (!v.alive) return;
+    if (v.vehicle) exitVehicle(this, v, true);
     v.alive = false; v.m.mode = MODE.DEAD; v.act = null; v.hp = 0; v.bleed = 0;
     v.deathTick = this.tick;
     v.stats.survived = (this.tick - (this.startTick || 0)) * DT;
@@ -696,6 +718,7 @@ export class Sim {
     if (this.phase !== 'live' && this.phase !== 'plane') return;
     const ev = this.zone.update(DT);
     if (ev) this.emit({ e: 'zone', ev, ...this.zoneInfo() });
+    if (ev === 'wait' && [1, 3, 5].includes(this.zone.phase)) scheduleAirdrop(this);
   }
 
   zoneInfo() {
@@ -923,6 +946,8 @@ export class Sim {
     }
     const proj = [];
     for (const pr of this.proj.values()) proj.push({ id: pr.id, k: pr.k === 'frag' ? 1 : 2, x: pr.x, y: pr.y, z: pr.z });
+    const veh = [];
+    for (const v of this.vehicles.values()) if (v.alive && Math.hypot(v.x - fx, v.z - fz) < RELEVANCE) veh.push(vehicleWire(v));
     let aliveN = 0; for (const o of this.list) if (o.alive) aliveN++;
     let sqN = 0; for (const s of this.squads.values()) if (s.alive) sqN++;
     const self = p ? {
@@ -936,7 +961,7 @@ export class Sim {
       tick: this.tick, ack: p ? p.lastSeq : 0, self,
       zone: { cx: z.cur.x, cz: z.cur.z, cr: z.cur.r, nx: z.next.x, nz: z.next.z, nr: z.next.r, phase: z.phase, state: z.state === 'wait' ? 0 : z.state === 'shrink' ? 1 : 2, timer: Math.max(0, z.timer) },
       plane: this.plane ? { x: this.plane.x, z: this.plane.z, active: this.plane.active } : { x: 0, z: 0, active: false },
-      alive: aliveN, squads: sqN, players, proj,
+      alive: aliveN, squads: sqN, players, proj, veh,
     };
   }
 
@@ -982,6 +1007,7 @@ export class Sim {
       terminals: this.terminals.map(t => ({ id: t.id, x: t.x, y: t.y, z: t.z, hacked: t.hackedBy })),
       zone: this.zoneInfo(), plane: this.plane ? { sx: this.plane.sx, sz: this.plane.sz, dx: this.plane.dx, dz: this.plane.dz, len: this.plane.len } : null,
       you: pid, squad: this.players.get(pid) ? this.players.get(pid).squad : -1,
+      airdrops: this.airdrops.map(d => ({ id: d.id, x: d.x, z: d.z, g: d.g, y0: d.y0, t0: d.t0, sp: d.speed, landed: d.landed })),
     };
   }
 

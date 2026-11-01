@@ -37,7 +37,7 @@ export const PLAYER = {
 };
 
 // Movement modes (also used on the wire).
-export const MODE = { GROUND: 0, FREEFALL: 1, CHUTE: 2, KNOCKED: 3, PLANE: 4, DEAD: 5, WAITING: 6 };
+export const MODE = { GROUND: 0, FREEFALL: 1, CHUTE: 2, KNOCKED: 3, PLANE: 4, DEAD: 5, WAITING: 6, VEHICLE: 7 };
 
 // Input button bits.
 export const BTN = {

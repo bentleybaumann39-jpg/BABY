@@ -162,3 +162,77 @@ export function buildTerminal() {
   g.userData = { screenMat, light };
   return g;
 }
+
+// ---------------------------------------------------------------- buggy
+let buggyMats = null;
+export function buildBuggy(tex, variant = 0) {
+  if (!buggyMats) buggyMats = {
+    paint: [0x4d5236, 0x6a5a3c, 0x3d4447].map(c => new THREE.MeshStandardMaterial({ color: c, roughness: 0.55, metalness: 0.35, map: tex ? tex.rust.map : null })),
+    tube: new THREE.MeshStandardMaterial({ color: 0x1d1e1f, roughness: 0.45, metalness: 0.7 }),
+    tyre: new THREE.MeshStandardMaterial({ color: 0x0d0d0d, roughness: 0.95 }),
+    rim: new THREE.MeshStandardMaterial({ color: 0x6b6d6e, roughness: 0.35, metalness: 0.85 }),
+    seat: new THREE.MeshStandardMaterial({ color: 0x241f1a, roughness: 0.8 }),
+    light: new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2.8, 2.2) }),
+    tail: new THREE.MeshBasicMaterial({ color: new THREE.Color(2.5, 0.15, 0.1) }),
+  };
+  const M = buggyMats;
+  const g = new THREE.Group();
+  const body = new THREE.Group(); g.add(body);
+  const paint = M.paint[variant % M.paint.length];
+  const add = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = true; m.receiveShadow = true; body.add(m); return m; };
+  add(new THREE.BoxGeometry(1.7, 0.22, 3.5), paint, 0, 0.55, 0);                 // floor pan
+  add(new THREE.BoxGeometry(1.5, 0.35, 0.9), paint, 0, 0.78, -1.45, -0.25);       // nose
+  add(new THREE.BoxGeometry(1.4, 0.5, 0.8), M.tube, 0, 0.85, 1.35);               // engine
+  add(new THREE.BoxGeometry(1.75, 0.08, 0.5), paint, 0, 0.72, -1.95);             // bumper
+  const tube = (x0, y0, z0, x1, y1, z1, r = 0.035) => {
+    const a = new THREE.Vector3(x0, y0, z0), b = new THREE.Vector3(x1, y1, z1);
+    const L = a.distanceTo(b);
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 6), M.tube);
+    m.position.copy(a).lerp(b, 0.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+    m.castShadow = true; body.add(m);
+  };
+  for (const s of [-1, 1]) {
+    tube(s * 0.75, 0.65, -0.75, s * 0.7, 1.75, -0.35); tube(s * 0.7, 1.75, -0.35, s * 0.7, 1.75, 0.75); tube(s * 0.7, 1.75, 0.75, s * 0.75, 0.65, 1.1);
+    tube(s * 0.82, 0.62, -1.7, s * 0.82, 0.62, 1.6);
+  }
+  tube(-0.7, 1.75, -0.35, 0.7, 1.75, -0.35); tube(-0.7, 1.75, 0.75, 0.7, 1.75, 0.75); tube(-0.75, 0.65, -0.75, 0.75, 0.65, -0.75);
+  for (const s of [-1, 1]) {
+    add(new THREE.BoxGeometry(0.55, 0.1, 0.55), M.seat, s * 0.42, 0.72, 0.15);
+    add(new THREE.BoxGeometry(0.55, 0.6, 0.1), M.seat, s * 0.42, 1.0, 0.45, 0.15);
+    add(new THREE.BoxGeometry(0.16, 0.1, 0.04), M.light, s * 0.55, 0.88, -1.86);
+    add(new THREE.BoxGeometry(0.14, 0.08, 0.04), M.tail, s * 0.6, 0.85, 1.76);
+  }
+  const wheel = add(new THREE.CylinderGeometry(0.2, 0.2, 0.06, 8), M.tube, -0.42, 1.05, -0.45, 1.0, 0, 0); // steering wheel
+  wheel.rotation.set(-0.9, 0, 0);
+  // wheels
+  const wheels = [];
+  const tyreGeo = new THREE.CylinderGeometry(0.44, 0.44, 0.34, 16); tyreGeo.rotateZ(Math.PI / 2);
+  const rimGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.36, 8); rimGeo.rotateZ(Math.PI / 2);
+  for (const [x, z, front] of [[-0.95, -1.25, true], [0.95, -1.25, true], [-0.95, 1.2, false], [0.95, 1.2, false]]) {
+    const hub = new THREE.Group(); hub.position.set(x, 0.44, z);
+    const spin = new THREE.Group(); hub.add(spin);
+    const t = new THREE.Mesh(tyreGeo, M.tyre); t.castShadow = true; spin.add(t);
+    const r = new THREE.Mesh(rimGeo, M.rim); spin.add(r);
+    g.add(hub); wheels.push({ hub, spin, front });
+  }
+  g.userData = { body, wheels, roll: 0 };
+  return g;
+}
+
+export function buildSupplyCrate() {
+  const g = new THREE.Group();
+  const crate = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.0, 1.4), new THREE.MeshStandardMaterial({ color: 0x2c4a6b, roughness: 0.6, metalness: 0.3 }));
+  crate.position.y = 0.5; crate.castShadow = true; crate.receiveShadow = true; g.add(crate);
+  const band = new THREE.Mesh(new THREE.BoxGeometry(1.44, 0.14, 1.44), new THREE.MeshStandardMaterial({ color: 0xc8a032, roughness: 0.5 }));
+  band.position.y = 0.55; g.add(band);
+  const chuteGeo = new THREE.SphereGeometry(3.4, 14, 6, 0, Math.PI * 2, 0, Math.PI * 0.35);
+  const chute = new THREE.Mesh(chuteGeo, new THREE.MeshStandardMaterial({ color: 0xd0d4d8, roughness: 0.9, side: THREE.DoubleSide }));
+  chute.position.y = 5.2; g.add(chute);
+  const pts = [];
+  for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; pts.push(new THREE.Vector3(0, 1.0, 0), new THREE.Vector3(Math.cos(a) * 2.8, 5.0, Math.sin(a) * 2.8)); }
+  g.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0x222222 })));
+  const beacon = new THREE.PointLight(0xff3020, 0, 18, 2); beacon.position.y = 1.6; g.add(beacon);
+  g.userData = { chute, beacon };
+  return g;
+}

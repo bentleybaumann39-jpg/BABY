@@ -202,6 +202,22 @@ export class Character {
       this.chute.visible = false;
       return;
     }
+    if (st.mode === MODE.VEHICLE) {
+      root.rotation.order = 'YXZ';
+      root.rotation.set(st.vpitch || 0, st.yaw, st.vroll || 0);
+      this.hips.position.y = 0.12;
+      this.spine.rotation.set(0.12, 0, 0);
+      this.legR.hip.rotation.set(1.45, 0, 0.08); this.legL.hip.rotation.set(1.45, 0, -0.08);
+      this.legR.kn.rotation.x = -1.35; this.legL.kn.rotation.x = -1.35;
+      if (st.driver) {
+        this.armR.sh.rotation.set(1.1, 0, -0.15); this.armR.el.rotation.x = 0.7;
+        this.armL.sh.rotation.set(1.1, 0, 0.15); this.armL.el.rotation.x = 0.7;
+        if (this.weapon) this.weapon.visible = false;
+      }
+      this.chute.visible = false;
+      return;
+    }
+    root.rotation.order = 'XYZ'; root.rotation.x = 0; root.rotation.z = 0;
     switch (st.mode) {
       case MODE.KNOCKED: {
         b.rotation.x = -1.35; b.position.set(0, 0.3, 0.55);

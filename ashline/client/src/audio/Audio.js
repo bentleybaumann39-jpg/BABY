@@ -83,6 +83,7 @@ function loop(kind, seed) {
   else if (kind === 'freefall') { biquad(a, 'bp', 900, 0.4); biquad(a, 'hp', 300); }
   else if (kind === 'plane') { const t = tone(n, 62, 62, 1e9, 'saw'); const t2 = tone(n, 93.5, 93.5, 1e9, 'saw'); biquad(a, 'lp', 300); for (let i = 0; i < n; i++) a[i] = a[i] * 0.6 + (t[i] * 0.4 + t2[i] * 0.25) * (0.8 + 0.2 * Math.sin(i / SR * 6)); biquad(a, 'lp', 800); }
   else if (kind === 'ash') { biquad(a, 'lp', 260); for (let i = 0; i < n; i++) a[i] *= 0.7 + 0.3 * Math.sin(i / SR * 0.9); }
+  else if (kind === 'engine') { const t = tone(n, 46, 46, 1e9, 'saw'), t2 = tone(n, 92.3, 92.3, 1e9, 'sq'); biquad(a, 'lp', 500); for (let i = 0; i < n; i++) a[i] = a[i] * 0.35 + t[i] * 0.45 * (0.75 + 0.25 * Math.sin(i / SR * 2 * Math.PI * 23)) + t2[i] * 0.12; biquad(a, 'lp', 1400); }
   else if (kind === 'heart') { const o = new Float32Array(n); const beat = tone(SR * 0.2, 60, 40, 0.06); for (const t of [0, 0.25, 1, 1.25, 2, 2.25, 3, 3.25]) { const off = Math.floor(t * SR); for (let i = 0; i < beat.length; i++) o[off + i] += beat[i] * (t % 1 ? 0.6 : 1); } return norm(o, 0.8); }
   // crossfade loop seam
   const f = Math.floor(SR * 0.2);
@@ -153,7 +154,9 @@ export class Audio {
     tasks.push(() => B('slide', (() => { const a = noise(SR * 0.7, 41); for (let i = 0; i < a.length; i++) a[i] *= env(i, 0.02, 0.35) * (0.7 + 0.3 * Math.sin(i / 120)); biquad(a, 'bp', 1400, 0.6); biquad(a, 'lp', 4000); return norm(a, 0.55); })()));
     tasks.push(() => B('throw', (() => { const a = noise(SR * 0.3, 30); for (let i = 0; i < a.length; i++) a[i] *= Math.sin(Math.PI * i / a.length) ** 2; biquad(a, 'bp', 700, 0.7); return norm(a, 0.5); })()));
     tasks.push(() => B('smokehiss', (() => { const a = noise(SR * 3, 31); for (let i = 0; i < a.length; i++) a[i] *= env(i, 0.2, 1.5); biquad(a, 'hp', 2500); return norm(a, 0.4); })()));
-    for (const k of ['wind', 'freefall', 'plane', 'ash', 'heart']) tasks.push(() => B(`loop_${k}`, loop(k, k.length * 3)));
+    for (const k of ['wind', 'freefall', 'plane', 'ash', 'heart', 'engine']) tasks.push(() => B(`loop_${k}`, loop(k, k.length * 3)));
+    tasks.push(() => B('door', seqSounds([[0, click(900, 0.04, 51), 0.9], [0.06, click(400, 0.06, 52), 0.7]])));
+    tasks.push(() => B('crash', (() => { const a = noise(SR * 0.8, 53); for (let i = 0; i < a.length; i++) a[i] *= env(i, 0.002, 0.18); biquad(a, 'lp', 1800); const m = noise(SR * 0.5, 54); for (let i = 0; i < m.length; i++) m[i] *= env(i, 0.001, 0.08); biquad(m, 'bp', 2600, 3); return norm(mix(a, scale(m, 0.6), scale(tone(SR * 0.4, 90, 50, 0.1), 0.8)), 0.95); })()));
     for (const t of tasks) { t(); await new Promise(r => setTimeout(r, 0)); }
   }
 
@@ -190,7 +193,7 @@ export class Audio {
     s.start(ctx.currentTime + (delay ? d / 343 : 0));
   }
 
-  loop(name, gain) {
+  loop(name, gain, rate = 1) {
     if (!this.ready) return;
     let l = this.loops[name];
     if (!l) {
@@ -201,6 +204,7 @@ export class Audio {
       l = this.loops[name] = { s, g };
     }
     l.g.gain.setTargetAtTime(gain, this.ctx.currentTime, 0.15);
+    l.s.playbackRate.setTargetAtTime(rate, this.ctx.currentTime, 0.08);
   }
   stopLoops() { for (const k in this.loops) this.loops[k].g.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1); }
 }

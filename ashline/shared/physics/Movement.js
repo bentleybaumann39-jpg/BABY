@@ -15,11 +15,13 @@ export function copyMoveState(dst, s) {
 
 export function bodyHeight(s) {
   if (s.mode === MODE.KNOCKED) return PLAYER.knockedHeight;
+  if (s.mode === MODE.VEHICLE) return 1.25;
   return s.crouch ? PLAYER.crouchHeight : PLAYER.height;
 }
 export function eyeHeight(s) {
   if (s.mode === MODE.KNOCKED) return PLAYER.knockedEye;
   if (s.mode === MODE.FREEFALL || s.mode === MODE.CHUTE) return 1.4;
+  if (s.mode === MODE.VEHICLE) return 1.12;
   return s.crouch ? PLAYER.crouchEye : PLAYER.eye;
 }
 
@@ -31,7 +33,7 @@ export function stepMove(s, inp, world, dt, mods = null) {
   const pressed = b & ~s.pb;
   s.pb = b;
   s.impact = 0;
-  if (s.mode === MODE.PLANE || s.mode === MODE.DEAD || s.mode === MODE.WAITING) return;
+  if (s.mode === MODE.PLANE || s.mode === MODE.DEAD || s.mode === MODE.WAITING || s.mode === MODE.VEHICLE) return;
 
   let mx = inp.mx || 0, mz = inp.mz || 0;
   const ml = Math.hypot(mx, mz);

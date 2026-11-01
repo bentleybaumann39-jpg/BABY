@@ -134,10 +134,10 @@ export class Effects {
     for (let i = 0; i < 16; i++) this.sprite({ x, y: y + 0.3, z, s: 0.06, life: 1.2, col: [0.2, 0.16, 0.12], vx: (Math.random() - 0.5) * 16, vy: 4 + Math.random() * 10, vz: (Math.random() - 0.5) * 16, g: 15 });
   }
 
-  smoke(id, x, y, z, dur = 20) {
+  smoke(id, x, y, z, dur = 20, col = null) {
     const puffs = [];
     for (let i = 0; i < 26; i++) {
-      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.tSmoke, transparent: true, depthWrite: false, color: new THREE.Color(0.75, 0.75, 0.72), opacity: 0 }));
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.tSmoke, transparent: true, depthWrite: false, color: col ? new THREE.Color(col[0], col[1], col[2]) : new THREE.Color(0.75, 0.75, 0.72), opacity: 0 }));
       const a = Math.random() * Math.PI * 2, r = Math.random() * 4.5;
       s.userData = { ox: Math.cos(a) * r, oz: Math.sin(a) * r, oy: Math.random() * 3.5 + 0.5, s: 3 + Math.random() * 3, rot: (Math.random() - 0.5) * 0.2 };
       s.position.set(x, y, z);

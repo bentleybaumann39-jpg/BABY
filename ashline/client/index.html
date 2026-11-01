@@ -68,7 +68,8 @@
         <ul>
           <li><b>WASD</b> move · <b>Shift</b> sprint · <b>C / Ctrl</b> crouch · <b>Space</b> jump, leave the plane, open the chute</li>
           <li><b>LMB</b> fire · <b>RMB</b> aim · <b>R</b> reload · <b>B</b> fire mode · <b>1-3</b> weapons · <b>4 / G</b> grenades</li>
-          <li><b>E</b> pick up / hold to revive or hack · <b>Tab</b> inventory · <b>M</b> map · <b>Z / MMB</b> ping</li>
+          <li><b>E</b> pick up / hold to revive or hack · <b>F</b> drive / exit buggy · <b>Tab</b> inventory · <b>M</b> map · <b>Z / MMB</b> ping</li>
+          <li><b>Shift + C</b> slide · <b>Space</b> at a waist-high wall vaults it</li>
           <li><b>5</b> bandage · <b>6</b> field kit · <b>7</b> stim · <b>H</b> best heal · <b>X</b> cancel action</li>
         </ul>
         <p>Thirty drop in. The ash closes in seven fronts. Intel terminals reveal where it goes next — and who is near. Last squad standing wins.</p>
@@ -129,6 +130,7 @@
       <div class="wmain"><div id="w-name">Unarmed</div><div class="ammo"><b id="w-mag">–</b><span>/</span><em id="w-res">–</em></div><div id="w-mode"></div></div>
       <div class="heals"><span><b>5</b> Bandage <em id="h-band">0</em></span><span><b>6</b> Kit <em id="h-kit">0</em></span><span><b>7</b> Stim <em id="h-stim">0</em></span></div>
     </div>
+    <div id="vehicle-hud"><b id="veh-speed">0</b><span>km/h</span><div class="vbar"><i id="veh-hp"></i></div><small>W/S throttle · A/D steer · Space brake · F exit</small></div>
     <div id="scope"></div>
     <div id="fps"></div>
     <div id="death"><h2>ELIMINATED</h2><p id="spectating"></p><button id="btn-leave-death">Leave match</button></div>
@@ -138,7 +140,7 @@
       <div class="inv-col"><h3>Backpack</h3><div id="inv-bag"></div></div>
       <button id="inv-close">Close [Tab]</button>
     </div>
-    <div id="bigmap"><canvas id="bigmap-canvas"></canvas><div class="legend"><i class="cur"></i> ash front <i class="nxt"></i> next front <i class="term"></i> intel terminal · [M] close</div></div>
+    <div id="bigmap"><canvas id="bigmap-canvas"></canvas><div class="legend"><i class="cur"></i> ash front <i class="nxt"></i> next front <i class="term"></i> intel terminal <i class="drop"></i> supply drop · [M] close</div></div>
   </div>
 
   <div id="results" class="screen">
