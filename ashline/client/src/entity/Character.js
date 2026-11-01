@@ -95,7 +95,7 @@ export class Character {
     // far LOD
     this.far = new THREE.Mesh(cap(0.3, 1.1), S.far); this.far.position.y = 0.85; this.far.visible = false; this.root.add(this.far);
     this.phase = 0; this.recoil = 0; this.lastPos = null; this.speed = 0;
-    this.crouchT = 0; this.gear = -1;
+    this.crouchT = 0; this.gear = -1; this.flinchT = 0; this.flinchAmt = 0; this.deadT = -1; this.deadDir = 1;
     this.root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
     this.setGear(0x15);
   }
@@ -112,6 +112,9 @@ export class Character {
     g.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), S.line));
     return g;
   }
+
+  flinch(a = 0.6) { this.flinchT = 0.22; this.flinchAmt = a; }
+  die(head = 0) { this.deadT = 0; this.deadDir = head ? -1 : (Math.random() < 0.5 ? 1 : -1); this.deadSpin = (Math.random() - 0.5) * 0.8; }
 
   setGear(gear) {
     if (gear === this.gear) return;
@@ -178,6 +181,27 @@ export class Character {
     if (!this.weaponId) { this.armR.sh.rotation.set(sw * 0.6 * walkAmp, 0, 0.1); this.armL.sh.rotation.set(-sw * 0.6 * walkAmp, 0, -0.1); this.armR.el.rotation.x = 0.3; this.armL.el.rotation.x = 0.3; }
     if (this.weapon) this.weapon.visible = true;
 
+    if (this.flinchT > 0) {
+      this.flinchT -= dt;
+      const f = Math.sin((this.flinchT / 0.22) * Math.PI) * this.flinchAmt;
+      this.spine.rotation.x += f * 0.35; this.neck.rotation.x += f * 0.4; this.spine.rotation.z += f * 0.15;
+    }
+    if (st.mode === MODE.DEAD && this.deadT >= 0) {
+      this.deadT += dt;
+      const t = Math.min(1, this.deadT / 0.75), e = t * t;
+      b.rotation.set(-this.deadDir * 1.5 * e, this.deadSpin * e, 0);
+      b.position.set(0, 0.12 * e, this.deadDir * 0.35 * e);
+      this.hips.position.y = 0.95 - 0.1 * e;
+      this.spine.rotation.set(-this.deadDir * 0.2 * e, 0, 0.2 * e);
+      this.neck.rotation.set(this.deadDir * 0.6 * e, 0.4 * e, 0);
+      this.armR.sh.rotation.set(0.4 + 1.6 * e, 0, -0.9 * e); this.armR.el.rotation.x = 0.3;
+      this.armL.sh.rotation.set(0.2 + 1.2 * e, 0, 1.1 * e); this.armL.el.rotation.x = 0.6 * e;
+      this.legR.hip.rotation.set(0.25 * e, 0, 0.15 * e); this.legL.hip.rotation.set(-0.1 * e, 0, -0.2 * e);
+      this.legR.kn.rotation.x = -0.5 * e; this.legL.kn.rotation.x = -0.2 * e;
+      if (this.weapon) this.weapon.visible = t < 0.4;
+      this.chute.visible = false;
+      return;
+    }
     switch (st.mode) {
       case MODE.KNOCKED: {
         b.rotation.x = -1.35; b.position.set(0, 0.3, 0.55);

@@ -210,7 +210,7 @@ export class HUD {
         $('w-name').textContent = def.name + (w.att && w.att.optic ? ' · ' + ATTACH[w.att.optic].name : '');
         $('w-mag').textContent = mv.predMag;
         $('w-res').textContent = inv.ammo[def.ammo];
-        $('w-mode').textContent = def.auto ? (w.semi ? 'SEMI' : 'AUTO') : def.cls === 'sniper' ? 'BOLT' : def.cls === 'shotgun' ? 'PUMP' : 'SEMI';
+        $('w-mode').textContent = def.burst ? (w.semi ? 'SEMI' : 'BURST') : def.auto ? (w.semi ? 'SEMI' : 'AUTO') : def.cls === 'sniper' ? 'BOLT' : def.cls === 'shotgun' ? 'PUMP' : 'SEMI';
       } else if (st.slot === 3) {
         $('w-name').textContent = THROWS[inv.thrSel].name; $('w-mag').textContent = inv.thr[inv.thrSel]; $('w-res').textContent = inv.thr.frag + inv.thr.smoke; $('w-mode').textContent = 'G: swap';
       } else { $('w-name').textContent = 'Unarmed'; $('w-mag').textContent = '–'; $('w-res').textContent = '–'; $('w-mode').textContent = ''; }

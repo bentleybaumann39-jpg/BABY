@@ -78,7 +78,7 @@ export function encodeSnapshot(s) {
     w.u8(1);
     w.f64(m.x); w.f64(m.y); w.f64(m.z); w.f64(m.vx); w.f64(m.vy); w.f64(m.vz);
     w.u8(m.mode); w.u8((m.grounded ? 1 : 0) | (m.crouch ? 2 : 0) | (m.alive ? 4 : 0));
-    w.f64(m.airT); w.u16(m.pb);
+    w.f64(m.airT); w.u16(m.pb); w.f64(m.slide || 0); w.f64(m.slideCD || 0); w.f64(m.vault || 0);
     w.u16(Math.round(clamp(m.hp, 0, 100) * 100)); w.u16(Math.round(clamp(m.boost, 0, 100) * 100)); w.u16(Math.round(clamp(m.bleed, 0, 100) * 100));
     w.u8(m.slot); w.u16(m.mag); w.u8(m.act); w.u16(Math.round(m.actP * 1000));
     w.i16(m.spec);
@@ -104,7 +104,7 @@ export function decodeSnapshot(buf) {
   if (r.u8()) {
     const m = { x: r.f64(), y: r.f64(), z: r.f64(), vx: r.f64(), vy: r.f64(), vz: r.f64(), mode: r.u8() };
     const f = r.u8(); m.grounded = !!(f & 1); m.crouch = !!(f & 2); m.alive = !!(f & 4);
-    m.airT = r.f64(); m.pb = r.u16();
+    m.airT = r.f64(); m.pb = r.u16(); m.slide = r.f64(); m.slideCD = r.f64(); m.vault = r.f64();
     m.hp = r.u16() / 100; m.boost = r.u16() / 100; m.bleed = r.u16() / 100;
     m.slot = r.u8(); m.mag = r.u16(); m.act = r.u8(); m.actP = r.u16() / 1000; m.spec = r.i16();
     s.self = m;

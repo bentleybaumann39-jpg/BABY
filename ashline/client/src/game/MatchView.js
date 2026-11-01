@@ -125,7 +125,7 @@ export class MatchView {
       if (r.buf.length > 40) r.buf.splice(0, r.buf.length - 40);
       r.last = now;
     }
-    for (const [id, r] of this.remotes) if (!seen.has(id) && now - r.last > 400) { r.char.dispose(); this.remotes.delete(id); }
+    for (const [id, r] of this.remotes) if (!seen.has(id) && now - r.last > 400 && !(r.deadAt && now - r.deadAt < 9000)) { r.char.dispose(); this.remotes.delete(id); }
     this.fx.setNades(s.proj);
     if (!s.self) return;
     const m = s.self;
@@ -190,6 +190,7 @@ export class MatchView {
           A.play(e.z === 'head' ? 'headmark' : 'hitmark', 0.7);
           if (e.b) A.play('armor', 0.6);
         }
+        if (e.v !== me) { const rv = this.remotes.get(e.v); if (rv) rv.char.flinch(e.z === 'head' ? 1 : 0.6); }
         if (e.v === me) {
           this.trauma = Math.min(1, this.trauma + Math.min(0.6, e.d / 60));
           this.lastHitTime = performance.now();
@@ -204,10 +205,13 @@ export class MatchView {
         if (e.a === me) { this.hud.notify(`Knocked down ${this.name(e.v)}`, 2.5); A.play('killconfirm', 0.6); }
         if (e.v === me) { this.hud.notify('You are down! Crawl to cover — your squad can revive you.', 4); this.trauma = 1; }
         break;
-      case 'kill':
+      case 'kill': {
+        const rv = this.remotes.get(e.v);
+        if (rv && rv.cur) { rv.deadAt = performance.now(); rv.deadPose = { ...rv.cur, mode: MODE.DEAD, flags: 0 }; rv.char.die(e.hs ? 1 : 0); }
         this.hud.feed(this.name(e.a), this.name(e.v), e.w, e.hs ? 'headshot' : 'killed', e.a === me || this.isMate(e.a), e.v === me || this.isMate(e.v), e.d);
         if (e.a === me) { this.kills++; this.hud.notify(`Eliminated ${this.name(e.v)}${e.d > 60 ? ` (${e.d} m)` : ''}`, 2.5); A.play('killconfirm', 0.9); this.hud.hitmarker(true, true); }
         break;
+      }
       case 'revive':
         if (e.v === me) this.hud.notify(`${this.name(e.a)} revived you`, 3);
         else if (e.a === me) this.hud.notify(`You revived ${this.name(e.v)}`, 3);
@@ -405,7 +409,11 @@ export class MatchView {
     const pressed = b & ~this.pred.pb;
     copyMoveState(this.prev, this.pred);
     if (this.pred.mode === MODE.GROUND || this.pred.mode === MODE.KNOCKED || this.pred.mode === MODE.FREEFALL || this.pred.mode === MODE.CHUTE) {
+      const wasVault = this.pred.vault, wasSlide = this.pred.slide;
       stepMove(this.pred, inp, this.world, DT, this.mods());
+      if (this.pred.impact < -5) { this.landDip = Math.min(0.32, (this.landDip || 0) + (-this.pred.impact - 4) * 0.025); this.app.audio.play('land', Math.min(1, -this.pred.impact / 14)); }
+      if (!wasVault && this.pred.vault > 0) this.app.audio.play('land', 0.5);
+      if (!wasSlide && this.pred.slide > 0) this.app.audio.play('slide', 0.7);
       this.footsteps();
     } else this.pred.pb = b;
     this.pending.push(inp);
@@ -436,16 +444,22 @@ export class MatchView {
       return;
     }
     const w = this.inv.w[st.slot];
-    if (!w || !(b & BTN.FIRE) || busy) { if (f.cd < 0) f.cd = 0; return; }
+    const bursting = w && (f.burst | 0) > 0;
+    if (!w || (!(b & BTN.FIRE) && !bursting) || busy) { f.burst = 0; if (f.cd < 0) f.cd = 0; return; }
     const def = WEAPONS[w.id];
     const auto = def.auto && !w.semi;
-    if (!auto && !(pressed & BTN.FIRE)) { if (f.cd < 0) f.cd = 0; return; }
+    const burst = def.burst && !w.semi;
+    if (burst) {
+      if ((pressed & BTN.FIRE) && (f.burst | 0) <= 0 && this.predMag > 0) f.burst = def.burst;
+      if ((f.burst | 0) <= 0) { if ((pressed & BTN.FIRE) && this.predMag <= 0) { this.app.audio.play('dry', 0.8); this.startLocalReload(); } if (f.cd < 0) f.cd = 0; return; }
+    } else if (!auto && !(pressed & BTN.FIRE)) { if (f.cd < 0) f.cd = 0; return; }
     if (this.predMag <= 0) { if (pressed & BTN.FIRE) { this.app.audio.play('dry', 0.8); this.startLocalReload(); } if (f.cd < 0) f.cd = 0; return; }
     let n = 0;
     while (f.cd <= 0 && this.predMag > 0 && n < 3) {
       this.localShot(w, def, inp, n);
       f.cd += 60 / def.rpm; n++;
       this.predMag--;
+      if (burst) { f.burst--; if (f.burst <= 0) { f.cd += 0.12; break; } continue; }
       if (!auto) break;
     }
     if (n) this.shotsBySeq.set(inp.seq, n);
@@ -526,12 +540,13 @@ export class MatchView {
   updateRemotes(renderTick, dt) {
     const cam = this.camPos;
     for (const r of this.remotes.values()) {
-      const s = this.sample(r.buf, renderTick);
+      let s = this.sample(r.buf, renderTick);
+      if (r.deadAt) { if (performance.now() - r.deadAt > 8000) { r.char.root.visible = false; continue; } s = r.deadPose; }
       if (!s) continue;
       const prevMode = r.cur ? r.cur.mode : s.mode;
       r.cur = s;
       const ch = r.char;
-      const visible = s.mode !== MODE.DEAD && s.mode !== MODE.PLANE && s.mode !== MODE.WAITING && !(this.dead && this.status.spec === r.id && this.specFirst);
+      const visible = (s.mode !== MODE.DEAD || r.deadAt) && s.mode !== MODE.PLANE && s.mode !== MODE.WAITING && !(this.dead && this.status.spec === r.id && this.specFirst);
       ch.root.visible = visible;
       if (!visible) continue;
       ch.setGear(s.gear);
@@ -597,9 +612,13 @@ export class MatchView {
       fp = true;
       const eh = eyeHeight(p);
       this.eyeY += (eh - this.eyeY) * Math.min(1, dt * 14);
-      const bob = p.grounded ? Math.sin(performance.now() * 0.011) * Math.min(1, Math.hypot(p.vx, p.vz) / 6) * 0.025 * (1 - this.adsT * 0.8) : 0;
-      cam.position.set(x, y + this.eyeY + bob, z);
-      cam.rotation.set(this.pitch + sy, this.yaw + sx, mode === MODE.KNOCKED ? 0.25 : 0);
+      const hs = Math.hypot(p.vx, p.vz);
+      const bob = p.grounded && !p.slide ? Math.sin(performance.now() * 0.011) * Math.min(1, hs / 6) * 0.025 * (1 - this.adsT * 0.8) : 0;
+      this.landDip = (this.landDip || 0) * Math.exp(-dt * 7);
+      this.slideRoll = (this.slideRoll || 0) + ((p.slide > 0 ? 0.07 : 0) - (this.slideRoll || 0)) * Math.min(1, dt * 10);
+      cam.position.set(x, y + this.eyeY + bob - this.landDip, z);
+      cam.rotation.set(this.pitch + sy - this.landDip * 0.25, this.yaw + sx, mode === MODE.KNOCKED ? 0.25 : this.slideRoll);
+      this.fovKick = (this.fovKick || 0) + (((p.slide > 0 ? 1.6 : hs > 6 && !p.crouch ? 1 : 0) * (1 - this.adsT)) - (this.fovKick || 0)) * Math.min(1, dt * 6);
       this.R.followShadow(x, y, z);
       if (this.selfCharObj) this.selfCharObj.root.visible = false;
     }
@@ -608,7 +627,7 @@ export class MatchView {
     cam.updateMatrixWorld();
     // zoom & viewmodel
     const scoped = this.vm.scoped && this.adsT > 0.85;
-    this.R.setZoom(fp ? 1 + (this.vm.zoom - 1) * this.adsT : 1);
+    this.R.setZoom(fp ? (1 + (this.vm.zoom - 1) * this.adsT) / (1 + 0.075 * (this.fovKick || 0)) : 1);
     const w = this.inv && st.slot < 3 ? this.inv.w[st.slot] : null;
     this.vm.setWeapon(st.slot === 3 && this.inv ? this.inv.thrSel : w);
     // indoor test for viewmodel lighting

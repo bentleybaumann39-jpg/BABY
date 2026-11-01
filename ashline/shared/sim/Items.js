@@ -27,6 +27,12 @@ export const WEAPONS = {
     r0: 7, r1: 34, minMul: 0.15, hip: 4.2, ads: 3.0, bloom: 0, kick: 4.0, kickH: 1.0, reload: 3.4, equip: 0.7, zoom: 1.1, snd: 'shotgun', atts: ['optic'], optics: ['reddot'] },
   mattock: { name: 'Mattock', cls: 'lmg', slot: 'primary', ammo: '556', mag: 75, rpm: 640, auto: true, dmg: 26, head: 2.0, limb: 0.85,
     r0: 60, r1: 260, minMul: 0.7, hip: 4.0, ads: 0.5, bloom: 0.16, kick: 0.95, kickH: 0.6, reload: 5.2, equip: 1.0, zoom: 1.25, snd: 'heavyrifle', atts: ['optic', 'grip'], optics: ['reddot', 'x2', 'x4'], slowMul: 0.92 },
+  tern: { name: 'Tern', cls: 'ar', slot: 'primary', ammo: '556', mag: 30, rpm: 960, burst: 3, auto: false, dmg: 28, head: 2.2, limb: 0.85,
+    r0: 70, r1: 280, minMul: 0.72, hip: 2.6, ads: 0.2, bloom: 0.12, kick: 0.75, kickH: 0.3, reload: 2.3, equip: 0.6, zoom: 1.3, snd: 'rifle', atts: ['optic', 'mag', 'muzzle', 'grip'], optics: ['reddot', 'x2', 'x4'] },
+  wasp: { name: 'Wasp', cls: 'pistol', slot: 'side', ammo: '9mm', mag: 20, rpm: 1000, auto: true, dmg: 15, head: 1.7, limb: 0.9,
+    r0: 12, r1: 45, minMul: 0.5, hip: 2.6, ads: 0.9, bloom: 0.2, kick: 0.6, kickH: 0.5, reload: 1.8, equip: 0.35, zoom: 1.15, snd: 'smg', atts: ['optic', 'mag', 'muzzle'], optics: ['reddot'] },
+  magistrate: { name: 'Magistrate', cls: 'pistol', slot: 'side', ammo: '762', mag: 6, rpm: 150, auto: false, dmg: 54, head: 2.0, limb: 0.85,
+    r0: 25, r1: 90, minMul: 0.6, hip: 2.4, ads: 0.25, bloom: 1.2, kick: 3.6, kickH: 0.9, reload: 2.7, equip: 0.45, zoom: 1.2, snd: 'heavyrifle', atts: ['optic'], optics: ['reddot'] },
 };
 export const WEAPON_IDS = Object.keys(WEAPONS);
 
@@ -87,9 +93,9 @@ export function canAttach(weaponId, attId) {
 
 // Loot tables by tier. Each spot rolls: maybe an item group.
 const WEAPON_WEIGHTS = {
-  1: [['p9', 6], ['vespa', 4], ['breacher', 3], ['kr5', 3], ['halberd', 1], ['sable', 0.5]],
-  2: [['p9', 3], ['vespa', 4], ['breacher', 3], ['kr5', 4], ['halberd', 3], ['sable', 1.5], ['mattock', 0.8], ['longreach', 0.4]],
-  3: [['vespa', 2], ['kr5', 4], ['halberd', 4], ['sable', 2.5], ['mattock', 1.5], ['longreach', 1.2], ['breacher', 1]],
+  1: [['p9', 6], ['wasp', 2], ['magistrate', 1.5], ['vespa', 4], ['breacher', 3], ['kr5', 3], ['tern', 1.5], ['halberd', 1], ['sable', 0.5]],
+  2: [['p9', 3], ['wasp', 1.5], ['magistrate', 1.5], ['vespa', 4], ['breacher', 3], ['kr5', 4], ['tern', 2.5], ['halberd', 3], ['sable', 1.5], ['mattock', 0.8], ['longreach', 0.4]],
+  3: [['vespa', 2], ['kr5', 4], ['tern', 3], ['halberd', 4], ['sable', 2.5], ['mattock', 1.5], ['longreach', 1.2], ['breacher', 1], ['magistrate', 1]],
 };
 const ARMOR_TIER = { 1: [[1, 8], [2, 2], [3, 0.2]], 2: [[1, 5], [2, 4], [3, 0.8]], 3: [[1, 2], [2, 5], [3, 2.5]] };
 
@@ -117,4 +123,4 @@ export function rollLoot(rng, tier) {
 }
 
 // Rough desirability scores (used by bots and auto-pickup decisions).
-export const WEAPON_SCORE = { p9: 1, vespa: 4, breacher: 4, kr5: 6, halberd: 6.5, sable: 5.5, mattock: 6, longreach: 5 };
+export const WEAPON_SCORE = { p9: 1, wasp: 2, magistrate: 2.2, vespa: 4, breacher: 4, kr5: 6, tern: 6.2, halberd: 6.5, sable: 5.5, mattock: 6, longreach: 5 };

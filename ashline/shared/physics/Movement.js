@@ -3,12 +3,13 @@
 import { PLAYER, MODE, BTN, GRAVITY, CHUTE_AUTO, WATER_LEVEL } from '../constants.js';
 
 export function createMoveState(x = 0, y = 0, z = 0) {
-  return { x, y, z, vx: 0, vy: 0, vz: 0, mode: MODE.GROUND, grounded: true, crouch: false, airT: 0, pb: 0, impact: 0 };
+  return { x, y, z, vx: 0, vy: 0, vz: 0, mode: MODE.GROUND, grounded: true, crouch: false, airT: 0, pb: 0, impact: 0, slide: 0, slideCD: 0, vault: 0 };
 }
 
 export function copyMoveState(dst, s) {
   dst.x = s.x; dst.y = s.y; dst.z = s.z; dst.vx = s.vx; dst.vy = s.vy; dst.vz = s.vz;
   dst.mode = s.mode; dst.grounded = s.grounded; dst.crouch = s.crouch; dst.airT = s.airT; dst.pb = s.pb;
+  dst.slide = s.slide || 0; dst.slideCD = s.slideCD || 0; dst.vault = s.vault || 0;
   return dst;
 }
 
@@ -68,15 +69,24 @@ export function stepMove(s, inp, world, dt, mods = null) {
   }
 
   const knocked = s.mode === MODE.KNOCKED;
+  if (s.slideCD > 0) s.slideCD = Math.max(0, s.slideCD - dt);
+  const ads = !!(b & BTN.ADS);
+  const inWater = s.y < WATER_LEVEL - 0.35 && world.heightAt(s.x, s.z) < WATER_LEVEL - 0.3;
+  const hspeed = Math.hypot(s.vx, s.vz);
+  // slide: tap crouch while sprinting
+  if (!knocked && s.grounded && (pressed & BTN.CROUCH) && hspeed > 5.2 && s.slideCD <= 0 && !inWater && !s.slide) {
+    const boost = Math.max(hspeed, SLIDE.speed) / hspeed;
+    s.vx *= boost; s.vz *= boost;
+    s.slide = SLIDE.time; s.slideCD = SLIDE.cooldown;
+  }
+  if (s.slide > 0 && (!(b & BTN.CROUCH) || knocked || Math.hypot(s.vx, s.vz) < 2.4 || !s.grounded && s.vy < -6)) s.slide = 0;
   // crouch (hold); standing up requires headroom
-  let wantCrouch = !knocked && !!(b & BTN.CROUCH);
+  let wantCrouch = !knocked && (!!(b & BTN.CROUCH) || s.slide > 0);
   if (!wantCrouch && s.crouch) {
     if (world.overlaps(s.x - hw, s.y + 0.05, s.z - hw, s.x + hw, s.y + PLAYER.height, s.z + hw) >= 0) wantCrouch = true;
   }
   s.crouch = wantCrouch;
 
-  const ads = !!(b & BTN.ADS);
-  const inWater = s.y < WATER_LEVEL - 0.35 && world.heightAt(s.x, s.z) < WATER_LEVEL - 0.3;
   const sprint = !knocked && (b & BTN.SPRINT) && mz > 0.3 && !s.crouch && !ads && !(mods && mods.noSprint) && !inWater;
   let speed;
   if (knocked) speed = PLAYER.knocked;
@@ -89,16 +99,62 @@ export function stepMove(s, inp, world, dt, mods = null) {
   if (mods) { if (mods.speedMul) speed *= mods.speedMul; if (mods.slow) speed = Math.min(speed, mods.slow); }
 
   const wx = (-sy * mz + cy * mx) * speed, wz = (-cy * mz - sy * mx) * speed;
-  const k = s.grounded ? Math.min(1, 12 * dt) : Math.min(1, 1.6 * dt);
-  s.vx = approach(s.vx, wx, k);
-  s.vz = approach(s.vz, wz, k);
+  if (s.slide > 0) {
+    // momentum carries; light steering; friction ramps up as the slide ends
+    s.slide = Math.max(0, s.slide - dt);
+    const fr = Math.min(1, (0.9 + 2.2 * (1 - s.slide / SLIDE.time)) * dt);
+    s.vx -= s.vx * fr; s.vz -= s.vz * fr;
+    s.vx += (-sy * mz + cy * mx) * 2.5 * dt; s.vz += (-cy * mz - sy * mx) * 2.5 * dt;
+  } else if (s.vault > 0) {
+    s.vault = Math.max(0, s.vault - dt);
+    const fx = -sy, fz = -cy;
+    s.vx = fx * SLIDE.vaultPush; s.vz = fz * SLIDE.vaultPush;
+  } else {
+    const k = s.grounded ? Math.min(1, 12 * dt) : Math.min(1, 1.6 * dt);
+    s.vx = approach(s.vx, wx, k);
+    s.vz = approach(s.vz, wz, k);
+  }
 
-  if (s.grounded && (pressed & BTN.JUMP) && !knocked && !s.crouch && !inWater) { s.vy = PLAYER.jump; s.grounded = false; }
+  if (s.grounded && (pressed & BTN.JUMP) && !knocked && !inWater) {
+    const top = vaultTop(s, world, -sy, -cy);
+    if (top !== null) {
+      // vault / climb onto a ledge up to chest height
+      s.vy = Math.sqrt(2 * GRAVITY * (top - s.y + 0.3));
+      s.vault = SLIDE.vaultTime; s.slide = 0; s.crouch = false;
+      s.grounded = false;
+    } else if (!s.crouch || s.slide > 0) {
+      if (s.slide > 0) { s.slide = 0; s.crouch = false; }
+      s.vy = PLAYER.jump; s.grounded = false;
+    }
+  }
   s.vy -= GRAVITY * dt;
   if (s.vy < -60) s.vy = -60;
 
   const h = bodyHeight(s);
   s.impact = world.move(s, dt, hw, h, knocked ? 0.3 : PLAYER.stepUp);
+}
+
+export const SLIDE = { speed: 8.6, time: 0.8, cooldown: 1.3, vaultTime: 0.42, vaultPush: 3.4, vaultMin: 0.55, vaultMax: 1.5 };
+
+// Highest box top in front of the player that can be vaulted onto (with headroom), or null.
+function vaultTop(s, world, fx, fz) {
+  const px = s.x + fx * 0.62, pz = s.z + fz * 0.62, r = 0.18;
+  const b = world.b;
+  let top = null;
+  world.query(px - r, pz - r, px + r, pz + r, (i) => {
+    const k = i * 6;
+    if (px + r > b[k] && px - r < b[k + 3] && pz + r > b[k + 2] && pz - r < b[k + 5]) {
+      const t = b[k + 4];
+      if (b[k + 1] < s.y + SLIDE.vaultMin && t > s.y + SLIDE.vaultMin && t <= s.y + SLIDE.vaultMax && (top === null || t > top)) top = t;
+    }
+    return false;
+  });
+  if (top === null) return null;
+  // something taller right there? (a wall, not a ledge)
+  if (world.overlaps(px - r, top + 0.05, pz - r, px + r, top + PLAYER.crouchHeight, pz + r) >= 0) return null;
+  // headroom above us while rising
+  if (world.overlaps(s.x - PLAYER.halfWidth, s.y + 0.1, s.z - PLAYER.halfWidth, s.x + PLAYER.halfWidth, top + PLAYER.crouchHeight, s.z + PLAYER.halfWidth) >= 0) return null;
+  return top;
 }
 
 // Unit vector for view angles.

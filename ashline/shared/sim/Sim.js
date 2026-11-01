@@ -160,7 +160,7 @@ export class Sim {
       case 'slot': if (!knocked) this.switchSlot(p, c.s | 0); break;
       case 'use': if (!knocked) this.startHeal(p, c.id); break;
       case 'thr': if (THROWS[c.id]) { p.inv.thrSel = c.id; p.invDirty = true; } break;
-      case 'firemode': { const w = this.activeWeapon(p); if (w && WEAPONS[w.id].auto) { w.semi = !w.semi; p.invDirty = true; } break; }
+      case 'firemode': { const w = this.activeWeapon(p); if (w && (WEAPONS[w.id].auto || WEAPONS[w.id].burst)) { w.semi = !w.semi; p.invDirty = true; } break; }
       case 'drop': if (!knocked) this.drop(p, c); break;
       case 'attach': this.attach(p, c.i | 0, c.s | 0); break;
       case 'detach': this.detach(p, c.s | 0, String(c.t)); break;
@@ -284,12 +284,17 @@ export class Sim {
       return;
     }
     const w = this.activeWeapon(p);
-    if (!w || !(b & BTN.FIRE)) { if (f.cd < 0) f.cd = 0; return; }
+    const bursting = w && (f.burst | 0) > 0;
+    if (!w || (!(b & BTN.FIRE) && !bursting)) { f.burst = 0; if (f.cd < 0) f.cd = 0; return; }
     if (p.act && p.act.k === ACT.heal) this.cancelAct(p);
     if (p.act) { if (f.cd < 0) f.cd = 0; return; }
     const def = WEAPONS[w.id];
     const auto = def.auto && !w.semi;
-    if (!auto && !(pressed & BTN.FIRE)) { if (f.cd < 0) f.cd = 0; return; }
+    const burst = def.burst && !w.semi;
+    if (burst) {
+      if ((pressed & BTN.FIRE) && (f.burst | 0) <= 0 && w.mag > 0) f.burst = def.burst;
+      if ((f.burst | 0) <= 0) { if (pressed & BTN.FIRE && w.mag <= 0) { this.emit({ e: 'dry', p: p.id }); this.startReload(p); } if (f.cd < 0) f.cd = 0; return; }
+    } else if (!auto && !(pressed & BTN.FIRE)) { if (f.cd < 0) f.cd = 0; return; }
     if (w.mag <= 0) {
       if (pressed & BTN.FIRE) { this.emit({ e: 'dry', p: p.id }); this.startReload(p); }
       if (f.cd < 0) f.cd = 0;
@@ -300,6 +305,7 @@ export class Sim {
       this.shoot(p, w, inp, shotsThisTick);
       f.cd += 60 / def.rpm;
       shotsThisTick++;
+      if (burst) { f.burst--; if (f.burst <= 0) { f.cd += 0.12; break; } continue; }
       if (!auto) break;
     }
     if (w.mag <= 0 && p.inv.ammo[def.ammo] > 0 && p.bot) this.startReload(p);
@@ -921,7 +927,7 @@ export class Sim {
     let sqN = 0; for (const s of this.squads.values()) if (s.alive) sqN++;
     const self = p ? {
       x: p.m.x, y: p.m.y, z: p.m.z, vx: p.m.vx, vy: p.m.vy, vz: p.m.vz, mode: p.m.mode, grounded: p.m.grounded, crouch: p.m.crouch,
-      airT: p.m.airT, pb: p.m.pb, hp: p.hp, boost: p.boost, bleed: p.bleed, slot: p.inv.slot,
+      airT: p.m.airT, pb: p.m.pb, slide: p.m.slide || 0, slideCD: p.m.slideCD || 0, vault: p.m.vault || 0, hp: p.hp, boost: p.boost, bleed: p.bleed, slot: p.inv.slot,
       mag: this.activeWeapon(p) ? this.activeWeapon(p).mag : 0,
       act: p.act ? p.act.k : 0, actP: p.act ? clamp(p.act.t / p.act.dur, 0, 1) : 0,
       spec: p.alive ? -1 : p.spectate, alive: p.alive,

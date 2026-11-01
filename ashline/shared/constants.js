@@ -1,7 +1,7 @@
 // Shared constants for server, client and practice simulation. Pure data, no dependencies.
 
 export const GAME_NAME = 'ASHLINE';
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 export const TICK_RATE = 30;            // simulation ticks per second (server + prediction)
 export const DT = 1 / TICK_RATE;

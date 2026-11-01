@@ -123,6 +123,39 @@ export function buildWeapon(id, finish = 'parkerized', att = null) {
       railY = 0.085; railZ0 = 0.02; barrelEnd = -0.85; handZ = -0.36;
       break;
     }
+    case 'tern': { // bullpup burst rifle: magazine behind the grip
+      part(g, box(0.055, 0.085, 0.5), F, 0, 0.03, 0.05);
+      part(g, box(0.05, 0.05, 0.22), M.polymer, 0, 0.04, -0.3);
+      part(g, cyl(0.011, 0.011, 0.18), M.steel, 0, 0.045, -0.5);
+      part(g, cyl(0.016, 0.014, 0.05), M.steel, 0, 0.045, -0.6);
+      part(g, box(0.03, 0.1, 0.04), M.polymer, 0, -0.04, -0.12, -0.2);
+      part(g, box(0.06, 0.03, 0.12), M.polymer, 0, 0.08, -0.1);
+      mag = part(g, box(0.028, att && att.mag ? 0.21 : 0.16, 0.05), M.steel, 0, -0.07, 0.12, 0.15);
+      part(g, box(0.05, 0.09, 0.08), M.polymer, 0, 0.0, 0.33);
+      railY = 0.095; railZ0 = -0.05; barrelEnd = -0.63; handZ = -0.3;
+      break;
+    }
+    case 'wasp': { // machine pistol
+      part(g, box(0.032, 0.036, 0.2), F, 0, 0.06, -0.05);
+      part(g, box(0.03, 0.03, 0.16), M.polymer, 0, 0.032, -0.04);
+      part(g, box(0.03, 0.11, 0.045), M.polymer, 0, -0.02, 0.02, -0.2);
+      part(g, box(0.022, 0.06, 0.025), M.polymer, 0, -0.005, -0.12);
+      part(g, cyl(0.008, 0.008, 0.03), M.steel, 0, 0.065, -0.16);
+      mag = part(g, box(0.022, att && att.mag ? 0.16 : 0.1, 0.035), M.steel, 0, -0.1, 0.035, -0.2);
+      railY = 0.085; railZ0 = 0.02; barrelEnd = -0.17; handZ = -0.12; handY = -0.02;
+      break;
+    }
+    case 'magistrate': { // heavy revolver
+      part(g, cyl(0.012, 0.012, 0.2), M.steel, 0, 0.055, -0.12);
+      part(g, box(0.026, 0.02, 0.2), M.steel, 0, 0.072, -0.12);
+      const drum = part(g, G('rdrum', () => { const c = new THREE.CylinderGeometry(0.024, 0.024, 0.045, 12); c.rotateX(Math.PI / 2); return c; }), M.steel, 0, 0.048, 0.0);
+      drum.name = 'drum';
+      part(g, box(0.026, 0.04, 0.07), F, 0, 0.045, 0.04);
+      part(g, box(0.03, 0.1, 0.04), M.wood, 0, -0.02, 0.07, -0.35);
+      mag = part(g, box(0.01, 0.01, 0.01), M.steel, 0, 0.048, 0.02);
+      railY = 0.085; railZ0 = -0.02; barrelEnd = -0.23; handZ = 0.0; handY = -0.03;
+      break;
+    }
     default: {
       part(g, box(0.05, 0.06, 0.4), F, 0, 0.03, -0.1);
       mag = part(g, box(0.02, 0.1, 0.04), M.steel, 0, -0.04, -0.08);
@@ -147,9 +180,9 @@ export function buildWeapon(id, finish = 'parkerized', att = null) {
       sightY = railY + 0.035; sightZ = railZ0 - 0.08 + len / 2;
     }
   }
-  if (att && att.muzzle === 'suppressor') { part(g, cyl(0.02, 0.02, 0.17, 12), M.polymer, 0, id === 'p9' ? 0.06 : 0.04, barrelEnd - 0.085); barrelEnd -= 0.17; }
+  if (att && att.muzzle === 'suppressor') { part(g, cyl(0.02, 0.02, 0.17, 12), M.polymer, 0, ['p9', 'wasp'].includes(id) ? 0.06 : 0.04, barrelEnd - 0.085); barrelEnd -= 0.17; }
   if (att && att.grip) part(g, box(0.025, 0.07, 0.03), M.polymer, 0, -0.03, handZ, 0.1);
-  muzzle.position.set(0, id === 'p9' ? 0.06 : 0.042, barrelEnd);
+  muzzle.position.set(0, ['p9', 'wasp', 'magistrate'].includes(id) ? 0.06 : 0.042, barrelEnd);
   sight.position.set(0, sightY, sightZ);
   g.add(muzzle, sight);
   g.userData = { muzzle, sight, mag, handZ, handY, id };

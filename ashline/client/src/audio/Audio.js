@@ -150,6 +150,7 @@ export class Audio {
     tasks.push(() => B('ui', click(2400, 0.008, 28)));
     tasks.push(() => B('chute', (() => { const a = noise(SR * 0.8, 29); for (let i = 0; i < a.length; i++) a[i] *= env(i, 0.01, 0.2) * (1 + Math.sin(i / 300)); biquad(a, 'lp', 1200); return norm(a, 0.7); })()));
     tasks.push(() => B('land', footstep('dirt', 99)));
+    tasks.push(() => B('slide', (() => { const a = noise(SR * 0.7, 41); for (let i = 0; i < a.length; i++) a[i] *= env(i, 0.02, 0.35) * (0.7 + 0.3 * Math.sin(i / 120)); biquad(a, 'bp', 1400, 0.6); biquad(a, 'lp', 4000); return norm(a, 0.55); })()));
     tasks.push(() => B('throw', (() => { const a = noise(SR * 0.3, 30); for (let i = 0; i < a.length; i++) a[i] *= Math.sin(Math.PI * i / a.length) ** 2; biquad(a, 'bp', 700, 0.7); return norm(a, 0.5); })()));
     tasks.push(() => B('smokehiss', (() => { const a = noise(SR * 3, 31); for (let i = 0; i < a.length; i++) a[i] *= env(i, 0.2, 1.5); biquad(a, 'hp', 2500); return norm(a, 0.4); })()));
     for (const k of ['wind', 'freefall', 'plane', 'ash', 'heart']) tasks.push(() => B(`loop_${k}`, loop(k, k.length * 3)));
